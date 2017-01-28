@@ -1,0 +1,22 @@
+let foo = 0;
+if (foo == 0) {
+   write(foo);
+   foo = 1;
+   write(foo);
+} else {
+   write(foo);
+   foo = 2;
+   write(foo);
+}
+write(foo);
+let bar = 0;
+if (bar != 0) {
+   write(bar);
+   bar = 1;
+   write(bar);
+} else {
+   write(bar);
+   bar = 2;
+   write(bar);
+}
+write(bar);

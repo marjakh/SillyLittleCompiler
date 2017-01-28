@@ -1,0 +1,3 @@
+let indirect = write;
+let indirect2 = indirect;
+indirect2(13);

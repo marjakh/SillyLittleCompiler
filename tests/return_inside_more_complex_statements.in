@@ -1,0 +1,29 @@
+function foo() {
+  if (1 == 1) {
+    return 2;
+  }
+  write(666);
+}
+
+function bar() {
+  if (1 != 1) {
+  } else {
+    return 4;
+  }
+  write(666);
+}
+
+function baz() {
+  while (1 == 1) {
+    return 6;
+  }
+  write(666);
+}
+
+write(1);
+write(foo());
+write(3);
+write(bar());
+write(5);
+write(baz());
+write(7);

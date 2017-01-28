@@ -1,0 +1,5 @@
+let x = 0;
+
+function foo(x) { write(x); }
+
+foo(10);

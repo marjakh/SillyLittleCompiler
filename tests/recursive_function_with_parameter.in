@@ -1,0 +1,24 @@
+function foo(i) {
+  write(100);
+  write(i);
+  i = i - 1;
+  if (i > 0) {
+    foo(i);
+  }
+  write(200);
+  write(i);
+}
+
+foo(5);
+
+function bar(i) {
+  write(300);
+  write(i);
+  if (i > 0) {
+    bar(i - 1);
+  }
+  write(400);
+  write(i);
+}
+
+bar(5);

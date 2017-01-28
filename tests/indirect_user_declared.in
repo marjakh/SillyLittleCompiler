@@ -1,0 +1,9 @@
+function foo() {
+  write(12);
+}
+
+let bar = foo;
+bar();
+
+let baz = bar;
+baz();

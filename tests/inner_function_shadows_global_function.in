@@ -1,0 +1,7 @@
+function foo(x) { write(x); }
+
+function outer() {
+  function foo() { write(600); }
+  foo();
+}
+outer();

@@ -1,0 +1,35 @@
+let a = 0;
+
+function first() {
+  a = 1;
+  return;
+  a = 2;
+}
+
+function second() {
+  if (0 == 0) {
+    a = 3;
+    return;
+    a = 4;
+  }
+  a = 5;
+}
+
+function third() {
+  if (0 == 1) {
+  } else {
+    a = 6;
+    return;
+    a = 7;
+  }
+  a = 8;
+}
+
+
+write(a);
+first();
+write(a);
+second();
+write(a);
+third();
+write(a);

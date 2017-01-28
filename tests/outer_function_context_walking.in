@@ -1,0 +1,49 @@
+function outer() {
+  let x = 0;
+
+  function inner() {
+    function doublyinner() {
+      let x = 10;
+      inner();
+    }
+    write(x);
+    return doublyinner;
+  }
+
+  let doublyinnerref = inner();
+  doublyinnerref();
+}
+
+outer();
+
+function outer2() {
+  function foo() { write(8); }
+
+  function inner() {
+    function doublyinner() {
+      function foo() { write(18); }
+      inner();
+    }
+    foo();
+    return doublyinner;
+  }
+
+  let doublyinnerref = inner();
+  doublyinnerref();
+}
+
+outer2();
+
+function outer3() {
+  let x = 9;
+  function inner() {
+    function inner2() {
+      write(x);
+    }
+    return inner2;
+  }
+  return inner();
+}
+
+let ref = outer3();
+ref();

@@ -1,0 +1,9 @@
+// this is a comment
+write(3);
+// write(5);
+write(3); // this is a comment
+write(3); // write(5)
+if (0 == 0) { // foo
+  write(3);
+      // bar
+} // baz

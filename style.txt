@@ -1,0 +1,6 @@
+Classes:
+
+class Foo:
+  def doStuff(self):
+    this_is_var = 1
+

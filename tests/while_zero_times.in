@@ -1,0 +1,7 @@
+write(1);
+let i = 10;
+while (i < 10) {
+  write(2);
+  i = i + 1;
+}
+write(3);

@@ -1,0 +1,15 @@
+function foo(x) {
+  write(x);
+}
+foo(14);
+
+function bar(x, y) {
+  write(x);
+  write(y);
+}
+bar(15, 16);
+
+function baz(x) {
+  write(17);
+}
+baz(18);

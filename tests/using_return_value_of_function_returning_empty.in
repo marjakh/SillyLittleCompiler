@@ -1,0 +1,8 @@
+function explicityreturnsempty() {
+  return;
+}
+write(explicityreturnsempty());
+
+function implicitlyreturnsempty() {
+}
+write(implicitlyreturnsempty());

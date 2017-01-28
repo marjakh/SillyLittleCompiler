@@ -1,0 +1,14 @@
+foo();
+outer();
+
+function foo() {
+  write(7);
+}
+
+function outer() {
+   function inner() {
+     bar();
+   }
+   inner();
+   function bar() { write(9); }
+}

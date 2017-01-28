@@ -1,0 +1,3 @@
+let indirectwrite = write;
+let indirectnth = nth;
+indirectwrite(indirectnth(2, 10, 11));

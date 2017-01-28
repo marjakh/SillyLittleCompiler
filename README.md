@@ -1,2 +1,36 @@
-# SillyLittleCompiler
-A silly little hobby project for learning more about compilers.
+This is a silly little compiler.
+
+(c) Marja Hölttä (a proper license will follow)
+
+Purpose
+==============
+
+To study programming language / compiler concepts.
+- Rule-based parsing
+- Register allocation
+- Assembly
+- Optimizations (TODO)
+
+
+The language
+==============
+
+The language is a self invented one which might or might not resemble
+JavaScript.
+
+- Functions + inner functions
+- Garbage collected (garbage collection not implemented)
+
+
+Status of the silly little compiler
+==============
+
+At the moment, the silly little compiler can only compile simple and small
+programs.
+
+- The only datatype is int
+- No loops
+- Register allocation not complete
+- Most of the backend not implemented (only a subset of the instructions)
+
+The interpreter is more complete and can run all programs in tests/.

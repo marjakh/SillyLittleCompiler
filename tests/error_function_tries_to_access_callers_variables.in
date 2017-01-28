@@ -1,0 +1,10 @@
+function foo() {
+  write(x);
+}
+
+function bar() {
+  let x = 0;
+  foo();
+}
+
+bar();

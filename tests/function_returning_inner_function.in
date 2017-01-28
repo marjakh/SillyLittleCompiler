@@ -1,0 +1,17 @@
+function foo() {
+  function innerhelper() { write(600); }
+  function inner() { write(500); innerhelper(); }
+  return inner;
+}
+
+let f = foo();
+f();
+
+function bar() {
+  function innerhelper() { write(700); }
+  function inner(x) { write(x); innerhelper(); }
+  return inner;
+}
+
+let b = bar();
+b(800);

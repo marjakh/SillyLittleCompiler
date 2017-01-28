@@ -1,0 +1,230 @@
+Small stuff:
+- print out the statement as comments in the program?
+- mark some functions staticmethods if we don't need an object...
+- write->print
+- Allow negative numbers but not always... so e.g., 1 + (-1) is OK but 1 + -1 is not.
+- logical operators!! note that they need to shortcut both in the interpreter and in the compiler.
+- python interpreter.py from stdin? or interactively?
+- break and continue
+- get rid of nth, it's too hard to implement compared to how stupid it is.
+- allow _ in func / var names
+- should using an undefined return value be a runtime error? i guess yes, it's not like it's ever intended...
+- comparing functions with ==, does it work??
+
+Medium stuff:
+- the whole undefined thing... we need a representation for undefined, we need to init variables as undefined, and check for undefined in suitable places.
+- break and continue
+- should we allow: outer()(); when outer returns a function? Now the lang forces assigning it to a variable... in general, we should allow expression();
+- arrays
+- some way to address an arbitrary amount of memory << this will make it turing complete, right?
+- clearer distinction between the phases. when we're done with cfg creation, we should just discard the code, for example. but we must keep the results of the scope analysis around...
+- reorganize statements such as... a + b * c  -> b * c + a, a + 5 + b -> a + b + 5, and so on.
+
+Big stuff:
+- GC
+- Proper type system, distinguish between different functions!
+  -- add types like strings and such
+  -- when assigning functions it needs to be so that the assigned variable gets the proper type too, this way we can do the "param number" check at scope resolution time.. iguess??
+- Objects (so that we can also return several values)
+  -- objects referencing other objects is the big stuff!!! so we basically need garbage collection in the real code generator (the python gc will take care of it in the interpreter phase)
+- Runtime
+- Compatibility with C libraries
+
+
+Immediate plan for getting more stuff to compile:
+- convert more instructions
+- register allocation must be done properly
+- push registers before a builtin function call!
+- push registers before a call to a user function? do we need to? or does liveness analysis take care of it?
+
+
+
+
+------------------------
+
+Plan for the middle + backends:
+
+- convert into a representation with virtual registers (maybe cfg + virtual registers) for arithmetic operations + function calls (no returning functions or any of that complex stuff)
+- interpreter for the intermediate language and testing framework for it
+- register allocator
+- real code generation for arithmetic operations
+- proof of concept for the runtime
+- objects in the parser
+- "give me a new object" runtime function which first just consumes all the memory and doesn't collect garbage
+- some part must keep track of what the local variables of a function are.
+
+Later:
+- garbage collection
+- add returning functions, mucking with contexts and all that complex stuff
+
+Really later:
+- code improvements
+
+
+--------------------------
+
+Expression hoisting:
+
+Note that in this case, the expression a = b cannot be moved out of the loop:
+let a = 0;
+let b = 0;
+let c = 0;
+
+if (c == 0) {
+  b = 5;
+  a = b;
+  b = 4;
+} else {
+  a = b;
+}
+
+------------------------
+
+# TODO: phi functions - when to create? Or do we need them here, can't we just
+# use the actual variables names still? And virtual registers just for temporary
+# values?
+
+# TODO: augment this for more complex instructions, such as creating a function
+# context, returning stuff, calling into runtime whenever needed, etc.
+
+# let d = a + b + c;
+
+# temp = a + b;
+# d = temp + c;
+
+# or maybe even:
+
+# temp = a + b;
+# temp2 = temp + c;
+# d = temp2;
+
+# But if we go full ssa, we still need to know which variables are local and
+# which are global and so on, how does this all work? Variable contains that
+# information.
+
+# We probably need a better notation of a language that we can use here.
+
+
+
+
+
+let a = 0;
+
+function foo() {
+  let b = 0;
+  a = 6;
+
+  if (0 == 0) {
+    let c = 4;
+    c = 4;
+  } else {
+    a = 7;
+  }
+
+  b = 8;
+}
+
+function bar() {
+   while (0 == 0) {
+     let c = 4;
+   }
+}
+
+
+-------------------
+
+
+- variable can be in local scope, top scope, or outer function context. is the outer function scope taken into account at all?
+
+- Gather information about:
+  - what are the top level variables
+  - what are the local variables for each function
+  - which variables are referred to from the inner functions (need to be in function context)
+-> all of these should be in the scope analyser!!!
+  - what's the shape of the function context
+
+
+
+function() {
+  let a = 0;
+  if (0 == 0) {
+    let a = 0;
+  }
+}
+
+function has 2 variables: a und a. All references are resolved, so we know what refers to what.
+
+
+
+a = 1;
+a = 1 + 2;
+a = b + c;
+a = foo();
+a = a;
+a = b;
+
+
+a = foo();
+
+
+call foo
+b = rv
+
+
+a = b;
+load b
+
+what if b is a local
+rb = load(fc + displacement)
+store(rb, fc + displacement)
+
+
+a = b + 2;
+rb = load(fc + displacement)
+rb = rb + 2
+
+in the end, we store from a temporary to a local/global/param/outerlocal/outerparam.
+
+
+- the runtime (or something) must know how to create function context objects. how will it know? the executable will need to store some shape information for functions.
+
+
+
+
+
+
+function outer() {
+  let a = 5;
+  function inner() {
+    function innerinner() { let b = inner2; return b; }
+    return innerinner();
+  }
+  return inner;
+  function inner2() { write(a); }
+}
+
+let c = outer();
+let d = c();
+let e = d();
+e();
+
+
+---------------------------
+
+inner function inside a block scope:
+
+if (a == 0) {
+  let i = 8;
+  function inner() { return i; }
+}
+
+
+------
+
+
+as -32 -ggstabs -o temp.o temp.as
+gcc -m32 temp.o runtime/runtime.o runtime/builtins.o
+
+
+
+

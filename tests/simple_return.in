@@ -1,0 +1,8 @@
+function foo() { return 3; }
+write(foo());
+
+function bar() { let i = 4; return i + 3;}
+write(bar());
+
+function baz() { return bar(); }
+write(baz());

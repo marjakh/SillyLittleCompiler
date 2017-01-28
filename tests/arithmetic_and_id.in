@@ -1,0 +1,3 @@
+write(id(1));
+write(id(1) + id(4));
+write(id(1) + id(4) * (id(3) - id(4)) / id(2));

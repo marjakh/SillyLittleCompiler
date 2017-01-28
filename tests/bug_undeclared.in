@@ -1,0 +1,10 @@
+function foo() {
+  let count = 1;
+  let x = 0;
+  if (count > 0) {
+    x = x + 1;
+  }
+  write(x);
+}
+
+foo();

@@ -1,0 +1,12 @@
+function outer(x, what, f) {
+  function inner() { write(x); }
+  if (what == 1) {
+    return inner;
+  }
+  f();
+}
+
+let savedfunction = outer(10, 1, 0);
+let anothersavedfunction = outer(100, 1, 0);
+outer(20, 0, savedfunction);
+outer(200, 0, anothersavedfunction);

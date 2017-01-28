@@ -1,0 +1,19 @@
+let i = 10;
+
+function foo() {
+  write(i);
+  i = i - 1;
+  if (i > 0) {
+    bar();
+  }
+}
+
+function bar() {
+  write(i);
+  i = i - 2;
+  if (i > 0) {
+    foo();
+  }
+}
+
+foo();

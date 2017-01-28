@@ -1,0 +1,7 @@
+function foo() {
+  function inner() {
+    write(3);
+  }
+  inner();
+}
+foo();

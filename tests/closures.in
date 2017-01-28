@@ -1,0 +1,14 @@
+function outer(x) {
+  let a = 5;
+  function inner() {
+    function innerinner() { let b = inner2; return b; }
+    return innerinner;
+  }
+  return inner;
+  function inner2() { write(a); write(x); }
+}
+
+let shouldbeinner = outer(6);
+let shouldbeinnerinner = shouldbeinner();
+let shouldbeinner2 = shouldbeinnerinner();
+shouldbeinner2();

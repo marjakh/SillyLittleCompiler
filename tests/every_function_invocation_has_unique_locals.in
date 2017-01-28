@@ -1,0 +1,14 @@
+let count = 1;
+
+function foo() {
+  let x = 0;
+  if (count > 0) {
+    x = x + 1;
+    write(x);
+    count = count - 1;
+    foo();
+  }
+  write(x);
+}
+
+foo();

@@ -1,0 +1,6 @@
+function foo() {
+  write(1);
+  return 1;
+  write(2);
+}
+foo();

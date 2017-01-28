@@ -1,0 +1,2 @@
+write(x);
+let x = 0;

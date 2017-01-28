@@ -1,0 +1,6 @@
+function foo() {
+  write(x);
+}
+
+let x = 8;
+foo();

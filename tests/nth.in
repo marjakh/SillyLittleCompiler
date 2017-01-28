@@ -1,0 +1,6 @@
+let foo = 7;
+let bar = 8;
+let baz = 9;
+write(nth(1, foo, bar, baz));
+write(nth(2, foo, bar, baz));
+write(nth(3, foo, bar, baz));

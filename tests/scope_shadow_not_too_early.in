@@ -1,0 +1,48 @@
+let foo = 0;
+if (foo == 0) {
+  write(foo);
+  let foo = 100;
+  foo = 1;
+  write(foo);
+} else {
+  write(foo);
+  let foo = 100;
+  foo = 2;
+  write(foo);
+}
+write(foo);
+
+let bar = 0;
+if (bar != 0) {
+  write(bar);
+  let bar = 100;
+  bar = 1;
+  write(bar);
+} else {
+  write(bar);
+  let bar = 100;
+  bar = 2;
+  write(bar);
+}
+write(bar);
+
+let baz = 0;
+let count = 0;
+while (count == 0) {
+  write(baz);
+  let baz = 100;
+  baz = 3;
+  write(baz);
+  count = 1;
+}
+write(baz);
+
+let quux = 0;
+function quuxuser() {
+  write(quux);
+  let quux = 100;
+  quux = 4;
+  write(quux);
+}
+quuxuser();
+write(quux);

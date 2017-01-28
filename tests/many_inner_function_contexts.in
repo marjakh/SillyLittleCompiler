@@ -1,0 +1,11 @@
+function outer(x) {
+  let y = x;
+  function inner() { return y; }
+  return inner;
+}
+
+let outer1 = outer(1);
+let outer2 = outer(2);
+
+write(outer1());
+write(outer2());

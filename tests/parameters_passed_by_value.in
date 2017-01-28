@@ -1,0 +1,6 @@
+function foo(x) { x = x + 1; }
+
+let y = 3;
+write(y);
+foo(y);
+write(y);

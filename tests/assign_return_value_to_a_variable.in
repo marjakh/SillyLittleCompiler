@@ -1,0 +1,2 @@
+let foo = id(5);
+write(foo);

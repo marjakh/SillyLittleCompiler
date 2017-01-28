@@ -1,0 +1,14 @@
+let a = 0;
+
+function sneakystore(f) {
+  a = f;
+}
+
+function outer() {
+  let b = 8;
+  function inner() { write(b); }
+  sneakystore(inner);
+}
+
+outer();
+a();

@@ -1,0 +1,12 @@
+function outer(x) {
+  function inner() {
+    return x;
+  }
+  write(inner());
+  return inner;
+}
+
+let i = outer(500);
+let j = outer(600);
+write(i());
+write(j());
