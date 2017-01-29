@@ -27,9 +27,6 @@ local variables
 # limit the size of the relevant objects (function contexts etc) and thus,
 # parameter count etc. Document and enforce the limitations.
 
-# FIXME argh, the registers are wrong when used RegisterAndOffset!!! The register is actually read, not written.
-
-
 class PARegister:
   def __init__(self, name):
     self.name = name
@@ -97,6 +94,19 @@ class PARegisterAndOffset:
     return [self.my_register]
 
 
+class PARegisters:
+  def __init__(self):
+    self.registers = []
+
+  def nextRegister(self):
+    v = PAVirtualRegister(len(self.registers))
+    self.registers.append(v)
+    return v
+
+  def __str__(self):
+    return toString(self.registers)
+
+
 class PseudoAssemblerInstruction:
   def __init__(self):
     self.dead = False
@@ -112,15 +122,26 @@ class PseudoAssemblerInstruction:
     if isinstance(what, PAConstant):
       return what
     if isinstance(what, PAVirtualRegister):
-      ranges = assigned_registers[what]
-      for [start, end, real_register] in ranges:
-        if instruction.ix >= start and instruction.ix <= end + 1:
-          return real_register
+      if what in assigned_registers:
+        return assigned_registers[what]
       # Maybe the register is not live at all; in that case the instruction should be removed.
       instruction.dead = True
       return None
     if isinstance(what, PARegisterAndOffset):
       what.my_register = PseudoAssemblerInstruction.replaceRegistersIn(what.my_register, instruction, assigned_registers)
+      return what
+    assert(False)
+
+  @staticmethod
+  def replaceSpilledRegisterIn(what, register, new_register):
+    if isinstance(what, PAConstant):
+      return what
+    if isinstance(what, PAVirtualRegister):
+      if what == register:
+        return new_register
+      return what
+    if isinstance(what, PARegisterAndOffset):
+      what.my_register = PseudoAssemblerInstruction.replaceSpilledRegisterIn(what.my_register, register, new_register)
       return what
     assert(False)
 
@@ -181,6 +202,9 @@ class PAPush(PseudoAssemblerInstruction):
   def replaceRegisters(self, assigned_registers):
     self.what = PseudoAssemblerInstruction.replaceRegistersIn(self.what, self, assigned_registers)
 
+  def replaceSpilledRegister(self, register, new_register):
+    self.what = PseudoAssemblerInstruction.replaceSpilledRegisterIn(self.what, register, new_register)
+
 
 class PAClearStack(PseudoAssemblerInstruction):
   def __init__(self, value):
@@ -189,6 +213,46 @@ class PAClearStack(PseudoAssemblerInstruction):
 
   def __str__(self):
     return "addl $0x{0:x}, %esp".format(self.value * 4) # FIXME: magic number
+
+
+class PALoadSpilled(PseudoAssemblerInstruction):
+  def __init__(self, register, position):
+    super().__init__()
+    self.register = register
+    self.position = position
+
+  def __str__(self):
+    # FIXME: magic number
+    return "movl -" + str(self.position * 4) + "(%ebp), " + str(self.register)
+
+  def replaceRegisters(self, assigned_registers):
+    self.register = PseudoAssemblerInstruction.replaceRegistersIn(self.register, self, assigned_registers)
+
+  def replaceSpilledRegister(self, register, new_register):
+    self.register = PseudoAssemblerInstruction.replaceSpilledRegisterIn(self.register, register, new_register)
+
+  def getRegisters(self):
+    return [[], [self.register]]
+
+
+class PAStoreSpilled(PseudoAssemblerInstruction):
+  def __init__(self, register, position):
+    super().__init__()
+    self.register = register
+    self.position = position
+
+  def __str__(self):
+    # FIXME: magic number
+    return "movl " + str(self.register) + ", " + str(self.position * 4) + "(%ebp)"
+
+  def replaceRegisters(self, assigned_registers):
+    self.register = PseudoAssemblerInstruction.replaceRegistersIn(self.register, self, assigned_registers)
+
+  def replaceSpilledRegister(self, register, new_register):
+    self.register = PseudoAssemblerInstruction.replaceSpilledRegisterIn(self.register, register, new_register)
+
+  def getRegisters(self):
+    return [[self.register], []]
 
 
 class PAReturnValueToRegister(PseudoAssemblerInstruction):
@@ -204,6 +268,9 @@ class PAReturnValueToRegister(PseudoAssemblerInstruction):
 
   def replaceRegisters(self, assigned_registers):
     self.register = PseudoAssemblerInstruction.replaceRegistersIn(self.register, self, assigned_registers)
+
+  def replaceSpilledRegister(self, register, new_register):
+    self.register = PseudoAssemblerInstruction.replaceSpilledRegisterIn(self.register, register, new_register)
 
 
 class PAMov(PseudoAssemblerInstruction):
@@ -222,6 +289,10 @@ class PAMov(PseudoAssemblerInstruction):
   def replaceRegisters(self, assigned_registers):
     self.what = PseudoAssemblerInstruction.replaceRegistersIn(self.what, self, assigned_registers)
     self.where = PseudoAssemblerInstruction.replaceRegistersIn(self.where, self, assigned_registers)
+
+  def replaceSpilledRegister(self, register, new_register):
+    self.what = PseudoAssemblerInstruction.replaceSpilledRegisterIn(self.what, register, new_register)
+    self.where = PseudoAssemblerInstruction.replaceSpilledRegisterIn(self.where, register, new_register)
 
 
 class PAReturn(PseudoAssemblerInstruction):
@@ -249,6 +320,10 @@ class PAAdd(PseudoAssemblerInstruction):
     self.from1 = PseudoAssemblerInstruction.replaceRegistersIn(self.from1, self, assigned_registers)
     self.to = PseudoAssemblerInstruction.replaceRegistersIn(self.to, self, assigned_registers)
 
+  def replaceSpilledRegister(self, register, new_register):
+    self.from1 = PseudoAssemblerInstruction.replaceSpilledRegisterIn(self.from1, register, new_register)
+    self.to = PseudoAssemblerInstruction.replaceSpilledRegisterIn(self.to, register, new_register)
+
 
 class PseudoAssembly:
   def __init__(self, blocks, metadata):
@@ -256,7 +331,13 @@ class PseudoAssembly:
     self.metadata = metadata
 
   def __str__(self):
-    return toString(self.blocks)
+    return listToString(self.blocks, "", "", "\n")
+
+  # FIXME: add an instruction to reserve space for spilled registers.
+  # FIXME: for that, we need to know where a function starts
+  def spill(self, register, position):
+    for b in self.blocks:
+      b.spill(register, position, self.metadata.registers)
 
 
 class PseudoAssemblyMetadata:
@@ -273,21 +354,33 @@ class PseudoAssemblyBasicBlock:
   def __str__(self):
     return listToString(self.instructions, "", "", "\n")
 
+  def spill(self, register, position, registers):
+    new_instructions = []
+    for i in self.instructions:
+      [read, written] = i.getRegisters()
+      if register not in read and register not in written:
+        new_instructions += [i]
+      else:
+        new_register = registers.nextRegister()
+        if register in read:
+          # Read into a new temporary register from the spill position.
+          new_instructions += [PALoadSpilled(new_register, position)]
+        i.replaceSpilledRegister(register, new_register)
+        new_instructions += [i]
+        if register in written:
+          new_instructions += [PAStoreSpilled(new_register, position)]
+    self.instructions = new_instructions
+
 
 # Creates pseudoassembly based on the medium-level IR.
 class PseudoAssembler:
   def __init__(self):
-    self.registers = []
+    self.registers = PARegisters()
     self.name_to_register = dict()
-
-  def __nextVirtualRegister(self):
-    v = PAVirtualRegister(len(self.registers))
-    self.registers.append(v)
-    return v
 
   def __virtualRegister(self, variable):
     if variable not in self.name_to_register:
-      r = self.__nextVirtualRegister()
+      r = self.registers.nextRegister()
       self.name_to_register[variable] = r
     return self.name_to_register[variable]
 
@@ -334,7 +427,7 @@ class PseudoAssembler:
     if isinstance(instruction, CallFunction):
       if instruction.function.variable_type == VariableType.builtin_function:
         temp = self.__virtualRegister(instruction.temporary_for_function_context)
-        new_function_context_register = self.__nextVirtualRegister()
+        new_function_context_register = self.registers.nextRegister()
         code = [PAPush(temp),
                 PACallBuiltinFunction(instruction.function.name),
                 PAClearStack(1),
@@ -361,8 +454,8 @@ class PseudoAssembler:
   def create(self, ir): # FIXME: cleaner if we give the ir to the ctor
     self.__metadata = ir.metadata
 
-    self.__globals_table_register = self.__nextVirtualRegister()
-    self.__function_context_register = self.__nextVirtualRegister()
+    self.__globals_table_register = self.registers.nextRegister()
+    self.__function_context_register = self.registers.nextRegister()
 
     blocks = [PseudoAssemblyBasicBlock(0, [1], self.__createPrologue())]
 

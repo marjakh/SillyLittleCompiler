@@ -28,11 +28,11 @@ class LiveRangeAnalyser:
       read_so_far = set()
       written_so_far = set()
       for i in b.instructions:
-        print_debug("Instruction " + str(instruction_ix) + " " + str(i))
+        # print_debug("Instruction " + str(instruction_ix) + " " + str(i))
         i.ix = instruction_ix
         instruction_ix += 1
         [read, written] = i.getRegisters()
-        print_debug("Read: " + listToString(read) + ", written: " + listToString(written))
+        # print_debug("Read: " + listToString(read) + ", written: " + listToString(written))
         for r in read:
           if r not in written_so_far:
             b.gen_set.add(r)
@@ -68,7 +68,7 @@ class LiveRangeAnalyser:
       # print_debug("Out: " + listToString(list(b.out_set)))
 
     # Based on in_set and out_set, construct live ranges.
-    for register in pseudo_assembly.metadata.registers:
+    for register in pseudo_assembly.metadata.registers.registers:
       live = set()
       currently_live = False
       maybe_range = set()

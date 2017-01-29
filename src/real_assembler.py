@@ -68,23 +68,29 @@ class RealAssembler:
   def create(pseudo_assembly):
     # FIXME: when we have functions, we need to run the register allocator for each separately.
 
-
-    print_debug("Pseudo assembly:")
-    print_debug(toString(pseudo_assembly))
-
-    LiveRangeAnalyser.analyse(pseudo_assembly)
     real_registers = [Register("ebx"), Register("ecx"), Register("edx")]
 
-    # If we cannot assign registers for all temporary variables, we need to spill some registers.
-    # action = None
-    # while not isinstance(action, RegisterAllocationDone):
-    #   action = RegisterAllocator.tryToAllocate(pseudo_assembly.metadata.registers,
-    #                                            real_registers)
+    # If we cannot assign registers for all temporary variables, we need to
+    # spill some registers.
+    spill_position = 0
+    assigned_registers = None
+    while True:
+      # print_debug("Pseudo assembly:")
+      # print_debug(pseudo_assembly)
 
+      LiveRangeAnalyser.analyse(pseudo_assembly)
 
-
-    assigned_registers = RegisterAllocator.tryToAllocate(pseudo_assembly.metadata.registers,
-                                                         real_registers)
+      action = RegisterAllocator.tryToAllocate(pseudo_assembly.metadata.registers,
+                                               real_registers)
+      if isinstance(action, Spill):
+        # print_debug("Spilling " + str(action.register))
+        pseudo_assembly.spill(action.register, spill_position)
+        spill_position += 1
+      elif isinstance(action, RegisterAllocationDone):
+        assigned_registers = action.assigned_registers
+        break
+      else:
+        assert(False)
 
     program = [
       Label("text"),
