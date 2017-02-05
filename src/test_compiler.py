@@ -44,45 +44,15 @@ if __name__ == '__main__':
       print(e.output)
       print("That was the output")
       exit(1)
-    output = fixme
+    output = subprocess.check_output(["/tmp/a.out"]).decode("utf-8").strip()
+    print("output is:")
+    print(output)
 
     if output != expected_output:
       print("Got output:\n" + output)
       print("Wanted output:\n" + expected_output)
       exit(1)
     assert(output == expected_output)
-
-#  for input_file_name in bad_files:
-#    output_file_name = input_file_name[:-2] + "out"
-#    print("Running test " + input_file_name)
-#    if not os.path.isfile(os.path.join(test_path, output_file_name)):
-#      print("Corresponding output file " + output_file_name + " not found")
-#      exit(1)
-#    input_file = open(os.path.join(test_path, input_file_name), 'r')
-#    input = input_file.read()
-#    if input.startswith("SKIP"):
-#      print("SKIPPED")
-#      skipped += 1
-#      continue
-#    output_file = open(os.path.join(test_path, output_file_name), 'r')
-#    expected_output = output_file.read().strip()
-
-#    grammar = GrammarDriver(rules)
-
-#    try:
-#      i = Interpreter(grammar, input)
-#      i.run()
-#    except BaseException as e:
-#      output = e.__class__.__name__
-#    else:
-#      print("Expecting an error, got none")
-#      exit(1)
-
-#    if output != expected_output:
-#      print("Got output:\n" + output)
-#      print("Wanted output:\n" + expected_output)
-#      exit(1)
-#    assert(output == expected_output)
 
   if skipped > 0:
     print("Some tests skipped")

@@ -61,7 +61,6 @@ class SpillRegisterCreator:
 
 # Does mostly register allocation. Also, we need to take care of saving and
 # restoring caller-saves registers.
-
 class RealAssembler:
 
   @staticmethod

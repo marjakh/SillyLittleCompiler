@@ -1,4 +1,5 @@
 Small stuff:
+- make gdb "start" work (somehow)
 - print out the statement as comments in the program?
 - mark some functions staticmethods if we don't need an object...
 - write->print

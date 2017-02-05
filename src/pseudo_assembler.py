@@ -206,6 +206,58 @@ class PAPush(PseudoAssemblerInstruction):
     self.what = PseudoAssemblerInstruction.replaceSpilledRegisterIn(self.what, register, new_register)
 
 
+class PAPop(PseudoAssemblerInstruction):
+  def __init__(self, where):
+    super().__init__()
+    self.where = where
+
+  def __str__(self):
+    return "popl " + str(self.where)
+
+  def getRegisters(self):
+    return [[], self.where.registersReadIfTarget()]
+
+  def replaceRegisters(self, assigned_registers):
+    self.where = PseudoAssemblerInstruction.replaceRegistersIn(self.where, self, assigned_registers)
+
+  def replaceSpilledRegister(self, register, new_register):
+    self.where = PseudoAssemblerInstruction.replaceSpilledRegisterIn(self.where, register, new_register)
+
+
+class PAPushCallerSaveRegisters(PseudoAssemblerInstruction):
+  def __init__(self):
+    super().__init__()
+
+  def __str__(self):
+    return "pushl %ecx\npushl %edx"
+
+  def getRegisters(self):
+    return [[], []]
+
+  def replaceRegisters(self, assigned_registers):
+    pass
+
+  def replaceSpilledRegister(self, register, new_register):
+    pass
+
+
+class PAPopCallerSaveRegisters(PseudoAssemblerInstruction):
+  def __init__(self):
+    super().__init__()
+
+  def __str__(self):
+    return "popl %edx\npopl %ecx"
+
+  def getRegisters(self):
+    return [[], []]
+
+  def replaceRegisters(self, assigned_registers):
+    pass
+
+  def replaceSpilledRegister(self, register, new_register):
+    pass
+
+
 class PAClearStack(PseudoAssemblerInstruction):
   def __init__(self, value):
     super().__init__()
@@ -411,12 +463,14 @@ class PseudoAssembler:
     if isinstance(instruction, CreateFunctionContextForFunction):
       # FIXME: this doesn't work for inner functions yet
       temp = self.__virtualRegister(instruction.temporary_variable)
-      return [PAPush(PAConstant(self.__metadata.function_context_shapes[instruction.function.name])),
+      return [PAPushCallerSaveRegisters(),
+              PAPush(PAConstant(self.__metadata.function_context_shapes[instruction.function.name])),
               PAPush(self.__function_context_register), # previous
               PAPush(self.__function_context_register), # outer
               PACallRuntimeFunction("CreateFunctionContext"),
-              PAReturnValueToRegister(temp),
-              PAClearStack(3)]
+              PAClearStack(3),
+              PAPopCallerSaveRegisters(),
+              PAReturnValueToRegister(temp)]
     if isinstance(instruction, AddParameterToFunctionContext):
       temp_context = self.__virtualRegister(instruction.temporary_for_function_context)
       temp = self.__virtualRegister(instruction.temporary_variable)
@@ -428,9 +482,11 @@ class PseudoAssembler:
       if instruction.function.variable_type == VariableType.builtin_function:
         temp = self.__virtualRegister(instruction.temporary_for_function_context)
         new_function_context_register = self.registers.nextRegister()
-        code = [PAPush(temp),
+        code = [PAPushCallerSaveRegisters(),
+                PAPush(temp),
                 PACallBuiltinFunction(instruction.function.name),
                 PAClearStack(1),
+                PAPopCallerSaveRegisters(),
                 PAMov(PARegisterAndOffset(temp, 0), new_function_context_register)]
         self.__function_context_register = new_function_context_register
         return code
