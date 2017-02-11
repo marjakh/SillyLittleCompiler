@@ -354,27 +354,41 @@ class PAReturn(PseudoAssemblerInstruction):
   def __str__(self):
     return "ret"
 
-class PAAdd(PseudoAssemblerInstruction):
-  def __init__(self, from1, to):
+
+# Superclass for instructions such as add or sub which operate on one register
+# and one other operand.
+class PseudoAssemblerInstructionOperatingOnRegister(PseudoAssemblerInstruction):
+  def __init__(self, source, target, name):
     super().__init__()
-    assert(isinstance(to, PAVirtualRegister))
-    self.from1 = from1
-    self.to = to
+    assert(isinstance(target, PAVirtualRegister))
+    self.source = source
+    self.target = target
+    self.name = name
 
   def __str__(self):
-    return "addl " + str(self.from1) + ", " + str(self.to)
+    return self.name + " " + str(self.source) + ", " + str(self.target)
 
   def getRegisters(self):
-    registers_read = list(set(self.from1.registersReadIfSource() + self.to.registersReadIfSource() + self.to.registersReadIfTarget()))
-    return [registers_read, self.to.registersWrittenIfTarget()]
+    registers_read = list(set(self.source.registersReadIfSource() + self.target.registersReadIfSource() + self.target.registersReadIfTarget()))
+    return [registers_read, self.target.registersWrittenIfTarget()]
 
   def replaceRegisters(self, assigned_registers):
-    self.from1 = PseudoAssemblerInstruction.replaceRegistersIn(self.from1, self, assigned_registers)
-    self.to = PseudoAssemblerInstruction.replaceRegistersIn(self.to, self, assigned_registers)
+    self.source = PseudoAssemblerInstruction.replaceRegistersIn(self.source, self, assigned_registers)
+    self.target = PseudoAssemblerInstruction.replaceRegistersIn(self.target, self, assigned_registers)
 
   def replaceSpilledRegister(self, register, new_register):
-    self.from1 = PseudoAssemblerInstruction.replaceSpilledRegisterIn(self.from1, register, new_register)
-    self.to = PseudoAssemblerInstruction.replaceSpilledRegisterIn(self.to, register, new_register)
+    self.source = PseudoAssemblerInstruction.replaceSpilledRegisterIn(self.source, register, new_register)
+    self.target = PseudoAssemblerInstruction.replaceSpilledRegisterIn(self.target, register, new_register)
+
+
+class PAAdd(PseudoAssemblerInstructionOperatingOnRegister):
+  def __init__(self, from1, to):
+    super().__init__(from1, to, "addl")
+
+
+class PASub(PseudoAssemblerInstructionOperatingOnRegister):
+  def __init__(self, from1, to):
+    super().__init__(from1, to, "subl")
 
 
 class PseudoAssembly:
@@ -451,10 +465,13 @@ class PseudoAssembler:
   def __createForInstruction(self, instruction):
     if isinstance(instruction, Comment):
       return [PAComment(instruction.text)]
+
     if isinstance(instruction, Label):
       return [PALabel(instruction.name)]
+
     if isinstance(instruction, StoreConstantToGlobal):
       return [PAMov(PAConstant(instruction.value), PARegisterAndOffset(self.__globals_table_register, instruction.variable.offset))]
+
     if isinstance(instruction, LoadGlobalVariable):
       temp = self.__virtualRegister(instruction.to_variable)
       # FIXME: assert that to_variable is a temporary...
@@ -471,6 +488,7 @@ class PseudoAssembler:
               PAClearStack(3),
               PAPopCallerSaveRegisters(),
               PAReturnValueToRegister(temp)]
+
     if isinstance(instruction, AddParameterToFunctionContext):
       temp_context = self.__virtualRegister(instruction.temporary_for_function_context)
       temp = self.__virtualRegister(instruction.temporary_variable)
@@ -478,6 +496,7 @@ class PseudoAssembler:
       # function context, the outer function context and the return
       # value. FIXME: magic 4 * here again.
       return [PAMov(temp, PARegisterAndOffset(temp_context, 4 * (3 + instruction.index)))]
+
     if isinstance(instruction, CallFunction):
       if instruction.function.variable_type == VariableType.builtin_function:
         temp = self.__virtualRegister(instruction.temporary_for_function_context)
@@ -490,6 +509,7 @@ class PseudoAssembler:
                 PAMov(PARegisterAndOffset(temp, 0), new_function_context_register)]
         self.__function_context_register = new_function_context_register
         return code
+
     if isinstance(instruction, Return):
       return [PAReturn()]
 
@@ -498,9 +518,12 @@ class PseudoAssembler:
       v_from2 = self.__virtualRegister(instruction.from_variable2)
       v_to = self.__virtualRegister(instruction.to_variable)
       return [PAMov(v_from1, v_to), PAAdd(v_from2, v_to)]
-    # FIXME: when we call functions, we should save and restore caller-saves
-    # registers. We need to establish a convention about what are the
-    # caller-saves registers anyway!
+
+    if isinstance(instruction, SubtractTemporaryFromTemporary):
+      v_from1 = self.__virtualRegister(instruction.from_variable1)
+      v_from2 = self.__virtualRegister(instruction.from_variable2)
+      v_to = self.__virtualRegister(instruction.to_variable)
+      return [PAMov(v_from1, v_to), PASub(v_from2, v_to)]
 
     print_error("Cannot create pseudo assembly for instruction:")
     print_error(instruction)
