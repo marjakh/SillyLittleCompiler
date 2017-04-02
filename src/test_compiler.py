@@ -40,9 +40,8 @@ if __name__ == '__main__':
     try:
       compile_output = subprocess.check_output(["src/compile.sh", input_file_path])
     except subprocess.CalledProcessError as e:
-      print("Compilation failed")
+      print("Compilation failed. Output:")
       print(e.output)
-      print("That was the output")
       exit(1)
     output = subprocess.check_output(["/tmp/a.out"]).decode("utf-8").strip()
     print("output is:")
