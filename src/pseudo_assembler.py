@@ -306,7 +306,7 @@ class PAStoreSpilled(PseudoAssemblerInstruction):
 
   def __str__(self):
     # FIXME: magic number
-    return "movl " + str(self.register) + ", " + str(self.position * 4) + "(%ebp)"
+    return "movl " + str(self.register) + ", -" + str(self.position * 4) + "(%ebp)"
 
   def replaceRegisters(self, assigned_registers):
     self.register = PseudoAssemblerInstruction.replaceRegistersIn(self.register, self, assigned_registers)
