@@ -34,6 +34,15 @@ class PARegister:
   def __str__(self):
     return "%" + self.name
 
+  def registersWrittenIfTarget(self):
+    return []
+
+  def registersReadIfTarget(self):
+    return []
+
+  def registersReadIfSource(self):
+    return []
+
 
 # registersWritten vs. registersRead
 # e.g., mov 4(%v0), %v1
@@ -129,6 +138,8 @@ class PseudoAssemblerInstruction:
       return None
     if isinstance(what, PARegisterAndOffset):
       what.my_register = PseudoAssemblerInstruction.replaceRegistersIn(what.my_register, instruction, assigned_registers)
+      return what
+    if isinstance(what, PARegister):
       return what
     assert(False)
 
@@ -391,6 +402,37 @@ class PASub(PseudoAssemblerInstructionOperatingOnRegister):
     super().__init__(from1, to, "subl")
 
 
+# Pseudo assembler instruction with one implicit source (constant, register or
+# register + offset) and an implicit target register.
+class PseudoAssemblerInstructionWithSource(PseudoAssemblerInstruction):
+  def __init__(self, source, name):
+    super().__init__()
+    self.source = source
+    self.name = name
+
+  def __str__(self):
+    return self.name + " " + str(self.source)
+
+  def getRegisters(self):
+    registers_read = list(set(self.source.registersReadIfSource()))
+    return [registers_read, []]
+
+  def replaceRegisters(self, assigned_registers):
+    self.source = PseudoAssemblerInstruction.replaceRegistersIn(self.source, self, assigned_registers)
+
+  def replaceSpilledRegister(self, register, new_register):
+    self.source = PseudoAssemblerInstruction.replaceSpilledRegisterIn(self.source, register, new_register)
+
+class PAMul(PseudoAssemblerInstructionWithSource):
+  def __init__(self, source):
+    super().__init__(source, "mull")
+
+
+class PADiv(PseudoAssemblerInstructionWithSource):
+  def __init__(self, source):
+    super().__init__(source, "divl")
+
+
 class PseudoAssembly:
   def __init__(self, blocks, metadata):
     self.blocks = blocks
@@ -472,6 +514,9 @@ class PseudoAssembler:
     if isinstance(instruction, StoreConstantToGlobal):
       return [PAMov(PAConstant(instruction.value), PARegisterAndOffset(self.__globals_table_register, instruction.variable.offset))]
 
+    if isinstance(instruction, StoreConstantToTemporary):
+      return [PAMov(PAConstant(instruction.value), self.__virtualRegister(instruction.variable))]
+
     if isinstance(instruction, LoadGlobalVariable):
       temp = self.__virtualRegister(instruction.to_variable)
       # FIXME: assert that to_variable is a temporary...
@@ -525,6 +570,19 @@ class PseudoAssembler:
       v_to = self.__virtualRegister(instruction.to_variable)
       return [PAMov(v_from1, v_to), PASub(v_from2, v_to)]
 
+    if isinstance(instruction, MultiplyTemporaryByTemporary):
+      v_from1 = self.__virtualRegister(instruction.from_variable1)
+      v_from2 = self.__virtualRegister(instruction.from_variable2)
+      v_to = self.__virtualRegister(instruction.to_variable)
+      return [PAMov(v_from1, self.__eax), PAMul(v_from2), PAMov(self.__eax, v_to)]
+
+    if isinstance(instruction, DivideTemporaryByTemporary):
+      v_from1 = self.__virtualRegister(instruction.from_variable1)
+      v_from2 = self.__virtualRegister(instruction.from_variable2)
+      v_to = self.__virtualRegister(instruction.to_variable)
+      # FIXME: this is inefficient. We might not need to push edx.
+      return [PAMov(v_from1, self.__eax), PAPush(self.__edx), PAMov(PAConstant(0), self.__edx), PADiv(v_from2), PAMov(self.__eax, v_to), PAPop(self.__edx)]
+
     print_error("Cannot create pseudo assembly for instruction:")
     print_error(instruction)
     assert(False)
@@ -535,6 +593,8 @@ class PseudoAssembler:
 
     self.__globals_table_register = self.registers.nextRegister()
     self.__function_context_register = self.registers.nextRegister()
+    self.__eax = PARegister("eax")
+    self.__edx = PARegister("edx")
 
     blocks = [PseudoAssemblyBasicBlock(0, [1], self.__createPrologue())]
 
