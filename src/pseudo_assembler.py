@@ -27,12 +27,17 @@ local variables
 # limit the size of the relevant objects (function contexts etc) and thus,
 # parameter count etc. Document and enforce the limitations.
 
-class PARegister:
+class Register:
   def __init__(self, name):
     self.name = name
 
   def __str__(self):
     return "%" + self.name
+
+
+class PARegister(Register):
+  def __init__(self, name):
+    super().__init__(name)
 
   def registersWrittenIfTarget(self):
     return []
@@ -363,6 +368,15 @@ class PAReturn(PseudoAssemblerInstruction):
     super().__init__()
 
   def __str__(self):
+    # FIXME: this needs to be function specific
+    return "jmp epilogue"
+
+
+class PARealReturn(PseudoAssemblerInstruction):
+  def __init__(self):
+    super().__init__()
+
+  def __str__(self):
     return "ret"
 
 
@@ -371,7 +385,7 @@ class PAReturn(PseudoAssemblerInstruction):
 class PseudoAssemblerInstructionOperatingOnRegister(PseudoAssemblerInstruction):
   def __init__(self, source, target, name):
     super().__init__()
-    assert(isinstance(target, PAVirtualRegister))
+    assert(isinstance(target, Register))
     self.source = source
     self.target = target
     self.name = name
@@ -394,11 +408,13 @@ class PseudoAssemblerInstructionOperatingOnRegister(PseudoAssemblerInstruction):
 
 class PAAdd(PseudoAssemblerInstructionOperatingOnRegister):
   def __init__(self, from1, to):
+    # FIXME: from and to are not the correct names
     super().__init__(from1, to, "addl")
 
 
 class PASub(PseudoAssemblerInstructionOperatingOnRegister):
   def __init__(self, from1, to):
+    # FIXME: from and to are not the correct names
     super().__init__(from1, to, "subl")
 
 
@@ -441,8 +457,6 @@ class PseudoAssembly:
   def __str__(self):
     return listToString(self.blocks, "", "", "\n")
 
-  # FIXME: add an instruction to reserve space for spilled registers.
-  # FIXME: for that, we need to know where a function starts
   def spill(self, register, position):
     for b in self.blocks:
       b.spill(register, position, self.metadata.registers)

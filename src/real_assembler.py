@@ -35,13 +35,6 @@ class CallRuntimeFunction(RealAssemblerInstruction):
   def __str__(self):
     return ""
 
-class Register:
-  def __init__(self, name):
-    self.name = name
-
-  def __str__(self):
-    return "%" + self.name
-
 
 class SpillRegister(Register):
   def __init__(self, ix):
@@ -68,10 +61,12 @@ class RealAssembler:
     # FIXME: when we have functions, we need to run the register allocator for each separately.
 
     real_registers = [Register("ebx"), Register("ecx"), Register("edx")]
+    ebp = Register("ebp")
+    esp = Register("esp")
 
     # If we cannot assign registers for all temporary variables, we need to
     # spill some registers.
-    spill_position = 0
+    spill_position = 1
     assigned_registers = None
     while True:
       # print_debug("Pseudo assembly:")
@@ -96,10 +91,19 @@ class RealAssembler:
       GlobalDeclaration("user_code"),
       Label("user_code")]
 
+    # FIXME: each function needs this.
+    program.append(PAPush(ebp))
+    program.append(PAMov(esp, ebp))
+    # FIXME: magic number
+    program.append(PASub(PAConstant(spill_position * 4), esp))
     for b in pseudo_assembly.blocks:
       for i in b.instructions:
         i.replaceRegisters(assigned_registers)
         if not i.dead:
           program.append(i)
+    program.append(Label("epilogue"))
+    program.append(PAMov(ebp, esp))
+    program.append(PAPop(ebp))
+    program.append(PARealReturn())
 
     return program
