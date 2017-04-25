@@ -565,16 +565,16 @@ class MediumLevelIRCreator:
         if is_first:
           is_first = False
           code = [Comment("function " + f.name), Label(f.label())] + code
-      next_possible = []
-      if isinstance(b.next, BasicBlockBranch):
-        next_possible = [b.next.true_block.id, b.next.false_block.id]
-      elif isinstance(b.next, BasicBlock):
-        next_possible = [b.next.id]
-      output.append(MediumLevelIRBasicBlock(b.id, next_possible, code))
+        next_possible = []
+        if isinstance(b.next, BasicBlockBranch):
+          next_possible = [b.next.true_block.id, b.next.false_block.id]
+        elif isinstance(b.next, BasicBlock):
+          next_possible = [b.next.id]
+        output.append(MediumLevelIRBasicBlock(b.id, next_possible, code))
 
-    # print("And here it is:")
+    # print_debug("Medium-level IR:")
     # for b in output:
-    #   print(listToString(b.code, "", "", "\n"))
+    #   print_debug(listToString(b.code, "", "", "\n"))
 
     return MediumLevelIR(output, metadata)
 

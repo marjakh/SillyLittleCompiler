@@ -76,10 +76,12 @@ class CfgCreatorVisitor(ParseTreeVisitor):
       # The current basic block contains a return statement, and the rest of the
       # statements should just be ignored.
       return
+    # print_debug("Adding statement " + str(statement) + " to basic block " + str(self.__basic_block_stack[-1].id))
     self.__basic_block_stack[-1].statements.append(statement)
 
   def __newBasicBlock(self):
     block = BasicBlock()
+    # print_debug("Creating new basic block " + str(block.id))
     self.__basic_blocks.append(block)
     return block
 
@@ -89,6 +91,7 @@ class CfgCreatorVisitor(ParseTreeVisitor):
     # The superclass function visit the statements.
     super(CfgCreatorVisitor, v).visitFunctionStatement(statement)
     assert(len(v.__basic_block_stack) == 1)
+    # print_debug("Adding " + str(len(v.__basic_blocks)) + " basic blocks")
     self.__cfgs.append([statement.function, v.__basic_blocks])
 
   def visitLetStatement(self, statement):
@@ -108,6 +111,7 @@ class CfgCreatorVisitor(ParseTreeVisitor):
     if else_block:
       else_block.next = after_block
 
+    # print_debug("Adding branch as next to block " + str(self.__currentBlock().id))
     self.__currentBlock().next = BasicBlockBranch(statement.expression, if_block,
                                                   else_block if else_block else after_block)
 
