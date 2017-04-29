@@ -1,0 +1,5 @@
+let foo = 0;
+while (foo < 10) {
+  write(foo);
+  foo = foo + 1;
+}

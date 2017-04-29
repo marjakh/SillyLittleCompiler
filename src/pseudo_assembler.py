@@ -610,9 +610,14 @@ class PseudoAssembler:
       return [PAMov(PAConstant(instruction.value), self.__virtualRegister(instruction.variable))]
 
     if isinstance(instruction, LoadGlobalVariable):
+      assert(isinstance(instruction.to_variable, TemporaryVariable))
       temp = self.__virtualRegister(instruction.to_variable)
-      # FIXME: assert that to_variable is a temporary...
       return [PAMov(PARegisterAndOffset(self.__globals_table_register, instruction.from_variable.offset), temp)]
+
+    if isinstance(instruction, StoreTemporaryToGlobal):
+      assert(isinstance(instruction.temporary_variable, TemporaryVariable))
+      temp = self.__virtualRegister(instruction.temporary_variable)
+      return [PAMov(temp, PARegisterAndOffset(self.__globals_table_register, instruction.variable.offset))]
 
     if isinstance(instruction, CreateFunctionContextForFunction):
       # FIXME: this doesn't work for inner functions yet
