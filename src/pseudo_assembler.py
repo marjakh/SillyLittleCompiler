@@ -380,6 +380,48 @@ class PARealReturn(PseudoAssemblerInstruction):
     return "ret"
 
 
+class PACmp(PseudoAssemblerInstruction):
+  def __init__(self, left, right):
+    super().__init__()
+    self.left = left
+    self.right = right
+
+  def __str__(self):
+    return "cmp " + str(self.left) + ", " + str(self.right)
+
+  def getRegisters(self):
+    registers_read = list(set(self.left.registersReadIfSource() + self.right.registersReadIfSource()))
+    return [registers_read, []]
+
+  def replaceRegisters(self, assigned_registers):
+    self.left = PseudoAssemblerInstruction.replaceRegistersIn(self.left, self, assigned_registers)
+    self.right = PseudoAssemblerInstruction.replaceRegistersIn(self.right, self, assigned_registers)
+
+  def replaceSpilledRegister(self, register, new_register):
+    self.left = PseudoAssemblerInstruction.replaceSpilledRegisterIn(self.left, register, new_register)
+    self.right = PseudoAssemblerInstruction.replaceSpilledRegisterIn(self.right, register, new_register)
+
+
+class PAJumpInstruction(PseudoAssemblerInstruction):
+  def __init__(self, op, label):
+    super().__init__()
+    self.op = op
+    self.label = label
+
+  def __str__(self):
+    return self.op + " " + self.label
+
+
+class PAJump(PAJumpInstruction):
+  def __init__(self, label):
+    super().__init__("jmp", label)
+
+
+class PAJumpEquals(PAJumpInstruction):
+  def __init__(self, label):
+    super().__init__("je", label)
+
+
 # Superclass for instructions such as add or sub which operate on one register
 # and one other operand.
 class PseudoAssemblerInstructionOperatingOnRegister(PseudoAssemblerInstruction):
@@ -447,6 +489,7 @@ class PAMul(PseudoAssemblerInstructionWithSource):
 class PADiv(PseudoAssemblerInstructionWithSource):
   def __init__(self, source):
     super().__init__(source, "divl")
+
 
 
 class PseudoAssembly:
@@ -596,6 +639,14 @@ class PseudoAssembler:
       v_to = self.__virtualRegister(instruction.to_variable)
       # FIXME: this is inefficient. We might not need to push edx.
       return [PAMov(v_from1, self.__eax), PAPush(self.__edx), PAMov(PAConstant(0), self.__edx), PADiv(v_from2), PAMov(self.__eax, v_to), PAPop(self.__edx)]
+
+    if isinstance(instruction, TestEquals):
+      v_left = self.__virtualRegister(instruction.left)
+      v_right = self.__virtualRegister(instruction.right)
+      return [PACmp(v_left, v_right), PAJumpEquals(instruction.true_label), PAJump(instruction.false_label)]
+
+    if isinstance(instruction, Goto):
+      return [PAJump(instruction.label)]
 
     print_error("Cannot create pseudo assembly for instruction:")
     print_error(instruction)

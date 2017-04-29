@@ -96,12 +96,12 @@ class Label(MediumLevelIRInstruction):
 
 
 class Goto(MediumLevelIRInstruction):
-  def __init__(self, name):
+  def __init__(self, label):
     super().__init__()
-    self.name = name
+    self.label = label
 
   def __str__(self):
-    return "goto " + self.name
+    return "goto " + self.label
 
 
 class Test(MediumLevelIRInstruction):
@@ -113,6 +113,18 @@ class Test(MediumLevelIRInstruction):
 
   def __str__(self):
     return "test " + self.temporary_variable.name + "? " + self.true_label + " : " + self.false_label
+
+
+class TestEquals(MediumLevelIRInstruction):
+  def __init__(self, left, right, true_label, false_label):
+    super().__init__()
+    self.left = left
+    self.right = right
+    self.true_label = true_label
+    self.false_label = false_label
+
+  def __str__(self):
+    return "test " + self.left.name + " == " + self.right.name + "? " + self.true_label + " : " + self.false_label
 
 
 class StoreConstant(MediumLevelIRInstruction):
@@ -591,19 +603,27 @@ class MediumLevelIRCreator:
     if isinstance(block.next, BasicBlock):
       output.append(Goto("block_" + str(block.next.id)))
     elif block.next:
+      # FIXME: early return of evaluation for cases like foo() && bar() and foo() || bar().
+      # TODO: shortcut if always true / always false (already one level up!)
       assert(isinstance(block.next, BasicBlockBranch))
       condition = block.next.condition
       assert(isinstance(condition, BooleanExpression))
-      # TODO: shortcut if left / right sides of the expression are simpler
-      # (e.g., numbers)
-      # TODO: shortcut if always true / always false (already one level up!)
-      [temporary1, code1] = self.__computeIntoTemporary(condition.items[0])
-      output.extend(code1)
-      [temporary2, code2] = self.__computeIntoTemporary(condition.items[2])
-      output.extend(code2)
-      [temporary3, code3] = self.__computeComparisonIntoTemporary(temporary1, temporary2, condition.items[1])
-      output.extend(code3)
-      output.append(Test(temporary3, "block_" + str(block.next.true_block.id), "block_" + str(block.next.false_block.id)))
+
+      if condition.items[1].token_type == TokenType.equals:
+        [temporary1, code1] = self.__computeIntoTemporary(condition.items[0])
+        [temporary2, code2] = self.__computeIntoTemporary(condition.items[2])
+        output.extend(code1)
+        output.extend(code2)
+        output.append(TestEquals(temporary1, temporary2, "block_" + str(block.next.true_block.id), "block_" + str(block.next.false_block.id)))
+      else:
+        # FIXME: implement this properly - this is not correct for the general case.
+        [temporary1, code1] = self.__computeIntoTemporary(condition.items[0])
+        [temporary2, code2] = self.__computeIntoTemporary(condition.items[2])
+        [temporary3, code3] = self.__computeComparisonIntoTemporary(temporary1, temporary2, condition.items[1])
+        output.extend(code1)
+        output.extend(code2)
+        output.extend(code3)
+        output.append(Test(temporary3, "block_" + str(block.next.true_block.id), "block_" + str(block.next.false_block.id)))
     else:
       # Block doesn't have a next block, so it just returns (if it's inside a function)
       if len(output) > 0 and not isinstance(output[-1], Return):
