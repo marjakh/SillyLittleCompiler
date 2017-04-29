@@ -1,0 +1,19 @@
+let a = 42;
+if (a == 41) {
+  write(1);
+}
+if (a != 41) {
+  write(2);
+}
+if (a == 42) {
+  write(3);
+}
+if (a != 42) {
+  write(4);
+}
+if (a == 43) {
+  write(5);
+}
+if (a != 43) {
+  write(6);
+}

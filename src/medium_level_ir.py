@@ -104,6 +104,7 @@ class Goto(MediumLevelIRInstruction):
     return "goto " + self.label
 
 
+# FIXME: soon dead?
 class Test(MediumLevelIRInstruction):
   def __init__(self, temporary_variable, true_label, false_label):
     super().__init__()
@@ -115,16 +116,27 @@ class Test(MediumLevelIRInstruction):
     return "test " + self.temporary_variable.name + "? " + self.true_label + " : " + self.false_label
 
 
-class TestEquals(MediumLevelIRInstruction):
-  def __init__(self, left, right, true_label, false_label):
+class TestWithOperator(MediumLevelIRInstruction):
+  def __init__(self, left, right, op, true_label, false_label):
     super().__init__()
     self.left = left
     self.right = right
+    self.op = op
     self.true_label = true_label
     self.false_label = false_label
 
   def __str__(self):
-    return "test " + self.left.name + " == " + self.right.name + "? " + self.true_label + " : " + self.false_label
+    return "test " + self.left.name + " " + self.op + " " + self.right.name + "? " + self.true_label + " : " + self.false_label
+
+
+class TestEquals(TestWithOperator):
+  def __init__(self, left, right, true_label, false_label):
+    super().__init__(left, right, "==", true_label, false_label)
+
+
+class TestNotEquals(TestWithOperator):
+  def __init__(self, left, right, true_label, false_label):
+    super().__init__(left, right, "!==", true_label, false_label)
 
 
 class StoreConstant(MediumLevelIRInstruction):
@@ -609,19 +621,17 @@ class MediumLevelIRCreator:
       condition = block.next.condition
       assert(isinstance(condition, BooleanExpression))
 
+      [temporary1, code1] = self.__computeIntoTemporary(condition.items[0])
+      [temporary2, code2] = self.__computeIntoTemporary(condition.items[2])
+      output.extend(code1)
+      output.extend(code2)
       if condition.items[1].token_type == TokenType.equals:
-        [temporary1, code1] = self.__computeIntoTemporary(condition.items[0])
-        [temporary2, code2] = self.__computeIntoTemporary(condition.items[2])
-        output.extend(code1)
-        output.extend(code2)
         output.append(TestEquals(temporary1, temporary2, "block_" + str(block.next.true_block.id), "block_" + str(block.next.false_block.id)))
+      elif condition.items[1].token_type == TokenType.not_equals:
+        output.append(TestNotEquals(temporary1, temporary2, "block_" + str(block.next.true_block.id), "block_" + str(block.next.false_block.id)))
       else:
         # FIXME: implement this properly - this is not correct for the general case.
-        [temporary1, code1] = self.__computeIntoTemporary(condition.items[0])
-        [temporary2, code2] = self.__computeIntoTemporary(condition.items[2])
         [temporary3, code3] = self.__computeComparisonIntoTemporary(temporary1, temporary2, condition.items[1])
-        output.extend(code1)
-        output.extend(code2)
         output.extend(code3)
         output.append(Test(temporary3, "block_" + str(block.next.true_block.id), "block_" + str(block.next.false_block.id)))
     else:

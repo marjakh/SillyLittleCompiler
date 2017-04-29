@@ -645,6 +645,11 @@ class PseudoAssembler:
       v_right = self.__virtualRegister(instruction.right)
       return [PACmp(v_left, v_right), PAJumpEquals(instruction.true_label), PAJump(instruction.false_label)]
 
+    if isinstance(instruction, TestNotEquals):
+      v_left = self.__virtualRegister(instruction.left)
+      v_right = self.__virtualRegister(instruction.right)
+      return [PACmp(v_left, v_right), PAJumpEquals(instruction.false_label), PAJump(instruction.true_label)]
+
     if isinstance(instruction, Goto):
       return [PAJump(instruction.label)]
 
