@@ -1,0 +1,8 @@
+let a = 10;
+write(10);
+if (a == 10) {
+  write(11);
+} else {
+  write(12);
+}
+write(13);
