@@ -104,18 +104,6 @@ class Goto(MediumLevelIRInstruction):
     return "goto " + self.label
 
 
-# FIXME: soon dead?
-class Test(MediumLevelIRInstruction):
-  def __init__(self, temporary_variable, true_label, false_label):
-    super().__init__()
-    self.temporary_variable = temporary_variable
-    self.true_label = true_label
-    self.false_label = false_label
-
-  def __str__(self):
-    return "test " + self.temporary_variable.name + "? " + self.true_label + " : " + self.false_label
-
-
 class TestWithOperator(MediumLevelIRInstruction):
   def __init__(self, left, right, op, true_label, false_label):
     super().__init__()
@@ -136,7 +124,27 @@ class TestEquals(TestWithOperator):
 
 class TestNotEquals(TestWithOperator):
   def __init__(self, left, right, true_label, false_label):
-    super().__init__(left, right, "!==", true_label, false_label)
+    super().__init__(left, right, "!=", true_label, false_label)
+
+
+class TestLessThan(TestWithOperator):
+  def __init__(self, left, right, true_label, false_label):
+    super().__init__(left, right, "<", true_label, false_label)
+
+
+class TestLessOrEquals(TestWithOperator):
+  def __init__(self, left, right, true_label, false_label):
+    super().__init__(left, right, "<=", true_label, false_label)
+
+
+class TestGreaterThan(TestWithOperator):
+  def __init__(self, left, right, true_label, false_label):
+    super().__init__(left, right, ">", true_label, false_label)
+
+
+class TestGreaterOrEquals(TestWithOperator):
+  def __init__(self, left, right, true_label, false_label):
+    super().__init__(left, right, ">=", true_label, false_label)
 
 
 class StoreConstant(MediumLevelIRInstruction):
@@ -458,6 +466,14 @@ comparison_functions[TokenType.less_or_equals] = TemporaryLessrOrEqualsTemporary
 comparison_functions[TokenType.greater_than] = TemporaryGreaterThanTemporary
 comparison_functions[TokenType.greater_or_equals] = TemporaryGreaterOrEqualsTemporary
 
+test_functions = dict()
+test_functions[TokenType.equals] = TestEquals
+test_functions[TokenType.not_equals] = TestNotEquals
+test_functions[TokenType.less_than] = TestLessThan
+test_functions[TokenType.less_or_equals] = TestLessOrEquals
+test_functions[TokenType.greater_than] = TestGreaterThan
+test_functions[TokenType.greater_or_equals] = TestGreaterOrEquals
+
 
 class CreateFunctionContext(MediumLevelIRInstruction):
   def __init__(self, temporary_variable, function, call_string):
@@ -625,15 +641,9 @@ class MediumLevelIRCreator:
       [temporary2, code2] = self.__computeIntoTemporary(condition.items[2])
       output.extend(code1)
       output.extend(code2)
-      if condition.items[1].token_type == TokenType.equals:
-        output.append(TestEquals(temporary1, temporary2, "block_" + str(block.next.true_block.id), "block_" + str(block.next.false_block.id)))
-      elif condition.items[1].token_type == TokenType.not_equals:
-        output.append(TestNotEquals(temporary1, temporary2, "block_" + str(block.next.true_block.id), "block_" + str(block.next.false_block.id)))
-      else:
-        # FIXME: implement this properly - this is not correct for the general case.
-        [temporary3, code3] = self.__computeComparisonIntoTemporary(temporary1, temporary2, condition.items[1])
-        output.extend(code3)
-        output.append(Test(temporary3, "block_" + str(block.next.true_block.id), "block_" + str(block.next.false_block.id)))
+      func = test_functions[condition.items[1].token_type]
+      output.append(func(temporary1, temporary2, "block_" + str(block.next.true_block.id), "block_" + str(block.next.false_block.id)))
+
     else:
       # Block doesn't have a next block, so it just returns (if it's inside a function)
       if len(output) > 0 and not isinstance(output[-1], Return):

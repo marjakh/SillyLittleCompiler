@@ -1,0 +1,17 @@
+let a = 10;
+let b = 13;
+if (a == 10) {
+  write(0);
+  if (b == 12) {
+    write(1);
+  } else {
+    write(2);
+  }
+  write(3);
+  if (b == 13) {
+    write(4);
+  } else {
+    write(5);
+  }
+  write(6);
+}

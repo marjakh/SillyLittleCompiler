@@ -422,6 +422,41 @@ class PAJumpEquals(PAJumpInstruction):
     super().__init__("je", label)
 
 
+class PAJumpNotEquals(PAJumpInstruction):
+  def __init__(self, label):
+    super().__init__("jne", label)
+
+
+class PAJumpLessThan(PAJumpInstruction):
+  def __init__(self, label):
+    super().__init__("jl", label)
+
+
+class PAJumpLessOrEquals(PAJumpInstruction):
+  def __init__(self, label):
+    super().__init__("jle", label)
+
+
+class PAJumpGreaterThan(PAJumpInstruction):
+  def __init__(self, label):
+    super().__init__("jg", label)
+
+
+class PAJumpGreaterOrEquals(PAJumpInstruction):
+  def __init__(self, label):
+    super().__init__("jge", label)
+
+
+jump_types = dict()
+jump_types["=="] = PAJumpEquals
+jump_types["!="] = PAJumpNotEquals
+# This is wonky, because.. the cmp instruction is the other way around?
+jump_types[">"] = PAJumpLessThan
+jump_types[">="] = PAJumpLessOrEquals
+jump_types["<"] = PAJumpGreaterThan
+jump_types["<="] = PAJumpGreaterOrEquals
+
+
 # Superclass for instructions such as add or sub which operate on one register
 # and one other operand.
 class PseudoAssemblerInstructionOperatingOnRegister(PseudoAssemblerInstruction):
@@ -640,15 +675,11 @@ class PseudoAssembler:
       # FIXME: this is inefficient. We might not need to push edx.
       return [PAMov(v_from1, self.__eax), PAPush(self.__edx), PAMov(PAConstant(0), self.__edx), PADiv(v_from2), PAMov(self.__eax, v_to), PAPop(self.__edx)]
 
-    if isinstance(instruction, TestEquals):
+    if isinstance(instruction, TestWithOperator):
       v_left = self.__virtualRegister(instruction.left)
       v_right = self.__virtualRegister(instruction.right)
-      return [PACmp(v_left, v_right), PAJumpEquals(instruction.true_label), PAJump(instruction.false_label)]
-
-    if isinstance(instruction, TestNotEquals):
-      v_left = self.__virtualRegister(instruction.left)
-      v_right = self.__virtualRegister(instruction.right)
-      return [PACmp(v_left, v_right), PAJumpEquals(instruction.false_label), PAJump(instruction.true_label)]
+      jump_type = jump_types[instruction.op]
+      return [PACmp(v_left, v_right), jump_type(instruction.true_label), PAJump(instruction.false_label)]
 
     if isinstance(instruction, Goto):
       return [PAJump(instruction.label)]
