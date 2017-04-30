@@ -6,6 +6,7 @@ from parse_tree import *
 from parser import Parser
 from scanner import Scanner, TokenType
 from scope_analyser import ScopeAnalyser, ScopeType, FunctionVariable
+from util import print_debug
 
 from enum import Enum
 
@@ -24,7 +25,8 @@ class FunctionContext:
     self.__symbols = dict()
 
   def addVariable(self, variable, value):
-    # print("Adding variable into FunctionContext: " + str(variable))
+    # print_debug("Adding variable into FunctionContext: " + str(variable))
+    assert(variable)
     self.__symbols[variable] = value
 
   def updateVariable(self, variable, value):
@@ -154,14 +156,15 @@ class Interpreter:
       self.__function_context_stack[0].addVariable(s.resolved_variable, self.__evaluateExpression(s.expression))
       return (False, None)
     if isinstance(s, AssignmentStatement):
-      assert(s.resolved_variable)
+      # FIXME: arrays impl
+      assert(s.resolvedVariable())
       # Maybe the variable is in the current function context...
       new_value = self.__evaluateExpression(s.expression)
-      if s.resolved_variable.allocation_scope.scope_type == ScopeType.function:
-        self.__function_context_stack[0].updateVariable(s.resolved_variable, new_value)
+      if s.resolvedVariable().allocation_scope.scope_type == ScopeType.function:
+        self.__function_context_stack[0].updateVariable(s.resolvedVariable(), new_value)
       else: # Or in the top scope.
-        assert(s.resolved_variable.allocation_scope.scope_type == ScopeType.top)
-        self.__function_context_stack[-1].updateVariable(s.resolved_variable, new_value)
+        assert(s.resolvedVariable().allocation_scope.scope_type == ScopeType.top)
+        self.__function_context_stack[-1].updateVariable(s.resolvedVariable(), new_value)
       return (False, None)
     if isinstance(s, FunctionCall):
       value = self.__evaluateExpression(s)
@@ -193,7 +196,7 @@ class Interpreter:
     assert(False)
 
   def __evaluateExpression(self, e):
-    # print("Evaluating " + str(e))
+    # print_debug("Evaluating " + str(e))
     if isinstance(e, NumberExpression):
       return e.value
     if isinstance(e, VariableExpression):
@@ -247,9 +250,10 @@ class Interpreter:
       if e.items[1].token_type == TokenType.greater_or_equals:
         return e1 >= e2
     if isinstance(e, FunctionCall):
+      # FIXME: arrays impl
       parameters = [self.__evaluateExpression(p) for p in e.parameters]
-      assert(e.resolved_function)
-      f = e.resolved_function
+      assert(e.function.resolvedVariable())
+      f = e.function.resolvedVariable()
 
       # We might have a user-defined function, direct call: function foo() { ... } foo();
       # or a user-defined function, indirect call: function foo() { } let bar = foo; bar();
@@ -260,11 +264,11 @@ class Interpreter:
 
       # Maybe the variable is in the current function context, or in some outer
       # function context... (note that variableValue() walks the stack!)
-      if e.resolved_function.allocation_scope.scope_type == ScopeType.function:
+      if f.allocation_scope.scope_type == ScopeType.function:
         value = self.__function_context_stack[0].variableValue(f)
       else:
         # Or in the top context.
-        assert(e.resolved_function.allocation_scope.scope_type == ScopeType.top)
+        assert(f.allocation_scope.scope_type == ScopeType.top)
         value = self.__function_context_stack[-1].variableValue(f)
 
       if isinstance(value, BuiltinFunction):

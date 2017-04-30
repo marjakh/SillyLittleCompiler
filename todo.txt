@@ -1,3 +1,15 @@
+Priorities:
+1. arrays
+2. functions
+3. gc
+
+
+Arrays:
+- Parsing more complicated cases doesn't work (probably)
+let bar = foo()[3];
+- Interpreter + compiler implementation missing
+
+
 Small stuff:
 - make gdb "start" work (somehow)
 - print out the statement as comments in the program?
@@ -30,15 +42,6 @@ Big stuff:
   -- objects referencing other objects is the big stuff!!! so we basically need garbage collection in the real code generator (the python gc will take care of it in the interpreter phase)
 - Runtime
 - Compatibility with C libraries
-
-
-Immediate plan for getting more stuff to compile:
-- convert more instructions
-- register allocation must be done properly
-- push registers before a builtin function call!
-- push registers before a call to a user function? do we need to? or does liveness analysis take care of it?
-
-
 
 
 ------------------------

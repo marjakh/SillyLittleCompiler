@@ -2,11 +2,12 @@
 
 from grammar import GrammarDriver
 from grammar_rules import rules
-from parse_tree import ParseTreeVisitor
+from parse_tree import ParseTreeVisitor, VariableExpression, ArrayIndexExpression
 from parser import Parser
 from scanner import Scanner
 from type_enums import VariableType, ScopeType
 from variable import Variable, FunctionVariable, Function
+from util import print_debug
 
 from enum import Enum
 
@@ -176,12 +177,16 @@ class SecondPassScopeAnalyser(ScopeAnalyserVisitor):
 
   def visitAssignmentStatement(self, s):
     super().visitAssignmentStatement(s)
-    v = self.scopes[0].resolve(s.identifier)
-    if not v:
-      raise ScopeError("ScopeError: undeclared variable " + s.identifier, s.pos)
-    s.resolved_variable = v
-    if v.allocation_scope.scope_type == ScopeType.function and v.allocation_scope != self.currentFunctionScope():
-      v.referred_by_inner_functions = True
+
+    self.__visitVariableExpressionOrArrayIndexExpression(s.where)
+
+  def __visitVariableExpressionOrArrayIndexExpression(self, e):
+    if isinstance(e, VariableExpression):
+      self.visitVariableExpression(e)
+    elif isinstance(e, ArrayIndexExpression):
+      self.visitArrayIndexExpression(e)
+    else:
+      assert(False)
 
   def visitVariableExpression(self, e):
     v = self.scopes[0].resolve(e.name)
@@ -190,6 +195,10 @@ class SecondPassScopeAnalyser(ScopeAnalyserVisitor):
     e.resolved_variable = v
     if v.allocation_scope.scope_type == ScopeType.function and v.allocation_scope != self.currentFunctionScope():
       v.referred_by_inner_functions = True
+
+  def visitArrayIndexExpression(self, e):
+    self.__visitVariableExpressionOrArrayIndexExpression(e.array)
+    e.index.accept(self)
 
   def visitFunctionStatementEndBody(self, s):
     super().visitFunctionStatementEndBody(s)
@@ -207,10 +216,9 @@ class SecondPassScopeAnalyser(ScopeAnalyserVisitor):
 
   def visitFunctionCall(self, s):
     super().visitFunctionCall(s)
-    v = self.scopes[0].resolve(s.name)
-    if not v:
-      raise ScopeError("ScopeError: undeclared variable " + s.name, s.pos)
-    s.resolved_function = v
+
+    self.__visitVariableExpressionOrArrayIndexExpression(s.function)
+
     # We cannot check parameter count here, because we might be calling a
     # function via a variable!
 
@@ -257,6 +265,20 @@ if __name__ == "__main__":
     ("let foo = 0; foo = read(); write(foo);", True),
     ("let foo = 0; let indirect = write; indirect(foo);", True),
     ("write(id(1));", True),
+    ("function foo() { } write(foo());", True),
+    ("let foo = 1; foo[0] = 3;", True),
+    ("let foo = 1; foo[0][0] = 3;", True),
+    ("let foo = 1; foo[0]();", True),
+    ("let foo = 1; write(foo[0]);", True),
+    ("let foo = 1; write(foo[0][0]);", True),
+    ("let foo = 1; write(foo[0]());", True),
+    ("let foo = 1; let bar = 2; foo[bar] = 3;", True),
+    ("let foo = 1; let bar = 2; foo[bar][0] = 3;", True),
+    ("let foo = 1; let bar = 2; foo[0][bar] = 3;", True),
+    ("let foo = 1; let bar = 2; write(foo[bar]);", True),
+    ("let foo = 1; let bar = 2; write(foo[bar][0]);", True),
+    ("let foo = 1; let bar = 2; write(foo[0][bar]);", True),
+    ("let foo = 1; let bar = 2; write(foo[bar]());", True),
     # Errorneous programs
     ("let foo = 1; let foo = 2;", False),
     ("let foo = foo;", False),
@@ -264,6 +286,16 @@ if __name__ == "__main__":
     ("if (bar == 0) { }", False),
     ("let foo = 0; bar(foo);", False),
     ("let foo = id(foo);", False),
+    ("sth[0] = 3;", False),
+    ("sth[0][0] = 3;", False),
+    ("sth[0][0]();", False),
+    ("let foo = 1; foo[bar] = 3;", False),
+    ("let foo = 1; foo[bar][0] = 3;", False),
+    ("let foo = 1; foo[0][bar] = 3;", False),
+    ("let foo = 1; write(foo[bar]);", False),
+    ("let foo = 1; write(foo[bar][0]);", False),
+    ("let foo = 1; write(foo[0][bar]);", False),
+    ("let foo = 1; write(foo[bar]());", False),
   ]
 
   for (source, expected_success) in test_progs:

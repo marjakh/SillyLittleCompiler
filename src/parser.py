@@ -115,6 +115,9 @@ if __name__ == "__main__":
     ("if (foo() == 0) { }", True),
     ("if (foo(bar) == 0) { }", True),
     ("if (foo(bar, bar2) == 0) { }", True),
+    ("i[0] = 0;", True),
+    ("i[0][0] = j[0];", True),
+    ("i = j[0]();", True),
     # Errorneous programs
     ("foo 1 2 write();", False),
     ("write(1 2 3;", False),

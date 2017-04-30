@@ -4,6 +4,7 @@
 
 from grammar import GrammarDriver, GrammarRule, SyntaxError
 from parse_tree import *
+from util import *
 
 class Gatherer:
   def __init__(self, name, mask, ctor):
@@ -63,9 +64,25 @@ def dispatch_assignment_or_function_call(items, pos):
 
 def dispatch_variable_or_function_call(items, pos):
   assert(len(items) == 2)
+  assert(isinstance(items[0], VariableExpression) or isinstance(items[0], ArrayIndexExpression))
   if isinstance(items[1], ParameterList):
     return FunctionCall([items[0], items[1].parameters], pos)
-  return VariableExpression(items[0].value, pos)
+  return items[0]
+
+
+def dispatch_array_index(items, pos):
+  assert(len(items) == 2)
+
+  def to_expression(item, pos):
+    if isinstance(item, ArrayIndexExpression):
+      return item
+    return VariableExpression(item.value, pos)
+
+  if items[1] is None:
+    return to_expression(items[0], pos)
+
+  assert(isinstance(items[1], ArrayIndexContinuation))
+  return dispatch_array_index([ArrayIndexExpression(to_expression(items[0], pos), items[1].index_expression, pos), items[1].continuation], pos)
 
 
 rules = [
@@ -76,7 +93,7 @@ rules = [
     GrammarRule("statement_list", ["statement", "statement_list"], flatten(2)),
 
     GrammarRule("statement",
-                ["token_identifier", "assignment_or_function_call"],
+                ["identifier_or_array", "assignment_or_function_call"],
                 lambda: Gatherer("AssignmentStatementOrFunctionCallGatherer",
                                  [True, True], dispatch_assignment_or_function_call)),
     GrammarRule("statement",
@@ -156,7 +173,7 @@ rules = [
                 lambda: Gatherer("NumberExpression", [True],
                                  lambda items, pos: NumberExpression(items[0].value, pos))),
 
-    GrammarRule("mul_term", ["token_identifier", "maybe_function_call"],
+    GrammarRule("mul_term", ["identifier_or_array", "maybe_function_call"],
                 lambda: Gatherer("VariableOrFunctionCallGatherer",
                                  [True, True], dispatch_variable_or_function_call)),
 
@@ -183,4 +200,8 @@ rules = [
     GrammarRule("bool_op", ["token_less_or_equals"], just_route),
     GrammarRule("bool_op", ["token_greater_than"], just_route),
     GrammarRule("bool_op", ["token_greater_or_equals"], just_route),
+
+    GrammarRule("identifier_or_array", ["token_identifier", "identifier_or_array_continuation"], lambda: Gatherer("ArrayIndex", [True, True], dispatch_array_index)),
+    GrammarRule("identifier_or_array_continuation", ["epsilon"], None),
+    GrammarRule("identifier_or_array_continuation", ["token_left_bracket", "expression", "token_right_bracket", "identifier_or_array_continuation"], lambda: Gatherer("ArrayIndex", [False, True, False, True], lambda items, pos: ArrayIndexContinuation(items, pos))),
 ]

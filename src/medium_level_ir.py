@@ -479,6 +479,7 @@ class CreateFunctionContext(MediumLevelIRInstruction):
   def __init__(self, temporary_variable, function, call_string):
     super().__init__()
     self.temporary_variable = temporary_variable
+    assert(function)
     self.function = function
     self.call_string = call_string
 
@@ -657,7 +658,9 @@ class MediumLevelIRCreator:
     if isinstance(statement, LetStatement):
       # We already know about functions and their local variables, so we only
       # care about the assignment part.
-      return self.__createForAssignmentStatement(statement)
+      s = AssignmentStatement([VariableExpression(statement.identifier, statement.pos), statement.expression], statement.pos)
+      s.where.resolved_variable = statement.resolved_variable
+      return self.__createForAssignmentStatement(s)
     if isinstance(statement, AssignmentStatement):
       return self.__createForAssignmentStatement(statement)
 
@@ -665,15 +668,16 @@ class MediumLevelIRCreator:
     # the function context, we just need to nullify relevant fields.
     if isinstance(statement, FunctionCall):
       temporary_for_function_context = self.__nextTemporary()
+      # FIXME: arrays impl
       if statement.is_direct():
-        code = [CreateFunctionContextForFunction(temporary_for_function_context, statement.resolved_function)]
+        code = [CreateFunctionContextForFunction(temporary_for_function_context, statement.function.resolved_variable)]
       else:
-        code = [CreateFunctionContextFromVariable(temporary_for_function_context, statement.resolved_function)]
+        code = [CreateFunctionContextFromVariable(temporary_for_function_context, statement.function.resolved_variable)]
       for i in range(len(statement.parameters)):
         # TODO: optimization: if the parameter is trivial, we don't need to store it into a temporary
         [temporary, temporary_code] = self.__computeIntoTemporary(statement.parameters[i])
         code += temporary_code + [AddParameterToFunctionContext(temporary_for_function_context, i, temporary)]
-      code += [CallFunction(statement.resolved_function, temporary_for_function_context)]
+      code += [CallFunction(statement.function.resolved_variable, temporary_for_function_context)]
       return code
     if isinstance(statement, ReturnStatement):
       code = []
@@ -702,20 +706,22 @@ class MediumLevelIRCreator:
     """
 
     # Find the proper assignment function...
-    [variable_or_function, scope, is_parameter, extra_parameter] = self.__findVariableSpecs(statement.resolved_variable)
+    # FIXME: arrays impl
+    [variable_or_function, scope, is_parameter, extra_parameter] = self.__findVariableSpecs(statement.resolvedVariable())
     assert(variable_or_function == "variable")
 
     if isinstance(statement.expression, NumberExpression):
       is_constant = "constant"
-      return [store_functions[is_constant][scope][is_parameter](statement.resolved_variable, statement.expression.value, extra_parameter)]
+      return [store_functions[is_constant][scope][is_parameter](statement.resolvedVariable(), statement.expression.value, extra_parameter)]
     else:
       # Complex expressions.
       is_constant = "not_constant"
       [temporary, temporary_code] = self.__computeIntoTemporary(statement.expression);
-      return temporary_code + [store_functions[is_constant][scope][is_parameter](statement.resolved_variable, temporary, extra_parameter)]
+      return temporary_code + [store_functions[is_constant][scope][is_parameter](statement.resolvedVariable(), temporary, extra_parameter)]
 
   def __findVariableSpecs(self, variable):
     extra_parameter = None
+    assert(variable)
     if variable.variable_type == VariableType.variable:
       variable_or_function = "variable"
     else:

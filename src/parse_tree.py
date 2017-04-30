@@ -10,6 +10,14 @@ class AssignmentStatementContinuation:
     self.pos = pos
 
 
+class ArrayIndexContinuation:
+  def __init__(self, items, pos):
+    self.index_expression = items[0]
+    assert(items[1] is None or isinstance(items[1], ArrayIndexContinuation))
+    self.continuation = items[1]
+    self.pos = pos
+
+
 class ParameterList:
   def __init__(self, items, pos):
     self.parameters = items
@@ -66,15 +74,29 @@ class AssignmentStatement(Statement):
   def __init__(self, items, pos):
     super().__init__(pos)
     assert(len(items) == 2)
-    self.identifier = items[0].value
+    assert(isinstance(items[0], VariableExpression) or isinstance(items[0], ArrayIndexExpression))
+    self.where = items[0]
     self.expression = items[1]
-    self.resolved_variable = None
 
   def __str__(self):
-    return "AssignmentStatement(" + str(self.identifier) + ", " + str(self.expression) + ")"
+    return "AssignmentStatement(" + str(self.where) + ", " + str(self.expression) + ")"
 
   def accept(self, visitor):
     visitor.visitAssignmentStatement(self)
+
+  def identifierName(self):
+    if isinstance(self.where, VariableExpression):
+      return self.where.name
+    elif isinstance(self.where, ArrayIndexExpression):
+      return self.where.arrayName()
+    assert(False)
+
+  def resolvedVariable(self):
+    if isinstance(self.where, VariableExpression):
+      return self.where.resolvedVariable()
+    elif isinstance(self.where, ArrayIndexExpression):
+      return self.where.resolvedVariable()
+    assert(False)
 
 
 class IfStatement(Statement):
@@ -116,21 +138,21 @@ class WhileStatement(Statement):
 class FunctionCall(Statement):
   def __init__(self, items, pos):
     super().__init__(pos)
-    self.name = items[0].value
+    assert(isinstance(items[0], VariableExpression) or isinstance(items[0], ArrayIndexExpression))
+    self.function = items[0]
     if items[1] is None:
       self.parameters = []
     else:
       self.parameters = items[1]
-    self.resolved_function = None
 
   def __str__(self):
-    return "FunctionCall(" + str(self.name) + ", " + listToString(self.parameters) + ")"
+    return "FunctionCall(" + str(self.function) + ", " + listToString(self.parameters) + ")"
 
   def accept(self, visitor):
     visitor.visitFunctionCall(self)
 
   def is_direct(self):
-    return self.resolved_function.variable_type == VariableType.user_function or self.resolved_function.variable_type == VariableType.builtin_function
+    return self.function.resolvedVariable().variable_type == VariableType.user_function or self.function.resolvedVariable().variable_type == VariableType.builtin_function
 
 
 class ReturnStatement(Statement):
@@ -161,6 +183,38 @@ class VariableExpression(Expression):
 
   def accept(self, visitor):
     visitor.visitVariableExpression(self)
+
+  def resolvedVariable(self):
+    return self.resolved_variable
+
+
+class ArrayIndexExpression(Expression):
+  def __init__(self, array, index, pos):
+    super().__init__(pos)
+    assert(isinstance(array, VariableExpression) or isinstance(array, ArrayIndexExpression))
+    assert(isinstance(index, Expression))
+    self.array = array
+    self.index = index
+
+  def __str__(self):
+    return "ArrayIndexExpression(" + str(self.array) + ", " + str(self.index) + ")"
+
+  def accept(self, visitor):
+    visitor.visitArrayIndexExpression(self)
+
+  def resolvedVariable(self):
+    if isinstance(array, VariableExpression):
+      return array.resolved_variable
+    elif isinstance(array, ArrayIndexExpression):
+      return array.resolvedVariable()
+    assert(False)
+
+  def arrayName(self):
+    if isinstance(array, VariableExpression):
+      return array.name
+    elif isinstance(array, ArrayIndexExpression):
+      return array.arrayName()
+    assert(False)
 
 
 class NumberExpression(Expression):
@@ -302,6 +356,10 @@ class ParseTreeVisitor:
         statement.expression.accept(self)
 
   def visitVariableExpression(self, expression):
+    assert(self.visit_expressions)
+    pass
+
+  def visitArrayIndexExpression(self, expression):
     assert(self.visit_expressions)
     pass
 
