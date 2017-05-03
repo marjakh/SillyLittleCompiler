@@ -118,6 +118,7 @@ if __name__ == "__main__":
     ("i[0] = 0;", True),
     ("i[0][0] = j[0];", True),
     ("i = j[0]();", True),
+    ("if (i[0] == j[0]) { }", True),
     # Errorneous programs
     ("foo 1 2 write();", False),
     ("write(1 2 3;", False),
