@@ -31,7 +31,8 @@ class TokenType(Enum):
   keyword_let = 25
   keyword_function = 26
   keyword_return = 27
-  eos = 28
+  keyword_new = 28
+  eos = 29
 
 
 class Token:
@@ -83,6 +84,7 @@ class Scanner:
     "let": TokenType.keyword_let,
     "function": TokenType.keyword_function,
     "return": TokenType.keyword_return,
+    "new": TokenType.keyword_new,
   }
 
   @staticmethod
@@ -124,7 +126,9 @@ class Scanner:
     name = ""
     while self.__hasMore() and (
         (self.s[self.pos] >= "a" and self.s[self.pos] <= "z") or
-        (self.s[self.pos] >= "0" and self.s[self.pos] <= "9")):
+        (self.s[self.pos] >= "A" and self.s[self.pos] <= "Z") or
+        (self.s[self.pos] >= "0" and self.s[self.pos] <= "9") or
+        self.s[self.pos] == '_'):
       name += self.s[self.pos]
       self.pos += 1
     if name in Scanner.__keywords:
@@ -152,7 +156,8 @@ class Scanner:
 
     if self.s[self.pos] >= "0" and self.s[self.pos] <= "9":
       return self.__scanNumber()
-    if self.s[self.pos] >= "a" and self.s[self.pos] <= "z":
+    if ((self.s[self.pos] >= "a" and self.s[self.pos] <= "z") or
+        (self.s[self.pos] >= "A" and self.s[self.pos] <= "Z")):
       return self.__scanIdentifierOrKeyword()
 
     return Token(TokenType.invalid)

@@ -229,6 +229,13 @@ class NumberExpression(Expression):
     visitor.visitNumberExpression(self)
 
 
+class NewExpression(Expression):
+  def __init__(self, items, pos):
+    super().__init__(pos)
+    self.class_name = items[0]
+    print_debug("params: " + str(items[1]))
+    self.params = items[1]
+
 class AddExpression(Expression):
   def __init__(self, items, pos):
     super().__init__(pos)
