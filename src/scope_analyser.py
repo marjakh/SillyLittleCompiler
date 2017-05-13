@@ -232,6 +232,15 @@ class SecondPassScopeAnalyser(ScopeAnalyserVisitor):
       if not self.scopes[0].addVariable(v):
         raise ScopeError("ScopeError: redeclaration of variable " + p.value, s.pos)
 
+  def visitNewExpression(self, e):
+    super().visitNewExpression(e)
+
+    v = self.scopes[0].resolve(e.class_name)
+    if not v:
+      raise ScopeError("ScopeError: undeclared variable " + e.class_name, e.pos)
+    e.resolved_class_variable = v
+
+
 class ScopeAnalyser:
   def __init__(self, parse_tree):
     self.__parse_tree = parse_tree

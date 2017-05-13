@@ -232,9 +232,12 @@ class NumberExpression(Expression):
 class NewExpression(Expression):
   def __init__(self, items, pos):
     super().__init__(pos)
-    self.class_name = items[0]
-    print_debug("params: " + str(items[1]))
-    self.params = items[1]
+    self.class_name = items[0].value
+    self.parameters = items[1] or []
+
+  def accept(self, visitor):
+    visitor.visitNewExpression(self)
+
 
 class AddExpression(Expression):
   def __init__(self, items, pos):
@@ -392,3 +395,7 @@ class ParseTreeVisitor:
       if isinstance(i, ParseTreeNode):
         i.accept(self)
 
+  def visitNewExpression(self, expression):
+    assert(self.visit_expressions)
+    for e in expression.parameters:
+      e.accept(self)
