@@ -1,0 +1,24 @@
+let size_x = 3;
+let size_y = 4;
+let a = new Array(size_x);
+let i = 0;
+let j = 0;
+while (i < size_x) {
+  a[i] = new Array(size_y);
+  j = 0;
+  while (j < size_y) {
+    a[i][j] = i * 10 + j;
+    j = j + 1;
+  }
+  i = i + 1;
+}
+
+i = 0;
+while (i < size_x) {
+  j = 0;
+  while (j < size_y) {
+    write(a[i][j]);
+    j = j + 1;
+  }
+  i = i + 1;
+}
