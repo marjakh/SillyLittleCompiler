@@ -136,7 +136,24 @@ class WhileStatement(Statement):
     visitor.visitWhileStatement(self)
 
 
-class FunctionCall(Statement):
+class ReturnStatement(Statement):
+  def __init__(self, items, pos):
+    super().__init__(pos)
+    self.expression = items[0]
+
+  def __str__(self):
+    return "ReturnStatement(" + str(self.expression) + ")"
+
+  def accept(self, visitor):
+    visitor.visitReturnStatement(self)
+
+
+class Expression(ParseTreeNode):
+  def __init__(self, pos):
+    super().__init__(pos)
+
+
+class FunctionCall(Expression):
   def __init__(self, items, pos):
     super().__init__(pos)
     assert(isinstance(items[0], VariableExpression) or isinstance(items[0], ArrayIndexExpression))
@@ -154,23 +171,6 @@ class FunctionCall(Statement):
 
   def is_direct(self):
     return self.function.resolvedVariable().variable_type == VariableType.user_function or self.function.resolvedVariable().variable_type == VariableType.builtin_function
-
-
-class ReturnStatement(Statement):
-  def __init__(self, items, pos):
-    super().__init__(pos)
-    self.expression = items[0]
-
-  def __str__(self):
-    return "ReturnStatement(" + str(self.expression) + ")"
-
-  def accept(self, visitor):
-    visitor.visitReturnStatement(self)
-
-
-class Expression(ParseTreeNode):
-  def __init__(self, pos):
-    super().__init__(pos)
 
 
 class VariableExpression(Expression):

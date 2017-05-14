@@ -1,0 +1,19 @@
+function foo() {
+  write(0);
+  return 0;
+}
+
+function bar() {
+  write(1);
+  return 0;
+}
+
+function baz() {
+  write(2);
+  return 2;
+}
+
+let a = new Array(1);
+a[0] = new Array(1);
+
+a[foo()][bar()] = baz();

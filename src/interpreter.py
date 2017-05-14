@@ -188,7 +188,6 @@ class Interpreter:
           assert(s.resolvedVariable().allocation_scope.scope_type == ScopeType.top)
           self.__function_context_stack[-1].updateVariable(s.resolvedVariable(), new_value)
       elif isinstance(s.where, ArrayIndexExpression):
-        # FIXME: add a test for a[foo()][bar()] = 0; foo must be evaluated before bar.
         self.__evaluateExpression(s.where.array).setData(self.__evaluateExpression(s.where.index), self.__evaluateExpression(s.expression))
       else:
         assert(False)
