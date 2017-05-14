@@ -92,6 +92,7 @@ class AssignmentStatement(Statement):
     assert(False)
 
   def resolvedVariable(self):
+    # FIXME: huh?
     if isinstance(self.where, VariableExpression):
       return self.where.resolvedVariable()
     elif isinstance(self.where, ArrayIndexExpression):
@@ -203,17 +204,19 @@ class ArrayIndexExpression(Expression):
     visitor.visitArrayIndexExpression(self)
 
   def resolvedVariable(self):
-    if isinstance(array, VariableExpression):
-      return array.resolved_variable
-    elif isinstance(array, ArrayIndexExpression):
-      return array.resolvedVariable()
+    # FIXME: it can also be a function return value: f()[3]. Make this more
+    # generic.
+    if isinstance(self.array, VariableExpression):
+      return self.array.resolved_variable
+    elif isinstance(self.array, ArrayIndexExpression):
+      return self.array.resolvedVariable()
     assert(False)
 
   def arrayName(self):
-    if isinstance(array, VariableExpression):
-      return array.name
-    elif isinstance(array, ArrayIndexExpression):
-      return array.arrayName()
+    if isinstance(self.array, VariableExpression):
+      return self.array.name
+    elif isinstance(self.array, ArrayIndexExpression):
+      return self.array.arrayName()
     assert(False)
 
 

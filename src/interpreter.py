@@ -19,6 +19,7 @@ class RuntimeError(BaseException):
     self.message = message
     self.pos = pos
 
+
 class FunctionContext:
   def __init__(self, function):
     self.function = function
@@ -64,6 +65,20 @@ class Function:
     return None
 
 
+class Array:
+  def __init__(self, size):
+    self.size = size
+    self.values = [None]*size
+
+  def getData(self, index):
+    # FIXME: better runtime error for overflow
+    return self.values[index]
+
+  def setData(self, index, new_value):
+    # FIXME: better runtime error for overflow
+    self.values[index] = new_value
+
+
 class BuiltinFunction:
   def __init__(self, name, code):
     self.name = name
@@ -91,6 +106,10 @@ def nth_builtin(parameters):
   assert(len(parameters) >= 2)
   return parameters[1:][parameters[0] - 1]
 
+def array_builtin(parameters):
+  assert(len(parameters) == 1)
+  return Array(parameters[0])
+
 class Interpreter:
   def __init__(self, grammar, source):
     self.grammar = grammar
@@ -112,6 +131,7 @@ class Interpreter:
     sa.builtins.add("write")
     sa.builtins.add("id")
     sa.builtins.add("nth")
+    sa.builtins.add("Array")
     sa.analyse()
 
     if not sa.success:
@@ -121,6 +141,7 @@ class Interpreter:
     self.__function_context_stack[0].addVariable(sa.top_scope.resolve("write"), BuiltinFunction("write", write_builtin))
     self.__function_context_stack[0].addVariable(sa.top_scope.resolve("id"), BuiltinFunction("id", id_builtin))
     self.__function_context_stack[0].addVariable(sa.top_scope.resolve("nth"), BuiltinFunction("nth", nth_builtin))
+    self.__function_context_stack[0].addVariable(sa.top_scope.resolve("Array"), BuiltinFunction("Array", array_builtin))
 
     self.__executeStatements(p.program.statements)
 
@@ -156,15 +177,21 @@ class Interpreter:
       self.__function_context_stack[0].addVariable(s.resolved_variable, self.__evaluateExpression(s.expression))
       return (False, None)
     if isinstance(s, AssignmentStatement):
-      # FIXME: arrays impl
-      assert(s.resolvedVariable())
-      # Maybe the variable is in the current function context...
-      new_value = self.__evaluateExpression(s.expression)
-      if s.resolvedVariable().allocation_scope.scope_type == ScopeType.function:
-        self.__function_context_stack[0].updateVariable(s.resolvedVariable(), new_value)
-      else: # Or in the top scope.
-        assert(s.resolvedVariable().allocation_scope.scope_type == ScopeType.top)
-        self.__function_context_stack[-1].updateVariable(s.resolvedVariable(), new_value)
+      if isinstance(s.where, VariableExpression):
+        assert(s.resolvedVariable())
+
+        new_value = self.__evaluateExpression(s.expression)
+        # Maybe the variable is in the current function context...
+        if s.resolvedVariable().allocation_scope.scope_type == ScopeType.function:
+          self.__function_context_stack[0].updateVariable(s.resolvedVariable(), new_value)
+        else: # Or in the top scope.
+          assert(s.resolvedVariable().allocation_scope.scope_type == ScopeType.top)
+          self.__function_context_stack[-1].updateVariable(s.resolvedVariable(), new_value)
+      elif isinstance(s.where, ArrayIndexExpression):
+        # FIXME: add a test for a[foo()][bar()] = 0; foo must be evaluated before bar.
+        self.__evaluateExpression(s.where.array).setData(self.__evaluateExpression(s.where.index), self.__evaluateExpression(s.expression))
+      else:
+        assert(False)
       return (False, None)
     if isinstance(s, FunctionCall):
       value = self.__evaluateExpression(s)
@@ -293,6 +320,22 @@ class Interpreter:
       self.__function_context_stack.pop(0)
       return maybe_return_value
 
+    if isinstance(e, NewExpression):
+      parameters = [self.__evaluateExpression(p) for p in e.parameters]
+      assert(e.resolved_class_variable)
+      f = e.resolved_class_variable
+      value = self.__function_context_stack[-1].variableValue(f)
+      if isinstance(value, BuiltinFunction):
+        r = value.execute(parameters)
+        return r
+      # No user defined classes yet.
+      assert(False)
+
+    if isinstance(e, ArrayIndexExpression):
+      array = self.__evaluateExpression(e.array)
+      index = self.__evaluateExpression(e.index)
+      return array.getData(index)
+
     assert(False)
 
 
@@ -310,4 +353,3 @@ if __name__ == "__main__":
   #   exit(1)
   output = i.run().strip()
   print(output)
-
