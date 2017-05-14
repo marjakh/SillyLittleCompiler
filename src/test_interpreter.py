@@ -78,8 +78,8 @@ def run_tests_in(test_path):
 
 
 if __name__ == '__main__':
-  skipped = run_tests_in("tests")
-  skipped += run_tests_in("compiler_tests")
+  skipped = run_tests_in("interpreter_tests")
+  skipped += run_tests_in("tests")
 
   if skipped > 0:
     print("Some tests skipped")

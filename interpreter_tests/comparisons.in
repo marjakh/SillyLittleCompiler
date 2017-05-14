@@ -1,0 +1,19 @@
+let foo = 5;
+if (foo == 4) { write(1); } else { write(0); }
+if (foo == 5) { write(1); } else { write(0); }
+if (foo == 6) { write(1); } else { write(0); }
+if (foo != 4) { write(1); } else { write(0); }
+if (foo != 5) { write(1); } else { write(0); }
+if (foo != 6) { write(1); } else { write(0); }
+if (foo < 4) { write(1); } else { write(0); }
+if (foo < 5) { write(1); } else { write(0); }
+if (foo < 6) { write(1); } else { write(0); }
+if (foo <= 4) { write(1); } else { write(0); }
+if (foo <= 5) { write(1); } else { write(0); }
+if (foo <= 6) { write(1); } else { write(0); }
+if (foo > 4) { write(1); } else { write(0); }
+if (foo > 5) { write(1); } else { write(0); }
+if (foo > 6) { write(1); } else { write(0); }
+if (foo >= 4) { write(1); } else { write(0); }
+if (foo >= 5) { write(1); } else { write(0); }
+if (foo >= 6) { write(1); } else { write(0); }

@@ -10,9 +10,9 @@ import subprocess
 if __name__ == '__main__':
   skipped = 0
 
-  # Read all input files in tests/, run the prog with the interpreter, ensure
+  # Read all input files in tests/, run the prog with the compiler, ensure
   # that the output matches the corresponding output file.
-  test_path = "compiler_tests"
+  test_path = "tests"
   files = [f for f in os.listdir(test_path) if os.path.isfile(os.path.join(test_path, f)) and f.endswith("in")]
   good_files = [f for f in files if not f.startswith("error_")]
   good_files.sort()
