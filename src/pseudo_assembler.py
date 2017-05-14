@@ -20,6 +20,8 @@ parameters
 local variables
 
 
+Division:
+https://www.csie.ntu.edu.tw/~acpang/course/asm_2004/slides/chapt_07_PartIISolve.pdf
 
 """
 
@@ -178,6 +180,15 @@ class PALabel(PseudoAssemblerInstruction):
 
   def __str__(self):
     return self.name + ":"
+
+
+class PACustom(PseudoAssemblerInstruction):
+  def __init__(self, code):
+    super().__init__()
+    self.code = code
+
+  def __str__(self):
+    return self.code
 
 
 class PACall(PseudoAssemblerInstruction):
@@ -518,12 +529,12 @@ class PseudoAssemblerInstructionWithSource(PseudoAssemblerInstruction):
 
 class PAMul(PseudoAssemblerInstructionWithSource):
   def __init__(self, source):
-    super().__init__(source, "mull")
+    super().__init__(source, "imull")
 
 
 class PADiv(PseudoAssemblerInstructionWithSource):
   def __init__(self, source):
-    super().__init__(source, "divl")
+    super().__init__(source, "idivl")
 
 
 
@@ -678,7 +689,7 @@ class PseudoAssembler:
       v_from2 = self.__virtualRegister(instruction.from_variable2)
       v_to = self.__virtualRegister(instruction.to_variable)
       # FIXME: this is inefficient. We might not need to push edx.
-      return [PAMov(v_from1, self.__eax), PAPush(self.__edx), PAMov(PAConstant(0), self.__edx), PADiv(v_from2), PAMov(self.__eax, v_to), PAPop(self.__edx)]
+      return [PAMov(v_from1, self.__eax), PAPush(self.__edx), PACustom("cdq"), PADiv(v_from2), PAPop(self.__edx), PAMov(self.__eax, v_to)]
 
     if isinstance(instruction, TestWithOperator):
       v_left = self.__virtualRegister(instruction.left)
