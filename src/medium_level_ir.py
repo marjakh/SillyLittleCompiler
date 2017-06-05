@@ -689,8 +689,8 @@ class MediumLevelIRCreator:
           code.append(SetReturnValueFromTemporary(temporary))
       code.append(Return())
       return code
-    print("Unable to create medium level IR for statement:")
-    print(statement)
+    print_error("Unable to create medium level IR for statement:")
+    print_error(statement)
     assert(False)
     return []
 
@@ -775,8 +775,8 @@ class MediumLevelIRCreator:
     if isinstance(expression, AddExpression) or isinstance(expression, MultiplyExpression):
       return self.__accumulateAddExpressionOrMultiplyExpression(expression)
 
-    print("Unable to create pseudo assembly for expression:")
-    print(expression)
+    print_error("Unable to create pseudo assembly for expression:")
+    print_error(expression)
     assert(False)
     return ["not implemented", []]
 
