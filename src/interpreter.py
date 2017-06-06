@@ -321,8 +321,8 @@ class Interpreter:
 
     if isinstance(e, NewExpression):
       parameters = [self.__evaluateExpression(p) for p in e.parameters]
-      assert(e.resolved_class_variable)
-      f = e.resolved_class_variable
+      assert(e.function_call.function.resolved_variable)
+      f = e.function_call.function.resolved_variable
       value = self.__function_context_stack[-1].variableValue(f)
       if isinstance(value, BuiltinFunction):
         r = value.execute(parameters)

@@ -237,6 +237,7 @@ class NewExpression(Expression):
     super().__init__(pos)
     self.class_name = items[0].value
     self.parameters = items[1] or []
+    self.function_call = FunctionCall([VariableExpression(self.class_name, pos), self.parameters], pos)
 
   def accept(self, visitor):
     visitor.visitNewExpression(self)

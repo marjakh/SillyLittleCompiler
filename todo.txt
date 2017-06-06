@@ -4,10 +4,16 @@ Priorities:
 3. gc
 
 
+Random bugs / corner cases:
+- Add tests for what happens when trying to access the return value for write.
+- Add tests for storing something else than constants to arrays.
+  -- And for cases where the index is something more complex too.
+- Why does compiling "comparisons.in" take so long? Some register allocation stuff?
+
 Arrays:
 - Parsing more complicated cases doesn't work (probably)
 let bar = foo()[3];
-- Interpreter + compiler implementation missing
+- Compiler implementation missing
 
 
 Small stuff:
@@ -24,6 +30,7 @@ Small stuff:
 - should using an undefined return value be a runtime error? i guess yes, it's not like it's ever intended...
 - comparing functions with ==, does it work??
 
+
 Medium stuff:
 - the whole undefined thing... we need a representation for undefined, we need to init variables as undefined, and check for undefined in suitable places.
 - break and continue
@@ -32,6 +39,7 @@ Medium stuff:
 - some way to address an arbitrary amount of memory << this will make it turing complete, right?
 - clearer distinction between the phases. when we're done with cfg creation, we should just discard the code, for example. but we must keep the results of the scope analysis around...
 - reorganize statements such as... a + b * c  -> b * c + a, a + 5 + b -> a + b + 5, and so on.
+
 
 Big stuff:
 - GC
@@ -42,6 +50,10 @@ Big stuff:
   -- objects referencing other objects is the big stuff!!! so we basically need garbage collection in the real code generator (the python gc will take care of it in the interpreter phase)
 - Runtime
 - Compatibility with C libraries
+
+
+Random ideas:
+- Make it possible to have several return values. Because why not!
 
 
 ------------------------

@@ -234,12 +234,7 @@ class SecondPassScopeAnalyser(ScopeAnalyserVisitor):
 
   def visitNewExpression(self, e):
     super().visitNewExpression(e)
-
-    # FIXME: if the class name is not a class, return an error.
-    v = self.scopes[0].resolve(e.class_name)
-    if not v:
-      raise ScopeError("ScopeError: undeclared variable " + e.class_name, e.pos)
-    e.resolved_class_variable = v
+    self.visitFunctionCall(e.function_call)
 
 
 class ScopeAnalyser:
