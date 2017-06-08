@@ -607,6 +607,22 @@ class PseudoAssembler:
   def __createEpilogue(self):
     return []
 
+  def __createForStore(self, store):
+    if isinstance(store.what, Constant):
+      if isinstance(store.where, Global):
+        return [PAMov(PAConstant(store.what.value), PARegisterAndOffset(self.__globals_table_register, store.where.variable.offset))]
+      if isinstance(store.where, TemporaryVariable):
+        return [PAMov(PAConstant(store.what.value), self.__virtualRegister(store.where))]
+    else:
+      assert(isinstance(store.what, TemporaryVariable))
+      if isinstance(store.where, Global):
+        temp = self.__virtualRegister(store.what)
+        return [PAMov(temp, PARegisterAndOffset(self.__globals_table_register, store.where.variable.offset))]
+
+    print_error("Cannot create pseudo assembly for instruction:")
+    print_error(store)
+    assert(False)
+
   def __createForInstruction(self, instruction):
     if isinstance(instruction, Comment):
       return [PAComment(instruction.text)]
@@ -614,21 +630,13 @@ class PseudoAssembler:
     if isinstance(instruction, Label):
       return [PALabel(instruction.name)]
 
-    if isinstance(instruction, StoreConstantToGlobal):
-      return [PAMov(PAConstant(instruction.value), PARegisterAndOffset(self.__globals_table_register, instruction.variable.offset))]
-
-    if isinstance(instruction, StoreConstantToTemporary):
-      return [PAMov(PAConstant(instruction.value), self.__virtualRegister(instruction.variable))]
+    if isinstance(instruction, Store):
+      return self.__createForStore(instruction)
 
     if isinstance(instruction, LoadGlobalVariable):
       assert(isinstance(instruction.to_variable, TemporaryVariable))
       temp = self.__virtualRegister(instruction.to_variable)
       return [PAMov(PARegisterAndOffset(self.__globals_table_register, instruction.from_variable.offset), temp)]
-
-    if isinstance(instruction, StoreTemporaryToGlobal):
-      assert(isinstance(instruction.temporary_variable, TemporaryVariable))
-      temp = self.__virtualRegister(instruction.temporary_variable)
-      return [PAMov(temp, PARegisterAndOffset(self.__globals_table_register, instruction.variable.offset))]
 
     if isinstance(instruction, CreateFunctionContextForFunction):
       # FIXME: this doesn't work for inner functions yet
@@ -699,6 +707,12 @@ class PseudoAssembler:
 
     if isinstance(instruction, Goto):
       return [PAJump(instruction.label)]
+
+    if isinstance(instruction, GetReturnValue):
+      # This ignores the function context parameter. Maybe refactor and actually
+      # read the return value from the function context.
+      v = self.__virtualRegister(instruction.temporary_variable)
+      return [PAReturnValueToRegister(v)]
 
     print_error("Cannot create pseudo assembly for instruction:")
     print_error(instruction)

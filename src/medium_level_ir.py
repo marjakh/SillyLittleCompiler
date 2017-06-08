@@ -147,127 +147,92 @@ class TestGreaterOrEquals(TestWithOperator):
     super().__init__(left, right, ">=", true_label, false_label)
 
 
-class StoreConstant(MediumLevelIRInstruction):
-  def __init__(self, variable, value, comment):
-    super().__init__()
+class StoreTarget:
+  def __init__(self, variable, depth, is_param, comment):
     self.variable = variable
+    assert(depth >= -1) # -1 = global
+    self.depth = depth
+    self.comment = comment
+
+  def __str__(self):
+    return str(self.variable.name)
+
+
+class Local(StoreTarget):
+  def __init__(self, variable, depth, is_param):
+    assert(depth == 0)
+    assert(is_param == False)
+    super().__init__(variable, 0, False, "local")
+
+
+class Parameter(StoreTarget):
+  def __init__(self, variable, depth, is_param):
+    assert(depth == 0)
+    assert(is_param)
+    super().__init__(variable, 0, True, "parameter")
+
+
+class Global(StoreTarget):
+  def __init__(self, variable, depth, is_param):
+    assert(depth == -1)
+    assert(is_param == False)
+    super().__init__(variable, -1, False, "global")
+
+
+class OuterFunctionLocal(StoreTarget):
+  def __init__(self, variable, depth, is_param):
+    assert(depth > 0)
+    assert(is_param == False)
+    super().__init__(variable, depth, False, "outer function local")
+
+
+class OuterFunctionParameter:
+  def __init__(self, variable, depth):
+    assert(depth > 0)
+    assert(is_param)
+    super().__init__(variable, depth, True, "outer function parameter")
+
+
+store_targets = dict()
+store_targets["local"] = dict()
+store_targets["local"]["not_parameter"] = Local
+store_targets["local"]["parameter"] = Parameter
+store_targets["outer"] = dict()
+store_targets["outer"]["not_parameter"] = OuterFunctionLocal
+store_targets["outer"]["parameter"] = OuterFunctionParameter
+store_targets["global"] = dict()
+store_targets["global"]["not_parameter"] = Global
+
+
+class Constant:
+  def __init__(self, value):
     self.value = value
-    self.comment = comment
 
   def __str__(self):
-    return self.variable.name + " = " + str(self.value) + " # " + self.comment
+    return str(self.value)
 
 
-class StoreConstantToLocal(StoreConstant):
-  def __init__(self, variable, value, extra_parameter=None):
-    assert(extra_parameter == None)
-    super().__init__(variable, value, "store local, offset = " + str(variable.offset))
-
-
-class StoreConstantToGlobal(StoreConstant):
-  def __init__(self, variable, value, extra_parameter=None):
-    assert(extra_parameter == None)
-    super().__init__(variable, value, "store global, offset = " + str(variable.offset))
-
-
-class StoreConstantToParameter(StoreConstant):
-  def __init__(self, variable, value, extra_parameter=None):
-    assert(extra_parameter == None)
-    super().__init__(variable, value, "assign to parameter, offset = " + str(variable.offset))
-
-
-class StoreConstantToOuterFunctionLocal(StoreConstant):
-  def __init__(self, variable, value, levels_up):
-    assert(levels_up != None)
-    super().__init__(variable, value, "assign to outer function local")
-    self.levels_up = levels_up
+class Store(MediumLevelIRInstruction):
+  def __init__(self, what, where):
+    # To: temporary, local variable, global variable, parameter, outer function
+    # local, outer function parameter
+    assert(isinstance(where, StoreTarget) or isinstance(where, TemporaryVariable))
+    self.where = where
+    assert(isinstance(what, Constant) or isinstance(what, TemporaryVariable))
+    self.what = what
 
   def __str__(self):
-    return super().__str__() + " " + str(self.levels_up) + " levels up, offset = " + str(self.variable.offset)
+    if isinstance(self.what, Constant):
+      what = str(self.what)
+    else:
+      assert(isinstance(self.what, TemporaryVariable))
+      what = self.what.name
 
-
-class StoreConstantToOuterFunctionParameter(StoreConstant):
-  def __init__(self, variable, value, levels_up):
-    assert(levels_up != None)
-    super().__init__(variable, value, "assign to outer function parameter")
-    self.levels_up = levels_up
-
-  def __str__(self):
-    return super().__str__() + " " + str(self.levels_up) + " levels up, offset = " + str(self.variable.offset)
-
-
-class StoreConstantToTemporary(StoreConstant):
-  def __init__(self, temporary_variable, value, extra_parameter=None):
-    assert(extra_parameter == None)
-    super().__init__(temporary_variable, value, "assign to temporary")
-
-
-class StoreTemporary(MediumLevelIRInstruction):
-  def __init__(self, variable, temporary_variable, comment):
-    super().__init__()
-    self.variable = variable
-    self.temporary_variable = temporary_variable
-    self.comment = comment
-
-  def __str__(self):
-    return self.variable.name + " = " + str(self.temporary_variable.name) + " # " + self.comment
-
-
-class StoreTemporaryToLocal(StoreTemporary):
-  def __init__(self, variable, temporary_variable, extra_parameter=None):
-    assert(extra_parameter == None)
-    super().__init__(variable, temporary_variable, "assign to local")
-
-
-class StoreTemporaryToGlobal(StoreTemporary):
-  def __init__(self, variable, temporary_variable, extra_parameter=None):
-    assert(extra_parameter == None)
-    super().__init__(variable, temporary_variable, "assign to global")
-
-
-class StoreTemporaryToParameter(StoreTemporary):
-  def __init__(self, variable, temporary_variable, extra_parameter=None):
-    assert(extra_parameter == None)
-    super().__init__(variable, temporary_variable, "assign to parameter")
-
-
-class StoreTemporaryToOuterFunctionLocal(StoreTemporary):
-  def __init__(self, variable, temporary_variable, levels_up):
-    super().__init__(variable, temporary_variable, "assign to outer function local")
-    self.levels_up = levels_up
-
-  def __str__(self):
-    return super().__str__() + " " + str(self.levels_up) + " levels up"
-
-
-class StoreTemporaryToOuterFunctionParameter(StoreTemporary):
-  def __init__(self, variable, temporary_variable, levels_up):
-    super().__init__(variable, temporary_variable, "assign to outer function parameter")
-    self.levels_up = levels_up
-
-  def __str__(self):
-    return super().__str__() + " " + str(self.levels_up) + " levels up"
-
-store_functions = dict();
-store_functions["constant"] = dict();
-store_functions["constant"]["local"] = dict();
-store_functions["constant"]["local"]["not_parameter"] = StoreConstantToLocal;
-store_functions["constant"]["local"]["parameter"] = StoreConstantToParameter;
-store_functions["constant"]["outer"] = dict();
-store_functions["constant"]["outer"]["not_parameter"] = StoreConstantToOuterFunctionLocal;
-store_functions["constant"]["outer"]["parameter"] = StoreConstantToOuterFunctionParameter;
-store_functions["constant"]["global"] = dict();
-store_functions["constant"]["global"]["not_parameter"] = StoreConstantToGlobal;
-
-store_functions["not_constant"] = dict();
-store_functions["not_constant"]["local"] = dict();
-store_functions["not_constant"]["local"]["not_parameter"] = StoreTemporaryToLocal;
-store_functions["not_constant"]["local"]["parameter"] = StoreTemporaryToParameter;
-store_functions["not_constant"]["outer"] = dict();
-store_functions["not_constant"]["outer"]["not_parameter"] = StoreTemporaryToOuterFunctionLocal;
-store_functions["not_constant"]["outer"]["parameter"] = StoreTemporaryToOuterFunctionParameter;
-store_functions["not_constant"]["global"] = dict();
-store_functions["not_constant"]["global"]["not_parameter"] = StoreTemporaryToGlobal;
+    if isinstance(self.where, StoreTarget):
+      return str(self.where) + " = " + what + " # " + self.where.comment
+    else:
+      assert(isinstance(self.where, TemporaryVariable))
+      return str(self.where.name) + " = " + what
 
 
 class LoadVariable(MediumLevelIRInstruction):
@@ -703,23 +668,56 @@ class MediumLevelIRCreator:
     global = ...
     parameter = ...
     function_context_var = ...
+    array[index] = ...
     """
 
-    # Find the proper assignment function...
-    # FIXME: arrays impl
-    [variable_or_function, scope, is_parameter, extra_parameter] = self.__findVariableSpecs(statement.resolvedVariable())
-    assert(variable_or_function == "variable")
+    if isinstance(statement.where, ArrayIndexExpression):
+      # FIXME: arrays impl
+      assert(False)
 
+    where = self.__createStoreTarget(statement.resolvedVariable())
+
+    code = []
     if isinstance(statement.expression, NumberExpression):
-      is_constant = "constant"
-      return [store_functions[is_constant][scope][is_parameter](statement.resolvedVariable(), statement.expression.value, extra_parameter)]
+      what = Constant(statement.expression.value)
     else:
-      # Complex expressions.
-      is_constant = "not_constant"
-      [temporary, temporary_code] = self.__computeIntoTemporary(statement.expression);
-      return temporary_code + [store_functions[is_constant][scope][is_parameter](statement.resolvedVariable(), temporary, extra_parameter)]
+      # Complex expressions. Compute the expression into a temporary and then
+      # store that temporary.
+      [temporary, temporary_code] = self.__computeIntoTemporary(statement.expression)
+      what = temporary
+      code += temporary_code
+
+    code += [Store(what, where)]
+    return code
+
+  def __createStoreTarget(self, variable):
+    assert(variable)
+    assert(variable.variable_type == VariableType.variable)
+
+    if variable.allocation_scope == self.__current_function.scope:
+      scope = "local"
+      depth = 0
+    elif variable.allocation_scope.scope_type == ScopeType.top:
+      scope = "global"
+      depth = -1
+    else:
+      scope = "outer"
+      depth = 1
+      outer = self.__current_function.outer_function
+      assert(outer)
+      while variable.allocation_scope != outer.scope:
+        depth += 1
+        outer = outer.outer_function
+        assert(outer)
+
+    if variable.is_parameter:
+      is_parameter = "parameter"
+    else:
+      is_parameter = "not_parameter"
+      return store_targets[scope][is_parameter](variable, depth, variable.is_parameter)
 
   def __findVariableSpecs(self, variable):
+    # FIXME: refactor so that this func is not needed any more.
     extra_parameter = None
     assert(variable)
     if variable.variable_type == VariableType.variable:
@@ -750,20 +748,21 @@ class MediumLevelIRCreator:
     if isinstance(expression, NumberExpression):
       # TODO: optimization: many of these can be shortcut.
       temporary = self.__nextTemporary()
-      return [temporary, [StoreConstantToTemporary(temporary, expression.value)]]
+      return [temporary, [Store(Constant(expression.value), temporary)]]
 
     if isinstance(expression, FunctionCall):
+      # FIXME: isn't this just dead code? And GetReturnValue too!
       temporary_for_function_context = self.__nextTemporary()
       if expression.is_direct():
-        code = [CreateFunctionContextForFunction(temporary_for_function_context, expression.resolved_function)]
+        code = [CreateFunctionContextForFunction(temporary_for_function_context, expression.function.resolved_variable)]
       else:
-        code = [CreateFunctionContextFromVariable(temporary_for_function_context, expression.resolved_function)]
+        code = [CreateFunctionContextFromVariable(temporary_for_function_context, expression.function.resolved_variable)]
       for i in range(len(expression.parameters)):
         # TODO: optimization: if the parameter is trivial, we don't need to store it into a temporary
         [temporary, temporary_code] = self.__computeIntoTemporary(expression.parameters[i])
         code += temporary_code + [AddParameterToFunctionContext(temporary_for_function_context, i, temporary)]
       temporary_for_return_value = self.__nextTemporary()
-      code += [CallFunction(expression.resolved_function, temporary_for_function_context),
+      code += [CallFunction(expression.function.resolved_variable, temporary_for_function_context),
                GetReturnValue(temporary_for_return_value, temporary_for_function_context)]
       return [temporary_for_return_value, code]
 
@@ -774,6 +773,9 @@ class MediumLevelIRCreator:
 
     if isinstance(expression, AddExpression) or isinstance(expression, MultiplyExpression):
       return self.__accumulateAddExpressionOrMultiplyExpression(expression)
+
+    if isinstance(expression, NewExpression):
+      return self.__computeIntoTemporary(expression.function_call)
 
     print_error("Unable to create pseudo assembly for expression:")
     print_error(expression)
@@ -801,7 +803,7 @@ class MediumLevelIRCreator:
     while i < len(expression.items):
       if isinstance(expression.items[i], NumberExpression):
         temporary = self.__nextTemporary()
-        code.append(StoreConstantToTemporary(temporary, expression.items[i].value))
+        code.append(Store(Constant(expression.items[i].value), temporary))
       else:
         [temporary, new_code] = self.__computeIntoTemporary(expression.items[i])
         code.extend(new_code)
