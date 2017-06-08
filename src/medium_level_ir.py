@@ -147,7 +147,7 @@ class TestGreaterOrEquals(TestWithOperator):
     super().__init__(left, right, ">=", true_label, false_label)
 
 
-class StoreTarget:
+class StoreOrLoadTarget:
   def __init__(self, variable, depth, is_param, comment):
     self.variable = variable
     assert(depth >= -1) # -1 = global
@@ -158,28 +158,28 @@ class StoreTarget:
     return str(self.variable.name)
 
 
-class Local(StoreTarget):
+class Local(StoreOrLoadTarget):
   def __init__(self, variable, depth, is_param):
     assert(depth == 0)
     assert(is_param == False)
     super().__init__(variable, 0, False, "local")
 
 
-class Parameter(StoreTarget):
+class Parameter(StoreOrLoadTarget):
   def __init__(self, variable, depth, is_param):
     assert(depth == 0)
     assert(is_param)
     super().__init__(variable, 0, True, "parameter")
 
 
-class Global(StoreTarget):
+class Global(StoreOrLoadTarget):
   def __init__(self, variable, depth, is_param):
     assert(depth == -1)
     assert(is_param == False)
     super().__init__(variable, -1, False, "global")
 
 
-class OuterFunctionLocal(StoreTarget):
+class OuterFunctionLocal(StoreOrLoadTarget):
   def __init__(self, variable, depth, is_param):
     assert(depth > 0)
     assert(is_param == False)
@@ -193,15 +193,15 @@ class OuterFunctionParameter:
     super().__init__(variable, depth, True, "outer function parameter")
 
 
-store_targets = dict()
-store_targets["local"] = dict()
-store_targets["local"]["not_parameter"] = Local
-store_targets["local"]["parameter"] = Parameter
-store_targets["outer"] = dict()
-store_targets["outer"]["not_parameter"] = OuterFunctionLocal
-store_targets["outer"]["parameter"] = OuterFunctionParameter
-store_targets["global"] = dict()
-store_targets["global"]["not_parameter"] = Global
+store_or_load_targets = dict()
+store_or_load_targets["local"] = dict()
+store_or_load_targets["local"]["not_parameter"] = Local
+store_or_load_targets["local"]["parameter"] = Parameter
+store_or_load_targets["outer"] = dict()
+store_or_load_targets["outer"]["not_parameter"] = OuterFunctionLocal
+store_or_load_targets["outer"]["parameter"] = OuterFunctionParameter
+store_or_load_targets["global"] = dict()
+store_or_load_targets["global"]["not_parameter"] = Global
 
 
 class Constant:
@@ -212,11 +212,24 @@ class Constant:
     return str(self.value)
 
 
+class Load(MediumLevelIRInstruction):
+  def __init__(self, what, where):
+    assert(isinstance(where, TemporaryVariable))
+    self.where = where
+    # From: temporary, local variable, global variable, parameter, outer
+    # function local, outer function parameter
+    assert(isinstance(what, StoreOrLoadTarget))
+    self.what = what
+
+  def __str__(self):
+    return self.where.name + " = " + str(self.what) + " # " + self.what.comment
+
+
 class Store(MediumLevelIRInstruction):
   def __init__(self, what, where):
     # To: temporary, local variable, global variable, parameter, outer function
     # local, outer function parameter
-    assert(isinstance(where, StoreTarget) or isinstance(where, TemporaryVariable))
+    assert(isinstance(where, StoreOrLoadTarget) or isinstance(where, TemporaryVariable))
     self.where = where
     assert(isinstance(what, Constant) or isinstance(what, TemporaryVariable))
     self.what = what
@@ -228,112 +241,11 @@ class Store(MediumLevelIRInstruction):
       assert(isinstance(self.what, TemporaryVariable))
       what = self.what.name
 
-    if isinstance(self.where, StoreTarget):
+    if isinstance(self.where, StoreOrLoadTarget):
       return str(self.where) + " = " + what + " # " + self.where.comment
     else:
       assert(isinstance(self.where, TemporaryVariable))
-      return str(self.where.name) + " = " + what
-
-
-class LoadVariable(MediumLevelIRInstruction):
-  def __init__(self, to_variable, from_variable, comment):
-    super().__init__()
-    self.to_variable = to_variable
-    self.from_variable = from_variable
-    self.comment = comment
-
-  def __str__(self):
-    return self.to_variable.name + " = " + self.from_variable.name + " # " + self.comment
-
-
-class LoadLocalVariable(LoadVariable):
-  def __init__(self, to_variable, from_variable, extra_parameter=None):
-    assert(extra_parameter == None)
-    super().__init__(to_variable, from_variable, "load local")
-
-
-class LoadGlobalVariable(LoadVariable):
-  def __init__(self, to_variable, from_variable, extra_parameter=None):
-    assert(extra_parameter == None)
-    super().__init__(to_variable, from_variable, "load global")
-
-
-class LoadParameter(LoadVariable):
-  def __init__(self, to_variable, from_variable, extra_parameter=None):
-    assert(extra_parameter == None)
-    super().__init__(to_variable, from_variable, "load parameter")
-
-
-class LoadOuterFunctionLocalVariable(LoadVariable):
-  def __init__(self, to_variable, from_variable, levels_up):
-    assert(levels_up != None)
-    super().__init__(to_variable, from_variable, "load outer function local")
-    self.levels_up = levels_up
-
-  def __str__(self):
-    return super().__str__() + " " + str(self.levels_up) + " levels up"
-
-
-class LoadOuterFunctionParameter(LoadVariable):
-  def __init__(self, to_variable, from_variable, levels_up):
-    assert(levels_up != None)
-    super().__init__(to_variable, from_variable, "load outer function parameter")
-    self.levels_up = levels_up
-
-  def __str__(self):
-    return super().__str__() + " " + str(self.levels_up) + " levels up"
-
-
-class LoadFunction(MediumLevelIRInstruction):
-  def __init__(self, to_variable, function, loader_function_name):
-    super().__init__()
-    self.to_variable = to_variable
-    self.function = function
-    self.loader_function_name = loader_function_name
-
-  def __str__(self):
-    return self.to_variable.name + " = " + self.loader_function_name + "(" + self.function.name
-
-
-class LoadGlobalFunction(LoadFunction):
-  def __init__(self, to_variable, function, extra_parameter=None):
-    assert(extra_parameter == None)
-    super().__init__(to_variable, function, "GlobalFunctionObject")
-
-  def __str__(self):
-    return super().__str__() + ")"
-
-
-# The inner function in question can be directly inside this function or inner
-# function of some of the outer functions.
-class LoadInnerFunction(LoadFunction):
-  def __init__(self, to_variable, function, levels_up=0):
-    if not levels_up:
-      levels_up = 0
-    self.levels_up = levels_up
-    super().__init__(to_variable, function, "CreateClosure")
-
-  def __str__(self):
-    return super().__str__() + ", " + str(self.levels_up) + ")"
-
-
-load_functions = dict();
-load_functions["variable"] = dict();
-load_functions["variable"]["local"] = dict();
-load_functions["variable"]["local"]["not_parameter"] = LoadLocalVariable;
-load_functions["variable"]["local"]["parameter"] = LoadParameter;
-load_functions["variable"]["outer"] = dict();
-load_functions["variable"]["outer"]["not_parameter"] = LoadOuterFunctionLocalVariable;
-load_functions["variable"]["outer"]["parameter"] = LoadOuterFunctionParameter;
-load_functions["variable"]["global"] = dict();
-load_functions["variable"]["global"]["not_parameter"] = LoadGlobalVariable;
-load_functions["function"] = dict();
-load_functions["function"]["local"] = dict();
-load_functions["function"]["local"]["not_parameter"] = LoadInnerFunction;
-load_functions["function"]["outer"] = dict();
-load_functions["function"]["outer"]["not_parameter"] = LoadInnerFunction;
-load_functions["function"]["global"] = dict();
-load_functions["function"]["global"]["not_parameter"] = LoadGlobalFunction;
+      return self.where.name + " = " + what
 
 
 class ArithmeticOperation(MediumLevelIRInstruction):
@@ -675,7 +587,7 @@ class MediumLevelIRCreator:
       # FIXME: arrays impl
       assert(False)
 
-    where = self.__createStoreTarget(statement.resolvedVariable())
+    where = self.__createStoreOrLoadTarget(statement.resolvedVariable())
 
     code = []
     if isinstance(statement.expression, NumberExpression):
@@ -690,7 +602,7 @@ class MediumLevelIRCreator:
     code += [Store(what, where)]
     return code
 
-  def __createStoreTarget(self, variable):
+  def __createStoreOrLoadTarget(self, variable):
     assert(variable)
     assert(variable.variable_type == VariableType.variable)
 
@@ -714,7 +626,7 @@ class MediumLevelIRCreator:
       is_parameter = "parameter"
     else:
       is_parameter = "not_parameter"
-      return store_targets[scope][is_parameter](variable, depth, variable.is_parameter)
+      return store_or_load_targets[scope][is_parameter](variable, depth, variable.is_parameter)
 
   def __findVariableSpecs(self, variable):
     # FIXME: refactor so that this func is not needed any more.
@@ -768,8 +680,9 @@ class MediumLevelIRCreator:
 
     if isinstance(expression, VariableExpression):
       temporary = self.__nextTemporary()
-      [variable_or_function, scope, is_parameter, extra_parameter] = self.__findVariableSpecs(expression.resolved_variable)
-      return [temporary, [load_functions[variable_or_function][scope][is_parameter](temporary, expression.resolved_variable, extra_parameter)]]
+
+      what = self.__createStoreOrLoadTarget(expression.resolved_variable)
+      return [temporary, [Load(what, temporary)]]
 
     if isinstance(expression, AddExpression) or isinstance(expression, MultiplyExpression):
       return self.__accumulateAddExpressionOrMultiplyExpression(expression)

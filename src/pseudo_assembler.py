@@ -607,6 +607,20 @@ class PseudoAssembler:
   def __createEpilogue(self):
     return []
 
+  def __cannotCreate(self, instruction):
+    print_error("Cannot create pseudo assembly for instruction:")
+    print_error(instruction)
+    assert(False)
+
+  def __createForLoad(self, load):
+    assert(isinstance(load.where, TemporaryVariable))
+    if isinstance(load.what, Global):
+      temp = self.__virtualRegister(load.where)
+      return [PAMov(PARegisterAndOffset(self.__globals_table_register, load.what.variable.offset), temp)]
+
+    # FIXME: implement the rest
+    self.__cannotCreate(load)
+
   def __createForStore(self, store):
     if isinstance(store.what, Constant):
       if isinstance(store.where, Global):
@@ -619,9 +633,9 @@ class PseudoAssembler:
         temp = self.__virtualRegister(store.what)
         return [PAMov(temp, PARegisterAndOffset(self.__globals_table_register, store.where.variable.offset))]
 
-    print_error("Cannot create pseudo assembly for instruction:")
-    print_error(store)
-    assert(False)
+    # FIXME: implement the rest
+    self.__cannotCreate(store)
+
 
   def __createForInstruction(self, instruction):
     if isinstance(instruction, Comment):
@@ -630,13 +644,11 @@ class PseudoAssembler:
     if isinstance(instruction, Label):
       return [PALabel(instruction.name)]
 
+    if isinstance(instruction, Load):
+      return self.__createForLoad(instruction)
+
     if isinstance(instruction, Store):
       return self.__createForStore(instruction)
-
-    if isinstance(instruction, LoadGlobalVariable):
-      assert(isinstance(instruction.to_variable, TemporaryVariable))
-      temp = self.__virtualRegister(instruction.to_variable)
-      return [PAMov(PARegisterAndOffset(self.__globals_table_register, instruction.from_variable.offset), temp)]
 
     if isinstance(instruction, CreateFunctionContextForFunction):
       # FIXME: this doesn't work for inner functions yet
@@ -714,10 +726,7 @@ class PseudoAssembler:
       v = self.__virtualRegister(instruction.temporary_variable)
       return [PAReturnValueToRegister(v)]
 
-    print_error("Cannot create pseudo assembly for instruction:")
-    print_error(instruction)
-    assert(False)
-    return []
+    self.__cannotCreate(instruction)
 
   def create(self, ir): # FIXME: cleaner if we give the ir to the ctor
     self.__metadata = ir.metadata
