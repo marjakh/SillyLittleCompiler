@@ -148,6 +148,11 @@ class TestGreaterOrEquals(TestWithOperator):
 
 
 class StoreOrLoadTarget:
+  def __init__(self):
+    pass
+
+
+class StoreOrLoadTargetWithVariable(StoreOrLoadTarget):
   def __init__(self, variable, depth, is_param, comment):
     self.variable = variable
     assert(depth >= -1) # -1 = global
@@ -158,39 +163,51 @@ class StoreOrLoadTarget:
     return str(self.variable.name)
 
 
-class Local(StoreOrLoadTarget):
+class Local(StoreOrLoadTargetWithVariable):
   def __init__(self, variable, depth, is_param):
     assert(depth == 0)
     assert(is_param == False)
     super().__init__(variable, 0, False, "local")
 
 
-class Parameter(StoreOrLoadTarget):
+class Parameter(StoreOrLoadTargetWithVariable):
   def __init__(self, variable, depth, is_param):
     assert(depth == 0)
     assert(is_param)
     super().__init__(variable, 0, True, "parameter")
 
 
-class Global(StoreOrLoadTarget):
+class Global(StoreOrLoadTargetWithVariable):
   def __init__(self, variable, depth, is_param):
     assert(depth == -1)
     assert(is_param == False)
     super().__init__(variable, -1, False, "global")
 
 
-class OuterFunctionLocal(StoreOrLoadTarget):
+class OuterFunctionLocal(StoreOrLoadTargetWithVariable):
   def __init__(self, variable, depth, is_param):
     assert(depth > 0)
     assert(is_param == False)
     super().__init__(variable, depth, False, "outer function local")
 
 
-class OuterFunctionParameter:
+class OuterFunctionParameter(StoreOrLoadTargetWithVariable):
   def __init__(self, variable, depth):
     assert(depth > 0)
     assert(is_param)
     super().__init__(variable, depth, True, "outer function parameter")
+
+
+class Array(StoreOrLoadTarget):
+  def __init__(self, base, index):
+    assert(isinstance(base, StoreOrLoadTarget))
+    assert(isinstance(index, Constant) or isinstance(index, TemporaryVariable))
+    self.base = base
+    self.index = index
+    self.comment = base.comment + " array"
+
+  def __str__(self):
+    return str(self.base) + "[" + self.index.name + "]"
 
 
 store_or_load_targets = dict()
@@ -583,13 +600,11 @@ class MediumLevelIRCreator:
     array[index] = ...
     """
 
-    if isinstance(statement.where, ArrayIndexExpression):
-      # FIXME: arrays impl
-      assert(False)
+    # FIXME: there shouldn't be a resolvedVariable in the statement (but there
+    # is - fix that!).. maybe there should be one in statement.where.
 
-    where = self.__createStoreOrLoadTarget(statement.resolvedVariable())
+    [where, code] = self.__createStoreOrLoadTarget(statement.where)
 
-    code = []
     if isinstance(statement.expression, NumberExpression):
       what = Constant(statement.expression.value)
     else:
@@ -602,8 +617,18 @@ class MediumLevelIRCreator:
     code += [Store(what, where)]
     return code
 
-  def __createStoreOrLoadTarget(self, variable):
+  def __createStoreOrLoadTarget(self, thing):
+    if isinstance(thing, ArrayIndexExpression):
+      [base, base_code] = self.__createStoreOrLoadTarget(thing.array)
+      # FIXME: shortcut constant indices
+      [temporary_for_index, code] = self.__computeIntoTemporary(thing.index)
+      return [Array(base, temporary_for_index), base_code + code]
+
+    assert(isinstance(thing, VariableExpression))
+    variable = thing.resolved_variable
+
     assert(variable)
+    # FIXME: loading functions should be fine too?
     assert(variable.variable_type == VariableType.variable)
 
     if variable.allocation_scope == self.__current_function.scope:
@@ -626,35 +651,7 @@ class MediumLevelIRCreator:
       is_parameter = "parameter"
     else:
       is_parameter = "not_parameter"
-      return store_or_load_targets[scope][is_parameter](variable, depth, variable.is_parameter)
-
-  def __findVariableSpecs(self, variable):
-    # FIXME: refactor so that this func is not needed any more.
-    extra_parameter = None
-    assert(variable)
-    if variable.variable_type == VariableType.variable:
-      variable_or_function = "variable"
-    else:
-      variable_or_function = "function" # FIXME: builtins
-    if variable.allocation_scope == self.__current_function.scope:
-      scope = "local"
-    elif variable.allocation_scope.scope_type == ScopeType.top:
-      scope = "global"
-    else:
-      scope = "outer"
-      extra_parameter = 1
-      outer = self.__current_function.outer_function
-      assert(outer)
-      while variable.allocation_scope != outer.scope:
-        extra_parameter += 1
-        outer = outer.outer_function
-        assert(outer)
-
-    if variable.is_parameter:
-      is_parameter = "parameter"
-    else:
-      is_parameter = "not_parameter"
-    return [variable_or_function, scope, is_parameter, extra_parameter]
+    return [store_or_load_targets[scope][is_parameter](variable, depth, variable.is_parameter), []]
 
   def __computeIntoTemporary(self, expression):
     if isinstance(expression, NumberExpression):
@@ -680,9 +677,13 @@ class MediumLevelIRCreator:
 
     if isinstance(expression, VariableExpression):
       temporary = self.__nextTemporary()
+      [what, code] = self.__createStoreOrLoadTarget(expression)
+      return [temporary, code + [Load(what, temporary)]]
 
-      what = self.__createStoreOrLoadTarget(expression.resolved_variable)
-      return [temporary, [Load(what, temporary)]]
+    if isinstance(expression, ArrayIndexExpression):
+      temporary = self.__nextTemporary()
+      [what, code] = self.__createStoreOrLoadTarget(expression)
+      return [temporary, code + [Load(what, temporary)]]
 
     if isinstance(expression, AddExpression) or isinstance(expression, MultiplyExpression):
       return self.__accumulateAddExpressionOrMultiplyExpression(expression)
