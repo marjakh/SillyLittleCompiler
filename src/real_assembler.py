@@ -77,7 +77,7 @@ class RealAssembler:
       action = RegisterAllocator.tryToAllocate(pseudo_assembly.metadata.registers,
                                                real_registers)
       if isinstance(action, Spill):
-        # print_debug("Spilling " + str(action.register))
+        # print_debug("Spilling " + str(action.register) + " to position " + str(spill_position))
         pseudo_assembly.spill(action.register, spill_position)
         spill_position += 1
       elif isinstance(action, RegisterAllocationDone):
@@ -95,6 +95,7 @@ class RealAssembler:
     program.append(PAPush(ebp))
     program.append(PAMov(esp, ebp))
     # FIXME: magic number
+    program.append(PAComment("Number of spills: " + str(spill_position)))
     program.append(PASub(PAConstant(spill_position * 4), esp))
     for b in pseudo_assembly.blocks:
       for i in b.instructions:

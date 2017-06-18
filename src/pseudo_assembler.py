@@ -302,7 +302,7 @@ class PALoadSpilled(PseudoAssemblerInstruction):
 
   def __str__(self):
     # FIXME: magic number
-    return "movl -" + str(self.position * 4) + "(%ebp), " + str(self.register)
+    return "movl -" + str(self.position * 4) + "(%ebp), " + str(self.register) + " # Load spilled"
 
   def replaceRegisters(self, assigned_registers):
     self.register = PseudoAssemblerInstruction.replaceRegistersIn(self.register, self, assigned_registers)
@@ -322,7 +322,7 @@ class PAStoreSpilled(PseudoAssemblerInstruction):
 
   def __str__(self):
     # FIXME: magic number
-    return "movl " + str(self.register) + ", -" + str(self.position * 4) + "(%ebp)"
+    return "movl " + str(self.register) + ", -" + str(self.position * 4) + "(%ebp) # Store spilled"
 
   def replaceRegisters(self, assigned_registers):
     self.register = PseudoAssemblerInstruction.replaceRegistersIn(self.register, self, assigned_registers)
@@ -674,12 +674,17 @@ class PseudoAssembler:
       if instruction.function.variable_type == VariableType.builtin_function:
         temp = self.__virtualRegister(instruction.temporary_for_function_context)
         new_function_context_register = self.registers.nextRegister()
-        code = [PAPushCallerSaveRegisters(),
+        code = [PAComment("Calling builtin function"),
+                PAPushCallerSaveRegisters(),
                 PAPush(temp),
                 PACallBuiltinFunction(instruction.function.name),
                 PAClearStack(1),
                 PAPopCallerSaveRegisters(),
-                PAMov(PARegisterAndOffset(temp, 0), new_function_context_register)]
+                # Restore the function context (and to be maximally flexible, we
+                # use a new virtual register for it (since it doesn't need to be
+                # the same register as before).
+                PAMov(PARegisterAndOffset(temp, 0), new_function_context_register),
+                PAComment("Calling builtin function done")]
         self.__function_context_register = new_function_context_register
         return code
 
