@@ -614,14 +614,62 @@ class PseudoAssembler:
 
   def __createForLoad(self, load):
     assert(isinstance(load.where, TemporaryVariable))
+    temp = self.__virtualRegister(load.where)
     if isinstance(load.what, Global):
-      temp = self.__virtualRegister(load.where)
       return [PAMov(PARegisterAndOffset(self.__globals_table_register, load.what.variable.offset), temp)]
+
+    if isinstance(load.what, Array):
+      [address_register, code] = self.__createLoadArray(load.what)
+      return [PAComment("Load from array")] + code + [PAMov(PARegisterAndOffset(address_register, 0), temp), PAComment("Load from array done")]
 
     # FIXME: implement the rest
     self.__cannotCreate(load)
 
+  def __createLoadArray(self, array):
+    assert(isinstance(array.base, StoreOrLoadTarget))
+    code = [PAComment("Computing array address")]
+    if isinstance(array.base, Global):
+      # global[%temp] or global[constant]
+
+      # FIXME: refactor this; the array is just an address which is the value of
+      # the global variable, so we should just load that value. Create a Load
+      # with this temp as load.where and array.base as load.what.
+      address_register = self.registers.nextRegister()
+      code += [PAMov(PARegisterAndOffset(self.__globals_table_register, array.base.variable.offset), address_register)]
+
+      # FIXME: magic number for size
+      if isinstance(array.index, Constant):
+        # FIXME: does this actually happen ever?
+        assert(False)
+      else:
+        assert(isinstance(array.index, TemporaryVariable))
+        constant_register = self.registers.nextRegister()
+        address_register2 = self.registers.nextRegister()
+        code += [PAMov(self.__virtualRegister(array.index), self.__eax),
+                 PAMov(PAConstant(4), constant_register),
+                 PAPush(self.__edx),
+                 PAMov(PAConstant(0), self.__edx),
+                 PAMul(constant_register),
+                 PAPop(self.__edx),
+                 PAMov(self.__eax, address_register2),
+                 PAAdd(address_register, address_register2)]
+      code += [PAComment("Computing array address done")]
+      return [address_register2, code]
+    # FIXME: impl
+    assert(False)
+
+
   def __createForStore(self, store):
+    assert(isinstance(store.where, StoreOrLoadTarget) or isinstance(store.where, TemporaryVariable))
+    if isinstance(store.where, Array):
+      [address_register, code] = self.__createLoadArray(store.where)
+      code.insert(0, PAComment("Store to array"))
+      if isinstance(store.what, Constant):
+        code += [PAMov(PAConstant(store.what.value), PARegisterAndOffset(address_register, 0)), PAComment("Store to array done")]
+        return code
+      # FIXME: impl
+      assert(False)
+
     if isinstance(store.what, Constant):
       if isinstance(store.where, Global):
         return [PAMov(PAConstant(store.what.value), PARegisterAndOffset(self.__globals_table_register, store.where.variable.offset))]
@@ -638,6 +686,9 @@ class PseudoAssembler:
 
 
   def __createForInstruction(self, instruction):
+    return [PAComment("Instruction: " + str(instruction))] + self.__createForInstructionWithoutComment(instruction)
+
+  def __createForInstructionWithoutComment(self, instruction):
     if isinstance(instruction, Comment):
       return [PAComment(instruction.text)]
 
@@ -707,7 +758,12 @@ class PseudoAssembler:
       v_from1 = self.__virtualRegister(instruction.from_variable1)
       v_from2 = self.__virtualRegister(instruction.from_variable2)
       v_to = self.__virtualRegister(instruction.to_variable)
-      return [PAMov(v_from1, self.__eax), PAMul(v_from2), PAMov(self.__eax, v_to)]
+      return [PAMov(v_from1, self.__eax),
+              PAPush(self.__edx),
+              PAMov(PAConstant(0), self.__edx),
+              PAMul(v_from2),
+              PAPop(self.__edx),
+              PAMov(self.__eax, v_to)]
 
     if isinstance(instruction, DivideTemporaryByTemporary):
       v_from1 = self.__virtualRegister(instruction.from_variable1)

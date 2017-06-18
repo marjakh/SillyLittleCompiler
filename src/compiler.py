@@ -27,6 +27,7 @@ if __name__ == "__main__":
   sa.builtins.add("write")
   sa.builtins.add("id")
   sa.builtins.add("nth")
+  sa.builtins.add("Array")
   sa.analyse()
 
   if not sa.success:
