@@ -80,6 +80,11 @@ class PAConstant:
 class PAVirtualRegister(PARegister):
   def __init__(self, i):
     super().__init__("v" + str(i))
+    # Which real registers this virtual register cannot use.
+    self.conflicts = set()
+
+  def addConflict(self, register):
+    self.conflicts.add(register)
 
   def registersWrittenIfTarget(self):
     return [self]
@@ -653,6 +658,7 @@ class PseudoAssembler:
                  PAPop(self.__edx),
                  PAMov(self.__eax, address_register2),
                  PAAdd(address_register, address_register2)]
+        constant_register.addConflict(self.__edx)
       code += [PAComment("Computing array address done")]
       return [address_register2, code]
     # FIXME: impl
@@ -758,6 +764,7 @@ class PseudoAssembler:
       v_from1 = self.__virtualRegister(instruction.from_variable1)
       v_from2 = self.__virtualRegister(instruction.from_variable2)
       v_to = self.__virtualRegister(instruction.to_variable)
+      v_from2.addConflict(self.__edx)
       return [PAMov(v_from1, self.__eax),
               PAPush(self.__edx),
               PAMov(PAConstant(0), self.__edx),

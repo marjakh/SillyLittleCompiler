@@ -1,5 +1,7 @@
 #!/usr/bin/python3
 
+from pseudo_assembler import PARegister
+from real_assembler import Register
 from util import listToString, toString, print_debug
 
 """
@@ -10,11 +12,11 @@ https://www.cs.princeton.edu/courses/archive/spr05/cos320/notes/Register%20Alloc
 """
 
 class Node:
-  def __init__(self, register):
+  def __init__(self, register, assigned_register = None):
     self.register = register
     self.simplified = False
     self.conflicts = set()
-    self.assigned_register = None
+    self.assigned_register = assigned_register
 
   def __str__(self):
     return toString(self.register)
@@ -105,7 +107,31 @@ class RegisterAllocator:
           node1.addConflict(node2)
           node2.addConflict(node1)
 
+    # Add a node for each real register.
+    unreal_nodes = len(nodes)
+
     k = len(real_registers)
+    for i in range(k):
+      nodes += [Node(real_registers[i], real_registers[i])]
+
+    # Add conflicts for cases where some virtual registers cannot be allocated
+    # to some real registers.
+    for i in range(unreal_nodes):
+      node = nodes[i]
+      assert(node.assigned_register == None)
+      # FIXME: this is more complicated than needed because of the mismatch:
+      # real registers are Registers, but in the conflict list we have the
+      # corresponding PARegisters.
+      for c in node.register.conflicts:
+        assert(isinstance(c, PARegister))
+        for j in range(k):
+          real_register_node = nodes[unreal_nodes + j]
+          assert(real_register_node.assigned_register != None)
+          assert(isinstance(real_register_node.assigned_register, Register))
+          if real_register_node.assigned_register.name == c.name:
+            real_register_node.addConflict(node)
+            node.addConflict(real_register_node)
+
     # Simplify nodes whose degree is less than k - we can always find a register for them.
     simplified = []
 
@@ -137,6 +163,9 @@ class RegisterAllocator:
     max_conflicts = 0
     max_conflict_register = None
     for node in nodes:
+      if node.assigned_register:
+        # Don't spill real registers.
+        break
       c = node.conflictCount()
       if c > max_conflicts:
         max_conflicts = c
