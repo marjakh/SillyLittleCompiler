@@ -9,5 +9,6 @@ void builtin_write(void** function_context) {
 
 void* builtin_Array(void** function_context) {
   int size = (int) function_context[3];
-  return runtime_allocate(size);
+  // FIXME: magic number
+  return runtime_allocate(size * sizeof(int));
 }

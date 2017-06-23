@@ -1,0 +1,14 @@
+let len = 5;
+let a = new Array(len);
+let i = 0;
+while (i < len) {
+  a[i] = i;
+  i = i + 1;
+}
+i = 0;
+let sum = 0;
+while (i < len) {
+  sum = sum + a[i];
+  i = i + 1;
+}
+write(sum);

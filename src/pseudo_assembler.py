@@ -673,8 +673,10 @@ class PseudoAssembler:
       if isinstance(store.what, Constant):
         code += [PAMov(PAConstant(store.what.value), PARegisterAndOffset(address_register, 0)), PAComment("Store to array done")]
         return code
-      # FIXME: impl
-      assert(False)
+      else:
+        assert(isinstance(store.what, TemporaryVariable))
+        code += [PAMov(self.__virtualRegister(store.what), PARegisterAndOffset(address_register, 0)), PAComment("Store to array done")]
+        return code
 
     if isinstance(store.what, Constant):
       if isinstance(store.where, Global):
