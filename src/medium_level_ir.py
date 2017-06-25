@@ -57,15 +57,34 @@ def computeVariableOffsetsForFunction(f):
   for v in f.local_variables:
     v.offset = offset
     offset += 4
+
+  # FIXME: how do f.local_variables relate to f.scope.variables?
+  max_offset = offset
+  for s in f.scope.children:
+    if s.scope_type == ScopeType.function:
+      continue
+    assert(s.scope_type == ScopeType.sub)
+    new_offset = computeVariableOffsetsForNonFunctionScope(s, offset)
+    if new_offset > max_offset:
+      max_offset = new_offset
+  return max_offset
+
   return offset
 
-def computeVariableOffsetsForTopScope(top_scope):
-  offset = 0
-  for v in top_scope.variables:
+def computeVariableOffsetsForNonFunctionScope(scope, offset=0):
+  for v in scope.variables:
     if v.variable_type == VariableType.variable:
       v.offset = offset
       offset += 4
-  return offset
+  max_offset = offset
+  for s in scope.children:
+    if s.scope_type == ScopeType.function:
+      continue
+    assert(s.scope_type == ScopeType.sub)
+    new_offset = computeVariableOffsetsForNonFunctionScope(s, offset)
+    if new_offset > max_offset:
+      max_offset = new_offset
+  return max_offset
 
 
 class TemporaryVariable(Variable):
@@ -485,7 +504,7 @@ class MediumLevelIRCreator:
     for [f, cfg] in cfgs:
       assert(f)
       if f.name == "%main":
-        metadata.function_context_shapes[f.name] = computeVariableOffsetsForTopScope(top_scope)
+        metadata.function_context_shapes[f.name] = computeVariableOffsetsForNonFunctionScope(top_scope)
       else:
         metadata.function_context_shapes[f.name] = computeVariableOffsetsForFunction(f)
 
