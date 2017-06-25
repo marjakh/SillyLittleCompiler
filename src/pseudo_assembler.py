@@ -817,9 +817,9 @@ class PseudoAssembler:
 
     blocks.append(PseudoAssemblyBasicBlock(ir.blocks[-1].id + 1, [], self.__createEpilogue()))
 
-    # print("Pseudo assembly program:")
+    # print_debug("Pseudo assembly program:")
     # for b in blocks:
-    #   print(listToString(b.instructions, "", "", "\n"))
+    #   print_debug(listToString(b.instructions, "", "", "\n"))
 
     return PseudoAssembly(blocks, PseudoAssemblyMetadata(self.registers))
 
