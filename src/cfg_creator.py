@@ -66,6 +66,7 @@ class CfgCreatorVisitor(ParseTreeVisitor):
     self.visit_expressions = False
     self.__basic_blocks = []
     self.__basic_block_stack = [self.__newBasicBlock()]
+    self.__loop_condition_stack = [None]
     self.__cfgs = cfgs # Output goes here
 
   def __currentBlock(self):
@@ -121,6 +122,7 @@ class CfgCreatorVisitor(ParseTreeVisitor):
     self.__basic_block_stack.append(else_block)
     self.__basic_block_stack.append(if_block)
     super().visitIfStatement(statement)
+    # FIXME: is there a bug in having an if statement inside a while statement? Or the other way around?
 
   def visitIfStatementEndBody(self, statement):
     self.__basic_block_stack.pop()
@@ -159,11 +161,16 @@ class CfgCreatorVisitor(ParseTreeVisitor):
     dummy_block.next = BasicBlockBranch(statement.expression, body_block, after_block)
     body_block.next = dummy_block
 
+    after_block.next = self.__loop_condition_stack[-1]
+    self.__loop_condition_stack.append(dummy_block)
+
     self.__basic_block_stack.pop()
     self.__basic_block_stack.append(after_block)
     self.__basic_block_stack.append(body_block)
 
     super().visitWhileStatement(statement)
+
+    self.__loop_condition_stack.pop()
 
   def visitWhileStatementEndBody(self, statement):
     self.__basic_block_stack.pop()
