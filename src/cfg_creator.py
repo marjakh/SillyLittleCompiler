@@ -111,6 +111,7 @@ class CfgCreatorVisitor(ParseTreeVisitor):
     if_block.next = after_block
     if else_block:
       else_block.next = after_block
+    after_block.next = self.__loop_condition_stack[-1]
 
     # print_debug("Adding branch as next to block " + str(self.__currentBlock().id))
     self.__currentBlock().next = BasicBlockBranch(statement.expression, if_block,
