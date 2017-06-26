@@ -66,7 +66,7 @@ class CfgCreatorVisitor(ParseTreeVisitor):
     self.visit_expressions = False
     self.__basic_blocks = []
     self.__basic_block_stack = [self.__newBasicBlock()]
-    self.__loop_condition_stack = [None]
+    self.__next_block_stack = [None]
     self.__cfgs = cfgs # Output goes here
 
   def __currentBlock(self):
@@ -111,7 +111,7 @@ class CfgCreatorVisitor(ParseTreeVisitor):
     if_block.next = after_block
     if else_block:
       else_block.next = after_block
-    after_block.next = self.__loop_condition_stack[-1]
+    after_block.next = self.__next_block_stack[-1]
 
     # print_debug("Adding branch as next to block " + str(self.__currentBlock().id))
     self.__currentBlock().next = BasicBlockBranch(statement.expression, if_block,
@@ -122,8 +122,12 @@ class CfgCreatorVisitor(ParseTreeVisitor):
     # else_block might be None but that's fine, we just pop it out.
     self.__basic_block_stack.append(else_block)
     self.__basic_block_stack.append(if_block)
+
+    self.__next_block_stack.append(after_block)
+
     super().visitIfStatement(statement)
-    # FIXME: is there a bug in having an if statement inside a while statement? Or the other way around?
+
+    self.__next_block_stack.pop()
 
   def visitIfStatementEndBody(self, statement):
     self.__basic_block_stack.pop()
@@ -162,8 +166,8 @@ class CfgCreatorVisitor(ParseTreeVisitor):
     dummy_block.next = BasicBlockBranch(statement.expression, body_block, after_block)
     body_block.next = dummy_block
 
-    after_block.next = self.__loop_condition_stack[-1]
-    self.__loop_condition_stack.append(dummy_block)
+    after_block.next = self.__next_block_stack[-1]
+    self.__next_block_stack.append(dummy_block)
 
     self.__basic_block_stack.pop()
     self.__basic_block_stack.append(after_block)
@@ -171,7 +175,7 @@ class CfgCreatorVisitor(ParseTreeVisitor):
 
     super().visitWhileStatement(statement)
 
-    self.__loop_condition_stack.pop()
+    self.__next_block_stack.pop()
 
   def visitWhileStatementEndBody(self, statement):
     self.__basic_block_stack.pop()

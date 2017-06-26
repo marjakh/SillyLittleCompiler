@@ -1,0 +1,15 @@
+write(0);
+if (0 == 0) {
+  write(1);
+  if (0 == 1) {
+    write(2);
+  }
+  write(3);
+  if (0 == 1) {
+    write(4);
+  } else {
+    write(5);
+  }
+  write(6);
+}
+write(7);

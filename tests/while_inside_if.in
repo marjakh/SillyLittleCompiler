@@ -1,0 +1,12 @@
+let i = 0;
+if (i == 0) {
+  write(0);
+  while (i < 3) {
+    write(1);
+    i = i + 1;
+  }
+  write(2);
+} else {
+  write(3);
+}
+write(4);

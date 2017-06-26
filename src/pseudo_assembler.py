@@ -95,6 +95,10 @@ class PAVirtualRegister(PARegister):
   def registersReadIfSource(self):
     return [self]
 
+  # Comparison needed for sorting live ranges in register allocator. Order doesn't really matter.
+  def __lt__(self, other):
+    return self.name < other.name
+
 
 class PARegisterAndOffset:
   def __init__(self, register, offset):
