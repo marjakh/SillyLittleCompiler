@@ -32,6 +32,8 @@ class Node:
     return c
 
   def findRegister(self, registers):
+    if self.assigned_register:
+      return
     for r in registers:
       # Is this register ok?
       ok = True
@@ -170,4 +172,6 @@ class RegisterAllocator:
       if c > max_conflicts:
         max_conflicts = c
         max_conflict_register = node.register
+    assert(max_conflicts > 0)
+    # print_debug("Spilling: " + str(max_conflict_register))
     return Spill(max_conflict_register)

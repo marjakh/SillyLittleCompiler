@@ -1,3 +1,16 @@
+Assignment in loop might not work:
+
+while (i < x) {
+  let j = 0;
+  while (j < y) {
+    write(i);
+    write(j);
+    j = j + 1;
+  }
+  i = i + 1;
+}
+
+
 Priorities:
 1. arrays
 2. functions

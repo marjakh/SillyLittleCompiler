@@ -163,11 +163,13 @@ class PseudoAssemblerInstruction:
   def replaceSpilledRegisterIn(what, register, new_register):
     if isinstance(what, PAConstant):
       return what
-    if isinstance(what, PAVirtualRegister):
+    elif isinstance(what, PAVirtualRegister):
       if what == register:
         return new_register
       return what
-    if isinstance(what, PARegisterAndOffset):
+    elif isinstance(what, PARegister):
+      return what
+    elif isinstance(what, PARegisterAndOffset):
       what.my_register = PseudoAssemblerInstruction.replaceSpilledRegisterIn(what.my_register, register, new_register)
       return what
     assert(False)
@@ -645,29 +647,37 @@ class PseudoAssembler:
       # with this temp as load.where and array.base as load.what.
       address_register = self.registers.nextRegister()
       code += [PAMov(PARegisterAndOffset(self.__globals_table_register, array.base.variable.offset), address_register)]
-
-      # FIXME: magic number for size
-      if isinstance(array.index, Constant):
-        # FIXME: does this actually happen ever?
-        assert(False)
-      else:
-        assert(isinstance(array.index, TemporaryVariable))
-        constant_register = self.registers.nextRegister()
-        address_register2 = self.registers.nextRegister()
-        code += [PAMov(self.__virtualRegister(array.index), self.__eax),
-                 PAMov(PAConstant(4), constant_register),
-                 PAPush(self.__edx),
-                 PAMov(PAConstant(0), self.__edx),
-                 PAMul(constant_register),
-                 PAPop(self.__edx),
-                 PAMov(self.__eax, address_register2),
-                 PAAdd(address_register, address_register2)]
-        constant_register.addConflict(self.__edx)
-      code += [PAComment("Computing array address done")]
-      return [address_register2, code]
-    # FIXME: impl
+      [address_register2, index_code] = self.__createArrayIndexingCode(address_register, array.index)
+      return [address_register2, code + index_code]
+    elif isinstance(array.base, Array):
+      [address_register, load_array_code] = self.__createLoadArray(array.base)
+      read_from_array_register = self.registers.nextRegister()
+      reference_array_code = [PAMov(PARegisterAndOffset(address_register, 0), read_from_array_register)]
+      [address_register2, index_code] = self.__createArrayIndexingCode(read_from_array_register, array.index)
+      return [address_register2, code + load_array_code + reference_array_code + index_code]
     assert(False)
 
+  def __createArrayIndexingCode(self, address_register, index):
+    # FIXME: magic number for size
+    code = [PAComment("Indexing array")]
+    if isinstance(index, Constant):
+      # FIXME: does this actually happen ever?
+      assert(False)
+    else:
+      assert(isinstance(index, TemporaryVariable))
+      constant_register = self.registers.nextRegister()
+      address_register2 = self.registers.nextRegister()
+      code += [PAMov(self.__virtualRegister(index), self.__eax),
+               PAMov(PAConstant(4), constant_register),
+               PAPush(self.__edx),
+               PAMov(PAConstant(0), self.__edx),
+               PAMul(constant_register),
+               PAPop(self.__edx),
+               PAMov(self.__eax, address_register2),
+               PAAdd(address_register, address_register2)]
+      constant_register.addConflict(self.__edx)
+    code += [PAComment("Computing array address done")]
+    return [address_register2, code]
 
   def __createForStore(self, store):
     assert(isinstance(store.where, StoreOrLoadTarget) or isinstance(store.where, TemporaryVariable))

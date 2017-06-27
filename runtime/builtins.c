@@ -10,5 +10,7 @@ void builtin_write(void** function_context) {
 void* builtin_Array(void** function_context) {
   int size = (int) function_context[3];
   // FIXME: magic number
-  return runtime_allocate(size * sizeof(int));
+  void* array = runtime_allocate(size * sizeof(int));
+  fprintf(stderr, "Array of size %d is %p\n", size, array);
+  return array;
 }
