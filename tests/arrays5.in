@@ -1,0 +1,14 @@
+let len = 10;
+let a = new Array(len);
+a[0] = 1;
+a[1] = 1;
+let i = 2;
+while (i < len) {
+  a[i] = a[i - 1] + a[i - 2];
+  i = i + 1;
+}
+i = 0;
+while (i < len) {
+  write(a[i]);
+  i = i + 1;
+}

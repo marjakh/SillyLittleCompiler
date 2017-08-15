@@ -1,28 +1,11 @@
-Assignment in loop might not work:
-
-while (i < x) {
-  let j = 0;
-  while (j < y) {
-    write(i);
-    write(j);
-    j = j + 1;
-  }
-  i = i + 1;
-}
-
 
 Priorities:
-1. arrays
-2. functions
-3. gc
+1. functions
+2. gc
 
 
 Random bugs / corner cases:
 - Add tests for what happens when trying to access the return value for write.
-- Add tests for storing something else than constants to arrays.
-  -- And for cases where the index is something more complex too.
-  -- Assigning from array to array
-  -- Multidimensional arrays
 - Why does compiling "comparisons.in" take so long? Some register allocation stuff?
 
 Arrays:
