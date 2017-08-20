@@ -62,6 +62,8 @@ def getOutput(input_file_name):
 skipped = 0
 
 def runTest(input_file_name, expect_error):
+  global skipped
+
   result = getOutput(input_file_name)
 
   output_file_name = input_file_name[:-2] + "out"
