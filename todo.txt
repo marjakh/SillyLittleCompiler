@@ -1,4 +1,3 @@
-
 Priorities:
 1. functions
 2. gc
@@ -7,6 +6,7 @@ Priorities:
 Random bugs / corner cases:
 - Add tests for what happens when trying to access the return value for write.
 - Why does compiling "comparisons.in" take so long? Some register allocation stuff?
+- Too many syntax errors: grammar.SyntaxError: SyntaxError: Syntax error: Expected identifier_or_array_continuation, got token_identifier. (33) (for "asdf asdf")
 
 Arrays:
 - Parsing more complicated cases doesn't work (probably)
