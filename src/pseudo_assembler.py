@@ -746,19 +746,17 @@ class PseudoAssembler:
     if isinstance(instruction, CallFunction):
       if instruction.function.variable_type == VariableType.builtin_function:
         temp = self.__virtualRegister(instruction.temporary_for_function_context)
-        new_function_context_register = self.registers.nextRegister()
         code = [PAComment("Calling builtin function"),
                 PAPushCallerSaveRegisters(),
                 PAPush(temp),
                 PACallBuiltinFunction(instruction.function.name),
                 PAClearStack(1),
                 PAPopCallerSaveRegisters(),
-                # Restore the function context (and to be maximally flexible, we
-                # use a new virtual register for it (since it doesn't need to be
-                # the same register as before).
-                PAMov(PARegisterAndOffset(temp, 0), new_function_context_register),
+                # Restore the function context. We need to always use the same
+                # register for it, because this instruction might be in a basic
+                # block which is not always executed.
+                PAMov(PARegisterAndOffset(temp, 0), self.__function_context_register),
                 PAComment("Calling builtin function done")]
-        self.__function_context_register = new_function_context_register
         return code
 
     if isinstance(instruction, Return):

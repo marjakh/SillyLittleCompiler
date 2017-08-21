@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-from util import listToString, print_debug
+from util import listToString, print_debug, toString
 
 class LiveRangeAnalyser:
   def __init__(self):
@@ -27,6 +27,7 @@ class LiveRangeAnalyser:
       b.out_set = set()
       read_so_far = set()
       written_so_far = set()
+      # print_debug("Basic block " + str(b.id))
       for i in b.instructions:
         # print_debug("Instruction " + str(instruction_ix) + " " + str(i))
         i.ix = instruction_ix
@@ -41,31 +42,35 @@ class LiveRangeAnalyser:
           if r not in read_so_far:
             b.kill_set.add(r)
           written_so_far.add(r)
-      # print_debug("Basic block " + str(b.id))
       # print_debug("Gen: " + listToString(list(b.gen_set)))
       # print_debug("Kill: " + listToString(list(b.kill_set)))
 
+    # print_debug("Constructing in/out sets")
     something_changed = True
     while something_changed:
       something_changed = False
       for b in pseudo_assembly.blocks:
+        # print_debug("block " + str(b.id))
         new_in_set = b.gen_set | (b.out_set - b.kill_set)
         new_out_set = set()
+        # print_debug("new in set")
+        # print_debug(toString(new_in_set))
         for next_id in b.possible_next_ids:
+          # print_debug("next is " + str(next_id))
           assert(pseudo_assembly.blocks[next_id].id == next_id)
           new_out_set = new_out_set | pseudo_assembly.blocks[next_id].in_set
+          # print_debug("new out set")
+          # print_debug(toString(new_out_set))
         if new_in_set != b.in_set or new_out_set != b.out_set:
           something_changed = True
         b.in_set = new_in_set
         b.out_set = new_out_set
-
-      for b in pseudo_assembly.blocks:
-        new_in_set = b.gen_set | (b.out_set - b.kill_set)
+    # print_debug("Constructing in/out sets done")
 
     # for b in pseudo_assembly.blocks:
-      # print_debug("Basic block " + str(b.id))
-      # print_debug("In: " + listToString(list(b.in_set)))
-      # print_debug("Out: " + listToString(list(b.out_set)))
+    #   print_debug("Basic block " + str(b.id))
+    #   print_debug("In: " + listToString(list(b.in_set)))
+    #   print_debug("Out: " + listToString(list(b.out_set)))
 
     # Based on in_set and out_set, construct live ranges.
     for register in pseudo_assembly.metadata.registers.registers:
@@ -73,6 +78,8 @@ class LiveRangeAnalyser:
       currently_live = False
       maybe_range = set()
       for b in pseudo_assembly.blocks:
+        if register in b.in_set:
+          maybe_range.add(b.instructions[0].ix)
         for i in b.instructions:
           [read, written] = i.getRegisters()
           if register in read:

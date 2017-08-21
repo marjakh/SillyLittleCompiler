@@ -93,6 +93,8 @@ class RegisterAllocator:
     live_ranges = RegisterAllocator.computeLiveRanges(registers.registers)
     # Sort based on starting point.
     live_ranges.sort()
+
+    # print_debug("tryToAllocate");
     # print_debug(toString(live_ranges))
 
     nodes = []
@@ -113,6 +115,7 @@ class RegisterAllocator:
     unreal_nodes = len(nodes)
 
     k = len(real_registers)
+    # print_debug("real register count " + str(k))
     for i in range(k):
       nodes += [Node(real_registers[i], real_registers[i])]
 
@@ -169,6 +172,7 @@ class RegisterAllocator:
         # Don't spill real registers.
         break
       c = node.conflictCount()
+      # print_debug("node " + str(node.register) + " conflict count " + str(c))
       if c > max_conflicts:
         max_conflicts = c
         max_conflict_register = node.register
