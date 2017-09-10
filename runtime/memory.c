@@ -30,9 +30,9 @@ void memory_teardown() {
   free(other_chunk);
 }
 
-void do_gc();
+void do_gc(void* stack_low);
 
-void* runtime_allocate(int size) {
+void* memory_allocate(int size, void* stack_when_entering_runtime) {
   fprintf(stderr, "Allocate %d\n", size);
   if (current_chunk == 0) {
     // First allocation.
@@ -53,17 +53,18 @@ void* runtime_allocate(int size) {
     current_chunk_cursor += (size + 1);
   } else {
     // Collect garbage.
-    do_gc();
+    fprintf(stderr, "GC starting\n");
+    do_gc(stack_when_entering_runtime);
+    fprintf(stderr, "GC done\n");
+    // FIXME: try again, maybe we can allocate now.
   }
 
   return result;
 }
 
-void do_gc() {
+void do_gc(void* stack_low) {
   // Discover potential pointers. They can be in the stack or in the current
   // memory chunk, pointed to by already discovered pointers.
-  int stack_is_here = 0;
-  void* stack_low = &stack_is_here;
   void* p;
 
   fprintf(stderr, "stack %p %p\n", stack_low, stack_high);
