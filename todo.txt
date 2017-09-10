@@ -1,7 +1,7 @@
 Priorities:
 1. functions
 2. gc
-
+3. objects
 
 Random bugs / corner cases:
 - Add tests for what happens when trying to access the return value for write.
@@ -13,6 +13,7 @@ let bar = foo()[3];
 
 
 Small stuff:
+- The "globals table" can be merged with the outermost function context.
 - make gdb "start" work (somehow)
 - print out the statement as comments in the program?
 - mark some functions staticmethods if we don't need an object...
@@ -240,3 +241,27 @@ gcc -m32 temp.o runtime/runtime.o runtime/builtins.o
 
 
 
+
+0xffffcea0:	0x00000000	0x00000000	0xf7fa6cc0	0x00000000
+0xffffceb0:	0x0804b02a	0xf1d3c600	0x00000030	0x00000000
+0xffffcec0:	0xffffcee4	0x080485c0	0xffffcee4	0x080485d7
+                                                                ^^ callee push
+0xffffced0:	0x0804b02a	0x00000000	0x0804b02a	0x08048735
+                ^^ caller push  ^^ caller push  ^^ caller push  ^^ spill
+0xffffcee0:	0x0804b009	0xc0decafe	0xffffcf18	0x0804873d
+                ^^ spill        ^^ marker
+0xffffcef0:	0x00000001	0x00000007	0xf7e22a50	0xffffcfc4
+0xffffcf00:	0x00000001	0xffffcfc4	0x00000000	0xf1d3c600
+                                                                ^^ stack in main
+0xffffcf10:	0xf7fa63dc	0xffffcf30	0x00000000	0xf7e0c637
+0xffffcf20:	0xf7fa6000	0xf7fa6000	0x00000000	0xf7e0c637
+0xffffcf30:	0x00000001	0xffffcfc4	0xffffcfcc	0x00000000
+
+Runtime starting. Stack is at 0xffffcf08.
+
+(gdb) disas
+Dump of assembler code for function builtin_Array:
+   0x0804879e <+0>:	push   %ebp
+   0x0804879f <+1>:	mov    %esp,%ebp
+   0x080487a1 <+3>:	sub    $0x28,%esp
+=> 0x080487a4 <+6>:	mov    0x8(%ebp),%eax

@@ -89,10 +89,14 @@ class RealAssembler:
     program = [
       Label("text"),
       GlobalDeclaration("user_code"),
-      Label("user_code")]
+      Label("user_code")
+    ]
 
     # FIXME: each function needs this.
+    program.append(Label("main_prologue"))
     program.append(PAPush(ebp))
+    # For debugging purposes.
+    program.append(PAPush(PAConstant(0xc0decafe)))
     program.append(PAMov(esp, ebp))
     # FIXME: magic number
     program.append(PAComment("Number of spills: " + str(spill_position)))
@@ -102,8 +106,9 @@ class RealAssembler:
         i.replaceRegisters(assigned_registers)
         if not i.dead:
           program.append(i)
-    program.append(Label("epilogue"))
+    program.append(Label("main_epilogue"))
     program.append(PAMov(ebp, esp))
+    program.append(PAPop(Register("eax")))
     program.append(PAPop(ebp))
     program.append(PARealReturn())
 

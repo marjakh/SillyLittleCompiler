@@ -14,15 +14,12 @@ void* other_chunk = 0;
 void* other_chunk_cursor = 0;
 void* other_chunk_end = 0;
 
-void* stack_high = 0;
-
+// FIMXE: intptr_t?
 int is_in_current_chunk(void* p) {
   return p > current_chunk && p < current_chunk_end;
 }
 
-void memory_init(void* stack) {
-  fprintf(stderr, "Runtime starting. Stack is at %p.\n", stack);
-  stack_high = stack;
+void memory_init() {
 }
 
 void memory_teardown() {
@@ -30,9 +27,10 @@ void memory_teardown() {
   free(other_chunk);
 }
 
-void do_gc(void* stack_low);
+void do_gc(int* stack_low, int* stack_high);
 
-void* memory_allocate(int size, void* stack_when_entering_runtime) {
+// FIXME: stack_high is always the same, no need to pass it more than once.
+void* memory_allocate(int size, int* stack_low, int* stack_high) {
   fprintf(stderr, "Allocate %d\n", size);
   if (current_chunk == 0) {
     // First allocation.
@@ -54,7 +52,7 @@ void* memory_allocate(int size, void* stack_when_entering_runtime) {
   } else {
     // Collect garbage.
     fprintf(stderr, "GC starting\n");
-    do_gc(stack_when_entering_runtime);
+    do_gc(stack_low, stack_high);
     fprintf(stderr, "GC done\n");
     // FIXME: try again, maybe we can allocate now.
   }
@@ -62,17 +60,17 @@ void* memory_allocate(int size, void* stack_when_entering_runtime) {
   return result;
 }
 
-void do_gc(void* stack_low) {
+void do_gc(int* stack_low, int* stack_high) {
   // Discover potential pointers. They can be in the stack or in the current
   // memory chunk, pointed to by already discovered pointers.
-  void* p;
+  int* p;
 
   fprintf(stderr, "stack %p %p\n", stack_low, stack_high);
+
   for (p = stack_low; p < stack_high; ++p) {
-    int* p2 = (int*)(p);
-    void* p3 = (void*)(*p2);
-    if (is_in_current_chunk(p3)) {
-      fprintf(stderr, "Found pointer %p\n", p3);
+    fprintf(stderr, "%p: %p\n", (void*)p, (void*)*p);
+    if (is_in_current_chunk((void*)*p)) {
+      fprintf(stderr, "Found pointer %p\n", (void*)*p);
     }
   }
 

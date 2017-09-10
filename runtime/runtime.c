@@ -5,16 +5,14 @@
 
 extern void user_code(void);
 
-void* runtime_GetGlobalsTable(int globals_size) {
-  int stack_when_entering_runtime = 0;
-  void* v = memory_allocate(4 * globals_size, &stack_when_entering_runtime);
+void* runtime_GetGlobalsTable(int globals_size, int* stack_low, int* stack_high) {
+  void* v = memory_allocate(4 * globals_size, stack_low, stack_high);
   fprintf(stderr, "GetGlobalsTable %d returns %p\n", globals_size, v);
   return v;
 }
 
-void* runtime_CreateFunctionContext(void* previous, void* outer, int params_size) {
-  int stack_when_entering_runtime = 0;
-  void** context = (void**)memory_allocate(4 * (3 + params_size), &stack_when_entering_runtime);
+void* runtime_CreateFunctionContext(void* previous, void* outer, int params_size, int* stack_low, int* stack_high) {
+  void** context = (void**)memory_allocate(4 * (3 + params_size), stack_low, stack_high);
   context[0] = previous;
   context[1] = outer;
   context[2] = 0;
@@ -23,8 +21,7 @@ void* runtime_CreateFunctionContext(void* previous, void* outer, int params_size
 }
 
 int main(int argc, char** argv) {
-  int stack_is_here = 0;
-  memory_init(&stack_is_here);
+  memory_init();
   user_code();
   memory_teardown();
   fprintf(stderr, "Runtime exiting\n");

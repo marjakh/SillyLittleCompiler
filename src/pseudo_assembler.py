@@ -391,7 +391,7 @@ class PAReturn(PseudoAssemblerInstruction):
 
   def __str__(self):
     # FIXME: this needs to be function specific
-    return "jmp epilogue"
+    return "jmp main_epilogue"
 
 
 class PARealReturn(PseudoAssemblerInstruction):
@@ -609,10 +609,13 @@ class PseudoAssembler:
   def __createPrologue(self):
     # FIXME: DEFINE %main as a constant
     return [PAComment("prologue"),
+            PAMov(self.__esp, self.__stack_in_user_main_register),
+            PAPush(self.__stack_in_user_main_register),
+            PAPush(self.__esp),
             PAPush(PAConstant(self.__metadata.function_context_shapes["%main"])),
             PACallRuntimeFunction("GetGlobalsTable"), # this should be a constant too
             PAReturnValueToRegister(self.__globals_table_register),
-            PAClearStack(1),
+            PAClearStack(3),
             PAMov(PAConstant(0), self.__function_context_register)]
 
   def __createEpilogue(self):
@@ -727,11 +730,13 @@ class PseudoAssembler:
       # FIXME: this doesn't work for inner functions yet
       temp = self.__virtualRegister(instruction.temporary_variable)
       return [PAPushCallerSaveRegisters(),
+              PAPush(self.__stack_in_user_main_register),
+              PAPush(self.__esp),
               PAPush(PAConstant(self.__metadata.function_context_shapes[instruction.function.name])),
               PAPush(self.__function_context_register), # previous
               PAPush(self.__function_context_register), # outer
               PACallRuntimeFunction("CreateFunctionContext"),
-              PAClearStack(3),
+              PAClearStack(5),
               PAPopCallerSaveRegisters(),
               PAReturnValueToRegister(temp)]
 
@@ -748,9 +753,11 @@ class PseudoAssembler:
         temp = self.__virtualRegister(instruction.temporary_for_function_context)
         code = [PAComment("Calling builtin function"),
                 PAPushCallerSaveRegisters(),
+                PAPush(self.__stack_in_user_main_register),
+                PAPush(self.__esp),
                 PAPush(temp),
                 PACallBuiltinFunction(instruction.function.name),
-                PAClearStack(1),
+                PAClearStack(3),
                 PAPopCallerSaveRegisters(),
                 # Restore the function context. We need to always use the same
                 # register for it, because this instruction might be in a basic
@@ -758,6 +765,7 @@ class PseudoAssembler:
                 PAMov(PARegisterAndOffset(temp, 0), self.__function_context_register),
                 PAComment("Calling builtin function done")]
         return code
+      assert(False)
 
     if isinstance(instruction, Return):
       return [PAReturn()]
@@ -815,8 +823,10 @@ class PseudoAssembler:
 
     self.__globals_table_register = self.registers.nextRegister()
     self.__function_context_register = self.registers.nextRegister()
+    self.__stack_in_user_main_register = self.registers.nextRegister()
     self.__eax = PARegister("eax")
     self.__edx = PARegister("edx")
+    self.__esp = PARegister("esp")
 
     blocks = [PseudoAssemblyBasicBlock(0, [1], self.__createPrologue())]
 
