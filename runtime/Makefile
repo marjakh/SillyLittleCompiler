@@ -1,4 +1,4 @@
-all: runtime.c builtins.c memory.h memory.c
-	gcc -m32 -c runtime.c -o runtime.o
-	gcc -m32 -c builtins.c -o builtins.o
-	gcc -m32 -c memory.c -o memory.o
+all: runtime.cpp builtins.cpp memory.h memory.cpp
+	g++ -m32 -c runtime.cpp -o runtime.o
+	g++ -m32 -c builtins.cpp -o builtins.o
+	g++ -m32 -c memory.cpp -o memory.o

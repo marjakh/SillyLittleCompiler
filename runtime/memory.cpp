@@ -6,13 +6,13 @@
 #define CHUNK_SIZE 4096
 
 // FIXME: this simple version has only one memory chunk. Use a list instead.
-void* current_chunk = 0;
-void* current_chunk_cursor = 0;
-void* current_chunk_end = 0;
+char* current_chunk = 0;
+char* current_chunk_cursor = 0;
+char* current_chunk_end = 0;
 
-void* other_chunk = 0;
-void* other_chunk_cursor = 0;
-void* other_chunk_end = 0;
+char* other_chunk = 0;
+char* other_chunk_cursor = 0;
+char* other_chunk_end = 0;
 
 // FIMXE: intptr_t?
 int is_in_current_chunk(void* p) {
@@ -20,6 +20,12 @@ int is_in_current_chunk(void* p) {
 }
 
 void memory_init() {
+  current_chunk = reinterpret_cast<char*>(malloc(CHUNK_SIZE));
+  current_chunk_cursor = current_chunk;
+  current_chunk_end = current_chunk + CHUNK_SIZE;
+  fprintf(stderr, "First chunk: %p %p\n", current_chunk_cursor, current_chunk_end);
+
+  other_chunk = reinterpret_cast<char*>(malloc(CHUNK_SIZE));
 }
 
 void memory_teardown() {
@@ -32,22 +38,11 @@ void do_gc(int* stack_low, int* stack_high);
 // FIXME: stack_high is always the same, no need to pass it more than once.
 void* memory_allocate(int size, int* stack_low, int* stack_high) {
   fprintf(stderr, "Allocate %d\n", size);
-  if (current_chunk == 0) {
-    // First allocation.
-    current_chunk = malloc(CHUNK_SIZE);
-    current_chunk_cursor = current_chunk;
-    current_chunk_end = current_chunk + CHUNK_SIZE;
-    fprintf(stderr, "First chunk: %p %p\n", current_chunk_cursor, current_chunk_end);
-
-    void* other_chunk = malloc(CHUNK_SIZE);
-  }
 
   void* result = 0;
-  if (current_chunk_end - current_chunk_cursor > size) {
+  if (current_chunk_cursor + size < current_chunk_end) {
     fprintf(stderr, "Fits in the current chunk\n");
     result = current_chunk_cursor + 1;
-    void** p = (void**)current_chunk_cursor;
-    *p = (void*)size;
     current_chunk_cursor += (size + 1);
   } else {
     // Collect garbage.
@@ -70,6 +65,8 @@ void do_gc(int* stack_low, int* stack_high) {
   for (p = stack_low; p < stack_high; ++p) {
     fprintf(stderr, "%p: %p\n", (void*)p, (void*)*p);
     if (is_in_current_chunk((void*)*p)) {
+      // FIXME: Is this always a pointer? Do we need to know something more
+      // complicated about the structure of the stack?
       fprintf(stderr, "Found pointer %p\n", (void*)*p);
     }
   }
