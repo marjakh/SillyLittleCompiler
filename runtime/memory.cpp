@@ -15,7 +15,7 @@ char* other_chunk_cursor = 0;
 char* other_chunk_end = 0;
 
 // FIMXE: intptr_t?
-int is_in_current_chunk(void* p) {
+bool is_in_current_chunk(void* p) {
   return p > current_chunk && p < current_chunk_end;
 }
 
@@ -33,16 +33,18 @@ void memory_teardown() {
   free(other_chunk);
 }
 
-void do_gc(int* stack_low, int* stack_high);
+void do_gc(std::int32_t* stack_low, std::int32_t* stack_high);
 
 // FIXME: stack_high is always the same, no need to pass it more than once.
-void* memory_allocate(int size, int* stack_low, int* stack_high) {
+void* memory_allocate(std::int32_t size, std::int32_t* stack_low, std::int32_t* stack_high) {
   fprintf(stderr, "Allocate %d\n", size);
 
   void* result = 0;
   if (current_chunk_cursor + size < current_chunk_end) {
     fprintf(stderr, "Fits in the current chunk\n");
     result = current_chunk_cursor + 1;
+    std::int32_t* p = (std::int32_t*)current_chunk_cursor;
+    *p = size;
     current_chunk_cursor += (size + 1);
   } else {
     // Collect garbage.
@@ -55,10 +57,10 @@ void* memory_allocate(int size, int* stack_low, int* stack_high) {
   return result;
 }
 
-void do_gc(int* stack_low, int* stack_high) {
+void do_gc(std::int32_t* stack_low, std::int32_t* stack_high) {
   // Discover potential pointers. They can be in the stack or in the current
   // memory chunk, pointed to by already discovered pointers.
-  int* p;
+  std::int32_t* p;
 
   fprintf(stderr, "stack %p %p\n", stack_low, stack_high);
 

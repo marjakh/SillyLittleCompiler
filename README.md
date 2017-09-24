@@ -29,8 +29,11 @@ At the moment, the silly little compiler can only compile simple and small
 programs.
 
 - The only datatype is int
-- No loops
-- Register allocation not complete
-- Most of the backend not implemented (only a subset of the instructions)
+- GC not impelemented yet
 
 The interpreter is more complete and can run all programs in tests/.
+
+
+Requirements
+==============
+sudo apt-get install gcc-multilib g++-multilib
