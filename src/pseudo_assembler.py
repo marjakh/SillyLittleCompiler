@@ -142,6 +142,9 @@ class PseudoAssemblerInstruction:
   def replaceRegisters(self, assigned_registers):
     pass
 
+  def replaceSpilledRegister(self, register, new_register):
+    pass
+
   @staticmethod
   def replaceRegistersIn(what, instruction, assigned_registers):
     if isinstance(what, PAConstant):
@@ -262,38 +265,24 @@ class PAPop(PseudoAssemblerInstruction):
     self.where = PseudoAssemblerInstruction.replaceSpilledRegisterIn(self.where, register, new_register)
 
 
-class PAPushCallerSaveRegisters(PseudoAssemblerInstruction):
+# Before calling into runtime, we need to push *all* registers (not just
+# caller-save registers), since the GC might want to change them.
+class PAPushAllRegisters(PseudoAssemblerInstruction):
   def __init__(self):
     super().__init__()
 
   def __str__(self):
-    return "pushl %ecx\npushl %edx"
-
-  def getRegisters(self):
-    return [[], []]
-
-  def replaceRegisters(self, assigned_registers):
-    pass
-
-  def replaceSpilledRegister(self, register, new_register):
-    pass
+    # FIXME: refactor; don't hardcode register names here.
+    return "pushl %ebx\npushl %ecx\npushl %edx"
 
 
-class PAPopCallerSaveRegisters(PseudoAssemblerInstruction):
+class PAPopAllRegisters(PseudoAssemblerInstruction):
   def __init__(self):
     super().__init__()
 
   def __str__(self):
-    return "popl %edx\npopl %ecx"
-
-  def getRegisters(self):
-    return [[], []]
-
-  def replaceRegisters(self, assigned_registers):
-    pass
-
-  def replaceSpilledRegister(self, register, new_register):
-    pass
+    # FIXME: refactor; don't hardcode register names here.
+    return "popl %edx\npopl %ecx\npopl %ebx\n"
 
 
 class PAClearStack(PseudoAssemblerInstruction):
@@ -610,8 +599,8 @@ class PseudoAssembler:
     # FIXME: DEFINE %main as a constant
     return [PAComment("prologue"),
             PAMov(self.__esp, self.__stack_in_user_main_register),
-            PAPush(self.__stack_in_user_main_register),
-            PAPush(self.__esp),
+            PAPush(self.__stack_in_user_main_register), # stack high
+            PAPush(self.__esp), # stack low
             PAPush(PAConstant(self.__metadata.function_context_shapes["%main"])),
             PACallRuntimeFunction("GetGlobalsTable"), # this should be a constant too
             PAReturnValueToRegister(self.__globals_table_register),
@@ -729,15 +718,15 @@ class PseudoAssembler:
     if isinstance(instruction, CreateFunctionContextForFunction):
       # FIXME: this doesn't work for inner functions yet
       temp = self.__virtualRegister(instruction.temporary_variable)
-      return [PAPushCallerSaveRegisters(),
-              PAPush(self.__stack_in_user_main_register),
-              PAPush(self.__esp),
+      return [PAPushAllRegisters(),
+              PAPush(self.__stack_in_user_main_register), # stack high
+              PAPush(self.__esp), # stack low
               PAPush(PAConstant(self.__metadata.function_context_shapes[instruction.function.name])),
               PAPush(self.__function_context_register), # previous
               PAPush(self.__function_context_register), # outer
               PACallRuntimeFunction("CreateFunctionContext"),
               PAClearStack(5),
-              PAPopCallerSaveRegisters(),
+              PAPopAllRegisters(),
               PAReturnValueToRegister(temp)]
 
     if isinstance(instruction, AddParameterToFunctionContext):
@@ -752,13 +741,13 @@ class PseudoAssembler:
       if instruction.function.variable_type == VariableType.builtin_function:
         temp = self.__virtualRegister(instruction.temporary_for_function_context)
         code = [PAComment("Calling builtin function"),
-                PAPushCallerSaveRegisters(),
-                PAPush(self.__stack_in_user_main_register),
-                PAPush(self.__esp),
+                PAPushAllRegisters(),
+                PAPush(self.__stack_in_user_main_register), # stack high
+                PAPush(self.__esp), # stack low
                 PAPush(temp),
                 PACallBuiltinFunction(instruction.function.name),
                 PAClearStack(3),
-                PAPopCallerSaveRegisters(),
+                PAPopAllRegisters(),
                 # Restore the function context. We need to always use the same
                 # register for it, because this instruction might be in a basic
                 # block which is not always executed.
