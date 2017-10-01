@@ -104,6 +104,7 @@ class RealAssembler:
     for b in pseudo_assembly.blocks:
       for i in b.instructions:
         i.replaceRegisters(assigned_registers)
+        i.setSpillCount(spill_position)
         if not i.dead:
           program.append(i)
     program.append(Label("main_epilogue"))

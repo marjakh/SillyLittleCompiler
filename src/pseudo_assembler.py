@@ -145,6 +145,11 @@ class PseudoAssemblerInstruction:
   def replaceSpilledRegister(self, register, new_register):
     pass
 
+  # There's one special instruction which needs to know the spill count in order
+  # to function properly.
+  def setSpillCount(self, spill_count):
+    pass
+
   @staticmethod
   def replaceRegistersIn(what, instruction, assigned_registers):
     if isinstance(what, PAConstant):
@@ -412,6 +417,29 @@ class PACmp(PseudoAssemblerInstruction):
     self.left = PseudoAssemblerInstruction.replaceSpilledRegisterIn(self.left, register, new_register)
     self.right = PseudoAssemblerInstruction.replaceSpilledRegisterIn(self.right, register, new_register)
 
+class PASetStackHigh(PseudoAssemblerInstruction):
+  def __init__(self, register):
+    super().__init__()
+    self.spill_count = None
+    self.register = register
+
+  def setSpillCount(self, spill_count):
+    # FIXME: magic number 4
+    self.spill_count = PAConstant(spill_count * 4)
+
+  def __str__(self):
+    assert(self.spill_count is not None)
+    return "mov %esp, " + str(self.register) + "\naddl " + str(self.spill_count) + ", " + str(self.register)
+
+  def getRegisters(self):
+    return [[], [self.register]]
+
+  def replaceRegisters(self, assigned_registers):
+    self.register = PseudoAssemblerInstruction.replaceRegistersIn(self.register, self, assigned_registers)
+
+  def replaceSpilledRegister(self, register, new_register):
+    self.register = PseudoAssemblerInstruction.replaceSpilledRegisterIn(self.register, register, new_register)
+
 
 class PAJumpInstruction(PseudoAssemblerInstruction):
   def __init__(self, op, label):
@@ -598,7 +626,7 @@ class PseudoAssembler:
   def __createPrologue(self):
     # FIXME: DEFINE %main as a constant
     return [PAComment("prologue"),
-            PAMov(self.__esp, self.__stack_in_user_main_register),
+            PASetStackHigh(self.__stack_in_user_main_register),
             PAPush(self.__stack_in_user_main_register), # stack high
             PAPush(self.__esp), # stack low
             PAPush(PAConstant(self.__metadata.function_context_shapes["%main"])),
