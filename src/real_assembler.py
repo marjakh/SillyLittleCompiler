@@ -60,6 +60,7 @@ class RealAssembler:
   def create(pseudo_assembly):
     # FIXME: when we have functions, we need to run the register allocator for each separately.
 
+    eax = Register("eax")
     real_registers = [Register("ebx"), Register("ecx"), Register("edx")]
     ebp = Register("ebp")
     esp = Register("esp")
@@ -101,6 +102,12 @@ class RealAssembler:
     # FIXME: magic number
     program.append(PAComment("Number of spills: " + str(spill_position)))
     program.append(PASub(PAConstant(spill_position * 4), esp))
+    program.append(PAMov(esp, eax))
+    program.append(PAPush(PAConstant(spill_position * 4)))
+    program.append(PAPush(PAConstant(0)))
+    program.append(PAPush(eax))
+    program.append(PACall("memset"))
+    program.append(PAAdd(PAConstant(3 * 4), esp))
     for b in pseudo_assembly.blocks:
       for i in b.instructions:
         i.replaceRegisters(assigned_registers)
@@ -109,7 +116,7 @@ class RealAssembler:
           program.append(i)
     program.append(Label("main_epilogue"))
     program.append(PAMov(ebp, esp))
-    program.append(PAPop(Register("eax")))
+    program.append(PAPop(eax))
     program.append(PAPop(ebp))
     program.append(PARealReturn())
 
