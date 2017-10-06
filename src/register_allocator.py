@@ -12,11 +12,12 @@ https://www.cs.princeton.edu/courses/archive/spr05/cos320/notes/Register%20Alloc
 """
 
 class Node:
-  def __init__(self, register, assigned_register = None):
+  def __init__(self, register, assigned_register = None, is_real_register = False):
     self.register = register
     self.simplified = False
     self.conflicts = set()
     self.assigned_register = assigned_register
+    self.is_real_register = is_real_register
 
   def __str__(self):
     return toString(self.register)
@@ -34,14 +35,19 @@ class Node:
   def findRegister(self, registers):
     if self.assigned_register:
       return
+    # print_debug("Finding register for " + str(self))
     for r in registers:
+      # print_debug("Thinking about " + str(r))
       # Is this register ok?
       ok = True
       for node in self.conflicts:
+        # print_debug("Conflicting node: " + str(node) + ", simplified: " + str(node.simplified) + ", assigned to " + str(node.assigned_register))
         if not node.simplified and node.assigned_register == r:
+          # print_debug("Found conflict, cannot use " + str(r))
           ok = False
           break
       if ok:
+        # print_debug("Found " + str(r))
         self.assigned_register = r
         return
     assert(False)
@@ -94,7 +100,7 @@ class RegisterAllocator:
     # Sort based on starting point.
     live_ranges.sort()
 
-    # print_debug("tryToAllocate");
+    # print_debug("tryToAllocate")
     # print_debug(toString(live_ranges))
 
     nodes = []
@@ -108,6 +114,7 @@ class RegisterAllocator:
             (live_ranges[i][0] >= live_ranges[j][0] and live_ranges[i][0] <= live_ranges[j][1])):
           node2 = nodes[j]
           assert(node1 != node2)
+          # print_debug("Found conflict between registers: " + str(node1) + " <-> " + str(node2))
           node1.addConflict(node2)
           node2.addConflict(node1)
 
@@ -117,7 +124,7 @@ class RegisterAllocator:
     k = len(real_registers)
     # print_debug("real register count " + str(k))
     for i in range(k):
-      nodes += [Node(real_registers[i], real_registers[i])]
+      nodes += [Node(real_registers[i], real_registers[i], True)]
 
     # Add conflicts for cases where some virtual registers cannot be allocated
     # to some real registers.
@@ -134,6 +141,7 @@ class RegisterAllocator:
           assert(real_register_node.assigned_register != None)
           assert(isinstance(real_register_node.assigned_register, Register))
           if real_register_node.assigned_register.name == c.name:
+            # print_debug("Found conflict with a real register: " + str(node) + " <-> " + str(real_register_node))
             real_register_node.addConflict(node)
             node.addConflict(real_register_node)
 
@@ -147,7 +155,7 @@ class RegisterAllocator:
         node = nodes[i]
         if node.simplified:
           continue
-        if node.conflictCount() < k:
+        if not node.is_real_register and node.conflictCount() < k:
           # print_debug("Simplified " + str(node))
           node.simplified = True
           simplified += [node]
@@ -155,7 +163,8 @@ class RegisterAllocator:
 
     # If we managed to simplify everything, we're done!
     assigned_registers = dict()
-    if len(simplified) == len(nodes):
+    if len(simplified) + len(real_registers) == len(nodes):
+      # print_debug("Enough simplified nodes - can find an allocation!")
       for i in range(len(simplified) - 1, -1, -1):
         node = simplified[i]
         node.findRegister(real_registers)
@@ -167,6 +176,7 @@ class RegisterAllocator:
     # FIXME: this strategy is bad.
     max_conflicts = 0
     max_conflict_register = None
+    # print_debug("Finding register to spill")
     for node in nodes:
       if node.assigned_register:
         # Don't spill real registers.
