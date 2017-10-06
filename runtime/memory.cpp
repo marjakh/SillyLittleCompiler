@@ -89,30 +89,37 @@ void* memory_allocate(int32_t size, int32_t* stack_low, int32_t* stack_high) {
   fprintf(stderr, "Allocate %d\n", size);
 
   int32_t* result = 0;
-  if (current_chunk_cursor + size + 2 < current_chunk_end) {
-    fprintf(stderr, "Fits in the current chunk\n");
-    // Reserve space for size and color.
-    // FIXME: compact; no need to use 8 bytes for them. Also add helpers.
-    result = reinterpret_cast<int32_t*>(current_chunk_cursor);
-    result += 2;
-    fprintf(stderr, "Allocation result: %p\n", result);
-    memset(result, 0, size);
-    int32_t* p = reinterpret_cast<int32_t*>(current_chunk_cursor);
-    *p = size;
-    fprintf(stderr, "Object at %p, size at %p, ", result, p);
-    ++p;
-    fprintf(stderr, "color at %p\n", p);
-    *p = COLOR_WHITE;
-    current_chunk_cursor += (size + 2 * INT_SIZE);
+  int gc_count = 0;
+  while (gc_count <= 1) {
+    if (current_chunk_cursor + size + 2 < current_chunk_end) {
+      fprintf(stderr, "Fits in the current chunk\n");
+      // Reserve space for size and color.
+      // FIXME: compact; no need to use 8 bytes for them. Also add helpers.
+      result = reinterpret_cast<int32_t*>(current_chunk_cursor);
+      result += 2;
+      fprintf(stderr, "Allocation result: %p\n", result);
+      memset(result, 0, size);
+      int32_t* p = reinterpret_cast<int32_t*>(current_chunk_cursor);
+      *p = size;
+      fprintf(stderr, "Object at %p, size at %p, ", result, p);
+      ++p;
+      fprintf(stderr, "color at %p\n", p);
+      *p = COLOR_WHITE;
+      current_chunk_cursor += (size + 2 * INT_SIZE);
 
-    current_objects->push_back(result);
-  } else {
-    // Collect garbage.
+      current_objects->push_back(result);
+      return result;
+    }
+    fprintf(stderr, "Doesn't fit in the current chunk\n");
+    // Doesn't fit. Collect garbage. Then try again.
     do_gc(stack_low, stack_high);
-    // FIXME: try again, maybe we can allocate now.
+    ++gc_count;
   }
 
-  return result;
+  // Tried GC but the object still doesn't fit. Out of memory.
+  fprintf(stderr, "Error: out of memory\n");
+  assert(false);
+  return nullptr;
 }
 
 bool find_object(int32_t* ptr_to_object, int32_t** object, int32_t* offset) {
@@ -155,21 +162,24 @@ bool move_object(int32_t* ptr_to_object, int32_t** new_ptr, std::stack<std::pair
   int32_t color = get_color(object);
   fprintf(stderr, "Moving object %p\n", object);
   if (color == COLOR_MOVED) {
+    int32_t* new_address = reinterpret_cast<int32_t*>(get_byte_size(object));
+    *new_ptr = new_address + offset;
     fprintf(stderr, "Already moved\n");
-    return reinterpret_cast<int32_t*>(get_byte_size(object));
+    return true;
   }
 
-  int32_t size = get_byte_size(object);
-  fprintf(stderr, "Size in bytes %d\n", size);
-  assert(size % INT_SIZE == 0);
+  int32_t byte_size = get_byte_size(object);
+  fprintf(stderr, "Size in bytes %d\n", byte_size);
+  assert(byte_size % INT_SIZE == 0);
 
   // Copy the raw bytes.
   // FIXME: assert that alignment is ok.
   int32_t* new_address = reinterpret_cast<int32_t*>(other_chunk_cursor);
-  fprintf(stderr, "new address is %p\n", new_address);
-  memcpy(other_chunk_cursor, object - 2, size);
-  other_chunk_cursor += size;
+  memcpy(other_chunk_cursor, object - 2, byte_size + 2 * INT_SIZE);
+  other_chunk_cursor += byte_size + 2 * INT_SIZE;
 
+  new_address += 2;
+  fprintf(stderr, "new address is %p\n", new_address);
   other_objects->push_back(new_address);
 
   // Mark the object as moved
@@ -179,7 +189,7 @@ bool move_object(int32_t* ptr_to_object, int32_t** new_ptr, std::stack<std::pair
   // Go through all the fields. If something looks like an object, mark it as
   // something that has to be moved.
   int32_t* p = new_address;
-  for (size_t i = 0; i < size / INT_SIZE; ++i) {
+  for (size_t i = 0; i < byte_size / INT_SIZE; ++i) {
     if (is_in_current_chunk(reinterpret_cast<void*>(*p))) {
       fprintf(stderr, "Discovered pointer %p\n", reinterpret_cast<void*>(*p));
       ptrs->push(std::make_pair(reinterpret_cast<int32_t**>(p), reinterpret_cast<int32_t*>(*p)));
