@@ -428,7 +428,6 @@ class PASetStackHigh(PseudoAssemblerInstruction):
     self.spill_count = PAConstant(spill_count * 4)
 
   def __str__(self):
-    assert(self.spill_count is not None)
     return "mov %esp, " + str(self.register) + "\naddl " + str(self.spill_count) + ", " + str(self.register)
 
   def getRegisters(self):
