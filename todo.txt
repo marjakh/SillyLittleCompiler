@@ -3,6 +3,9 @@ Priorities:
 2. gc
 3. objects
 
+GC:
+- Add tests for a[something_that_allocates()] = something_that_allocates();
+
 Random bugs / corner cases:
 - Add tests for what happens when trying to access the return value for write.
 - Too many syntax errors: grammar.SyntaxError: SyntaxError: Syntax error: Expected identifier_or_array_continuation, got token_identifier. (33) (for "asdf asdf")

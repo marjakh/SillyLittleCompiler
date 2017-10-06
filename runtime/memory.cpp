@@ -5,8 +5,8 @@
 #include <cassert>
 #include <cstring>
 
-#include <set>
 #include <stack>
+#include <vector>
 
 #define INT_SIZE 4
 
@@ -29,9 +29,28 @@ char* other_chunk = nullptr;
 char* other_chunk_cursor = nullptr;
 char* other_chunk_end = nullptr;
 
+std::vector<int32_t*>* current_objects;
+std::vector<int32_t*>* other_objects;
+
 // FIMXE: intptr_t?
 bool is_in_current_chunk(void* p) {
   return p > current_chunk && p < current_chunk_end;
+}
+
+int32_t get_color(int32_t* object) {
+  return *(object - 1);
+}
+
+void set_color(int32_t* object, int32_t color) {
+  *(object - 1) = color;
+}
+
+int32_t get_byte_size(int32_t* object) {
+  return *(object - 2);
+}
+
+void set_byte_size(int32_t* object, int32_t size) {
+  *(object - 2) = size;
 }
 
 void zap_memory(char* memory, size_t size) {
@@ -50,11 +69,17 @@ void memory_init() {
   other_chunk_end = other_chunk + CHUNK_SIZE;
   zap_memory(current_chunk,  CHUNK_SIZE);
   fprintf(stderr, "Second chunk: %p %p\n", other_chunk_cursor, other_chunk_end);
+
+  current_objects = new std::vector<int32_t*>();
+  other_objects = new std::vector<int32_t*>();
 }
 
 void memory_teardown() {
   free(current_chunk);
   free(other_chunk);
+
+  delete current_objects;
+  delete other_objects;
 }
 
 void do_gc(std::int32_t* stack_low, std::int32_t* stack_high);
@@ -79,34 +104,53 @@ void* memory_allocate(int32_t size, int32_t* stack_low, int32_t* stack_high) {
     fprintf(stderr, "color at %p\n", p);
     *p = COLOR_WHITE;
     current_chunk_cursor += (size + 2 * INT_SIZE);
+
+    current_objects->push_back(result);
   } else {
     // Collect garbage.
-    fprintf(stderr, "GC starting\n");
     do_gc(stack_low, stack_high);
-    fprintf(stderr, "GC done\n");
     // FIXME: try again, maybe we can allocate now.
   }
 
   return result;
 }
 
-int32_t get_color(int32_t* object) {
-  return *(object - 1);
+bool find_object(int32_t* ptr_to_object, int32_t** object, int32_t* offset) {
+  // ptr_to_object is a pointer to somewhere inside the object.
+
+  // FIXME: binary search.
+  for (size_t i = 0; i < current_objects->size(); ++i) {
+    fprintf(stderr, "comparing against current object %p\n", current_objects->at(i)); 
+    int32_t* maybe_right_object = current_objects->at(i);
+    if (maybe_right_object == ptr_to_object) {
+      *offset = 0;
+      *object = maybe_right_object;
+      return true;
+    } else if (maybe_right_object < ptr_to_object && (i == current_objects->size() - 1 || current_objects->at(i + 1) > ptr_to_object)) {
+      // Last chance! Check if that object is big enough for our pointer.
+
+      if (maybe_right_object + get_byte_size(maybe_right_object) / INT_SIZE > ptr_to_object) {
+        *offset = (ptr_to_object - maybe_right_object) / INT_SIZE;
+        *object = maybe_right_object;
+        return true;
+      }
+      return false;
+    } else if (maybe_right_object > ptr_to_object) {
+      return false;
+    }
+  }
 }
 
-void set_color(int32_t* object, int32_t color) {
-  *(object - 1) = color;
-}
+bool move_object(int32_t* ptr_to_object, int32_t** new_ptr, std::stack<std::pair<int32_t**, int32_t*>>* ptrs) {
+  fprintf(stderr, "Processing ptr %p\n", ptr_to_object);
+  int32_t* object;
+  int32_t offset;
 
-int32_t get_byte_size(int32_t* object) {
-  return *(object - 2);
-}
+  if (!find_object(ptr_to_object, &object, &offset)) {
+    fprintf(stderr, "Ptr doesn't belong to an object\n");
+    return false;
+  }
 
-void set_byte_size(int32_t* object, int32_t size) {
-  *(object - 2) = size;
-}
-
-int32_t* move_object(int32_t* object, std::stack<std::pair<int32_t**, int32_t*>>* ptrs) {
   // Maybe this object has been moved already?
   int32_t color = get_color(object);
   fprintf(stderr, "Moving object %p\n", object);
@@ -126,6 +170,8 @@ int32_t* move_object(int32_t* object, std::stack<std::pair<int32_t**, int32_t*>>
   memcpy(other_chunk_cursor, object - 2, size);
   other_chunk_cursor += size;
 
+  other_objects->push_back(new_address);
+
   // Mark the object as moved
   set_color(object, COLOR_MOVED);
   set_byte_size(object, reinterpret_cast<int32_t>(new_address));
@@ -140,6 +186,9 @@ int32_t* move_object(int32_t* object, std::stack<std::pair<int32_t**, int32_t*>>
     }
     p++;
   }
+
+  *new_ptr = new_address + offset;
+  return true;
 }
 
 void mark_and_sweep(std::stack<std::pair<int32_t**, int32_t*>>* ptrs) {
@@ -152,11 +201,15 @@ void mark_and_sweep(std::stack<std::pair<int32_t**, int32_t*>>* ptrs) {
     int32_t* ptr = ptr_pair.second;
 
     fprintf(stderr, "Visiting object %p\n", ptr);
-    *location = move_object(ptr, ptrs);
+    move_object(ptr, location, ptrs);
   }
 }
 
 void do_gc(std::int32_t* stack_low, std::int32_t* stack_high) {
+  fprintf(stderr, "GC starting\n");
+  fprintf(stderr, "Current chunk: %p %p %p\n", current_chunk, current_chunk_cursor, current_chunk_end);
+  fprintf(stderr, "%d full, no of objects: %d\n", 100 * (current_chunk_cursor - current_chunk) / (current_chunk_end - current_chunk), current_objects->size());
+
   // Discover potential pointers. They can be in the stack or in the current
   // memory chunk, pointed to by already discovered pointers.
   int32_t* p;
@@ -180,7 +233,14 @@ void do_gc(std::int32_t* stack_low, std::int32_t* stack_high) {
   std::swap(current_chunk, other_chunk);
   std::swap(current_chunk_cursor, other_chunk_cursor);
   std::swap(current_chunk_end, other_chunk_end);
+  std::swap(current_objects, other_objects);
 
   zap_memory(other_chunk, CHUNK_SIZE);
   other_chunk_cursor = other_chunk;
+  other_objects->clear();
+
+  fprintf(stderr, "GC done\n");
+  fprintf(stderr, "Current chunk: %p %p %p\n", current_chunk, current_chunk_cursor, current_chunk_end);
+  fprintf(stderr, "%d full, no of objects: %d\n", 100 * (current_chunk_cursor - current_chunk) / (current_chunk_end - current_chunk), current_objects->size());
+
 }

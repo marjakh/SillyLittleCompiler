@@ -108,6 +108,8 @@ class RealAssembler:
     program.append(PAPush(eax))
     program.append(PACall("memset"))
     program.append(PAAdd(PAConstant(3 * 4), esp))
+    for r in real_registers:
+      program.append(PAMov(PAConstant(0), r))
     for b in pseudo_assembly.blocks:
       for i in b.instructions:
         i.replaceRegisters(assigned_registers)
