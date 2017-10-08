@@ -1,0 +1,29 @@
+let i = 0;
+let j = 0;
+let root_array = new Array(10);
+let root_array_ix = 0;
+while (i < 500) {
+  let a = new Array(40);
+  let k = 0;
+  while (k < 40) {
+    a[k] = i + k;
+    k = k + 1;
+  }
+  i = i + 1;
+  j = j + 1;
+  if (j == 100) {
+    root_array[root_array_ix] = a;
+    root_array_ix = root_array_ix + 1;
+    j = 0;
+  }
+}
+
+root_array_ix = 0;
+while (root_array_ix < 5) {
+  let k = 0;
+  while (k < 40) {
+    write(root_array[root_array_ix][k]);
+    k = k + 1;
+  }
+  root_array_ix = root_array_ix + 1;
+}
