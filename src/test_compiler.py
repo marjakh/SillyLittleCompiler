@@ -61,7 +61,7 @@ def getOutput(input_file_name):
 
 skipped = 0
 
-def runTest(input_file_name, expect_error):
+def runTest(input_file_name, test_path, expect_error):
   global skipped
 
   result = getOutput(input_file_name)
@@ -99,22 +99,25 @@ if __name__ == '__main__':
 
   # Read all input files in tests/, run the prog with the compiler, ensure
   # that the output matches the corresponding output file.
-  test_path = "tests"
-  files = [f for f in os.listdir(test_path) if os.path.isfile(os.path.join(test_path, f)) and f.endswith("in")]
-  good_files = [f for f in files if not f.startswith("error_")]
-  good_files.sort()
-  bad_files = [f for f in files if f.startswith("error_")]
-  bad_files.sort()
+  test_paths = ["tests", "compiler_tests"]
 
-  for input_file_name in good_files:
-    runTest(input_file_name, False)
+  for test_path in test_paths:
+    files = [f for f in os.listdir(test_path) if os.path.isfile(os.path.join(test_path, f)) and f.endswith("in")]
 
-  for input_file_name in bad_files:
-    runTest(input_file_name, True)
+    good_files = [f for f in files if not f.startswith("error_")]
+    good_files.sort()
+    bad_files = [f for f in files if f.startswith("error_")]
+    bad_files.sort()
 
-  if skipped > 0:
-    print("Some tests skipped")
-    exit(1)
+    for input_file_name in good_files:
+      runTest(input_file_name, test_path, False)
+
+    for input_file_name in bad_files:
+      runTest(input_file_name, test_path, True)
+
+    if skipped > 0:
+      print("Some tests skipped")
+      exit(1)
 
   print("All OK!")
   exit(0)

@@ -1,0 +1,16 @@
+let a = new Array(1);
+a[0] = new Array(1);
+a[0][0] = 0;
+
+test_do_gc();
+
+// Assert that the objects we expect to be live are live. We cannot assert that
+// some objects were *not* live, since it can be that some registers are still
+// pointing to them.
+
+if (test_is_live_object(a) != 0) {
+  write(1);
+  if (test_is_live_object(a[0]) != 0) {
+    write(2);
+  }
+}

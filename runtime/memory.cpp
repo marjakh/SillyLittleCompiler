@@ -254,3 +254,17 @@ void do_gc(std::int32_t* stack_low, std::int32_t* stack_high) {
   fprintf(stderr, "%d full, no of objects: %d\n", 100 * (current_chunk_cursor - current_chunk) / (current_chunk_end - current_chunk), current_objects->size());
 
 }
+
+void memory_test_do_gc(int32_t* stack_low, int32_t* stack_high) {
+  do_gc(stack_low, stack_high);
+}
+
+bool memory_test_is_live_object(int32_t* object) {
+  int32_t* found_object;
+  int32_t offset;
+  if (find_object(object, &found_object, &offset) && offset == 0) {
+    assert(found_object == object);
+    return true;
+  }
+  return false;
+}
