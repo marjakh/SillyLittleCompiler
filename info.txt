@@ -1,0 +1,19 @@
+Intel & AT&T syntaxes
+---------------------
+
+Intel:
+mov eax, 5
+
+AT&T:
+mov $5, %eax
+
+Information about x86
+---------------------
+
+https://en.wikipedia.org/wiki/X86_calling_conventions
+
+cdecl calling convention
+- Function arguments pushed on the stack from right to left.
+- Caller cleans them up after the call has returned.
+- Caller save registers (subroutine is allowed to overwrite them): EAX, ECX, EDX
+- Callee save registers: everything else.

@@ -2,6 +2,7 @@ Priorities:
 1. functions
 2. gc
 3. objects
+4. separate compilation
 
 GC:
 - Add tests for a[something_that_allocates()] = something_that_allocates();

@@ -111,7 +111,8 @@ void* memory_allocate(int32_t size, int32_t* stack_low, int32_t* stack_high) {
       return result;
     }
     fprintf(stderr, "Doesn't fit in the current chunk\n");
-    // Doesn't fit. Collect garbage. Then try again.
+    // Doesn't fit. Collect garbage. Then try again. (Umm, actually this does GC
+    // twice... FIXME.)
     do_gc(stack_low, stack_high);
     ++gc_count;
   }
