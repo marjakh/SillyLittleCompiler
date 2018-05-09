@@ -93,6 +93,7 @@ class RealAssembler:
       Label("user_code")
     ]
 
+    # FIXME: create function descriptor
     # FIXME: each function needs this.
     program.append(Label("main_prologue"))
     program.append(PAPush(ebp))
@@ -118,8 +119,8 @@ class RealAssembler:
           program.append(i)
     program.append(Label("main_epilogue"))
     program.append(PAMov(ebp, esp))
-    program.append(PAPop(eax))
-    program.append(PAPop(ebp))
+    program.append(PAPop(eax)) # Pop debug marker
+    program.append(PAPop(ebp)) # Restore saved ebp
     program.append(PARealReturn())
 
     return program

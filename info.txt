@@ -17,3 +17,38 @@ cdecl calling convention
 - Caller cleans them up after the call has returned.
 - Caller save registers (subroutine is allowed to overwrite them): EAX, ECX, EDX
 - Callee save registers: everything else.
+
+
+At the start of main (before the prologue), the stack looks like this:
+
+(gdb) x/20xw $esp
+0xffffce8c:	0xf7c75637	0x00000001	0xffffcf24	0xffffcf2c
+0xffffce9c:	0x00000000	0x00000000	0x00000000	0xf7e0f000
+0xffffceac:	0xf7ffdc04	0xf7ffd000	0x00000000	0xf7e0f000
+0xffffcebc:	0xf7e0f000	0x00000000	0xbf9fee34	0xcea92024
+0xffffcecc:	0x00000000	0x00000000	0x00000000	0x00000001
+
+0xf7c75637 is the return address, 1 is argc, 0xffffcf24 is argv:
+
+(gdb) x/20xw 0xffffcf24
+0xffffcf24:	0xffffd129	0x00000000	0xffffd134	0xffffd149
+0xffffcf34:	0xffffd154	0xffffd166	0xffffd17d	0xffffd193
+0xffffcf44:	0xffffd1ab	0xffffd1dc	0xffffd1eb	0xffffd21d
+0xffffcf54:	0xffffd22d	0xffffd244	0xffffd255	0xffffd269
+0xffffcf64:	0xffffd28c	0xffffd2a3	0xffffd2b5	0xffffd2cc
+
+(gdb) x/s 0xffffd129
+0xffffd129:	"/tmp/a.out"
+
+(gdb) disas main
+Dump of assembler code for function main:
+=> 0x08048d01 <+0>:	lea    0x4(%esp),%ecx
+   0x08048d05 <+4>:	and    $0xfffffff0,%esp
+   0x08048d08 <+7>:	pushl  -0x4(%ecx)
+   0x08048d0b <+10>:	push   %ebp
+   0x08048d0c <+11>:	mov    %esp,%ebp
+   0x08048d0e <+13>:	push   %ecx
+   0x08048d0f <+14>:	sub    $0x4,%esp
+   0x08048d12 <+17>:	call   0x8048e88 <_Z11memory_initv>
+   0x08048d17 <+22>:	call   0x80489ab <user_code>
+   0x08048d1c <+27>:	call   0x8048fa1 <_Z15memory_teardownv>

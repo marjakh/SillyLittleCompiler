@@ -1,0 +1,35 @@
+Stack structure
+---------------
+
+- main calls user_code like it's a C function.
+
+- user_code should first create a stack frame for itself! (The same way we create it for a function.)
+
+
+- spill space
+- space for locals, incl function context function context << contains a descriptor of the stack frame
+- caller save registers, incl ebp
+- return address << will be pushed by the call instruction
+- params
+- callee save registers
+
+The first local is the function context??
+
+
+How does the GC know how far to scan the stack?
+
+
+When entering user_code, the stack is:
+
+return address
+
+user_code prologue:
+
+spill space for user_code
+0xc0decafe << ebp
+saved ebp
+return address
+
+
+When user_code calls allocation routine:
+

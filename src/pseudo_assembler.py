@@ -768,7 +768,9 @@ class PseudoAssembler:
       if instruction.function.variable_type == VariableType.builtin_function:
         temp = self.__virtualRegister(instruction.temporary_for_function_context)
         code = [PAComment("Calling builtin function"),
+                PAComment("Registers"),
                 PAPushAllRegisters(),
+                PAComment("Stack high, stack low and function context"),
                 PAPush(self.__stack_in_user_main_register), # stack high
                 PAPush(self.__esp), # stack low
                 PAPush(temp),
