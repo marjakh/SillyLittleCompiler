@@ -31,5 +31,12 @@ saved ebp
 return address
 
 
-When user_code calls allocation routine:
+When user_code calls a builtin:
 
+params << let's pass ebp as a param??
+callee saved registers
+spill space for user_code
+<<< and here we should have a pointer to the function context which contains the descriptor
+0xc0decafe << ebp
+saved ebp
+return address
