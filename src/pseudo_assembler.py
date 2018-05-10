@@ -751,9 +751,9 @@ class PseudoAssembler:
       return [PAPushAllRegisters(),
               PAPush(self.__stack_in_user_main_register), # stack high
               PAPush(self.__esp), # stack low
-              PAPush(PAConstant(self.__metadata.function_context_shapes[instruction.function.name])),
-              PAPush(self.__function_context_register), # previous
+              PAPush(PAConstant(self.__metadata.function_context_shapes[instruction.function.name])), # params count
               PAPush(self.__function_context_register), # outer
+              PAPush(PAConstant(0)), # spill_count
               PACallRuntimeFunction("CreateFunctionContext"),
               PAClearStack(5),
               PAPopAllRegisters(),

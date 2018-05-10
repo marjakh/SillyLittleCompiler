@@ -12,11 +12,11 @@ extern "C" void* runtime_GetGlobalsTable(int globals_size, int* stack_low, int* 
   return v;
 }
 
-// FIXME: get rid of params_size, need to change the caller side too.
-extern "C" FunctionContext* runtime_CreateFunctionContext(int32_t spill_count, void* outer, int32_t params_size, int* stack_low, int* stack_high) {
-  FunctionContext* context = reinterpret_cast<FunctionContext*>(memory_allocate(sizeof(FunctionContext), stack_low, stack_high));
-  context->spill_count = spill_count;
+extern "C" FunctionContext* runtime_CreateFunctionContext(void* outer, int32_t spill_count, int32_t params_size, int* stack_low, int* stack_high) {
+  FunctionContext* context = reinterpret_cast<FunctionContext*>(memory_allocate(sizeof(FunctionContext) + params_size * 4, stack_low, stack_high));
   context->outer = reinterpret_cast<FunctionContext*>(outer);
+  context->spill_count = spill_count;
+  context->params_size = params_size;
   fprintf(stderr, "CreateFunctionContext returns %p\n", context);
   return context;
 }
@@ -24,7 +24,7 @@ extern "C" FunctionContext* runtime_CreateFunctionContext(int32_t spill_count, v
 int main(int argc, char** argv) {
   memory_init();
   // Create a FunctionContext (for user main) and pass it to user_code.
-  FunctionContext* function_context = runtime_CreateFunctionContext(0, nullptr, 0, nullptr, nullptr);
+  FunctionContext* function_context = runtime_CreateFunctionContext(nullptr, 0, 0, nullptr, nullptr);
   fprintf(stderr, "Calling user code\n");
   user_code(function_context);
   fprintf(stderr, "User code returned\n");

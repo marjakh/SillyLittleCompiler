@@ -6,8 +6,7 @@
 struct FunctionContext {
   int32_t spill_count;
   FunctionContext* outer;
-  int32_t whats_this; // FIXME: Some legacy stuff, remove this from both sides.
-  int32_t param;
+  int32_t params_size;
 };
 
 
