@@ -299,6 +299,11 @@ class PAClearStack(PseudoAssemblerInstruction):
     return "addl $0x{0:x}, %esp".format(self.value * 4) # FIXME: magic number
 
 
+def spillPositionToEbpOffsetString(position):
+  # FIXME: magic numbers (2 is the offset of the spill area from ebp)
+  return "-" + str((position + 2) * 4) + "(%ebp)"
+
+
 class PALoadSpilled(PseudoAssemblerInstruction):
   def __init__(self, register, position):
     super().__init__()
@@ -306,8 +311,7 @@ class PALoadSpilled(PseudoAssemblerInstruction):
     self.position = position
 
   def __str__(self):
-    # FIXME: magic number
-    return "movl -" + str(self.position * 4) + "(%ebp), " + str(self.register) + " # Load spilled"
+    return "movl " + spillPositionToEbpOffsetString(self.position) + ", " + str(self.register) + " # Load spilled"
 
   def replaceRegisters(self, assigned_registers):
     self.register = PseudoAssemblerInstruction.replaceRegistersIn(self.register, self, assigned_registers)
@@ -326,8 +330,7 @@ class PAStoreSpilled(PseudoAssemblerInstruction):
     self.position = position
 
   def __str__(self):
-    # FIXME: magic number
-    return "movl " + str(self.register) + ", -" + str(self.position * 4) + "(%ebp) # Store spilled"
+    return "movl " + str(self.register) + ", " + spillPositionToEbpOffsetString(self.position) + " # Store spilled"
 
   def replaceRegisters(self, assigned_registers):
     self.register = PseudoAssemblerInstruction.replaceRegistersIn(self.register, self, assigned_registers)

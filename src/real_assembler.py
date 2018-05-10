@@ -96,10 +96,18 @@ class RealAssembler:
     # FIXME: create function descriptor
     # FIXME: each function needs this.
     program.append(Label("main_prologue"))
+    # Get the param (a FunctionContext which we can fill)
+    program.append(PAMov(PARegisterAndOffset(esp,  4), eax))
+    program.append(PAMov(PAConstant(spill_position), PARegisterAndOffset(eax, 0)))
+    # Crete stack frame for the main function.
+    # 1) Saved ebp (new ebp will point to it)
     program.append(PAPush(ebp))
-    # For debugging purposes.
-    program.append(PAPush(PAConstant(0xc0decafe)))
     program.append(PAMov(esp, ebp))
+    # 2) Stack frame marker
+    program.append(PAPush(PAConstant(0xc0decafe)))
+    # 3) Function context pointer
+    program.append(PAPush(eax))
+    #4) Space for spills
     # FIXME: magic number
     program.append(PAComment("Number of spills: " + str(spill_position)))
     program.append(PASub(PAConstant(spill_position * 4), esp))
@@ -119,7 +127,6 @@ class RealAssembler:
           program.append(i)
     program.append(Label("main_epilogue"))
     program.append(PAMov(ebp, esp))
-    program.append(PAPop(eax)) # Pop debug marker
     program.append(PAPop(ebp)) # Restore saved ebp
     program.append(PARealReturn())
 

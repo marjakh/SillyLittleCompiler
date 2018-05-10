@@ -26,8 +26,9 @@ return address
 user_code prologue:
 
 spill space for user_code
-0xc0decafe << ebp
-saved ebp
+function context pointer
+0xc0decafe
+saved ebp << ebp
 return address
 
 

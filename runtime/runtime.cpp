@@ -1,9 +1,10 @@
 #include "memory.h"
+#include "function_context.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 
-extern "C" void user_code(void);
+extern "C" void user_code(void*);
 
 extern "C" void* runtime_GetGlobalsTable(int globals_size, int* stack_low, int* stack_high) {
   void* v = memory_allocate(4 * globals_size, stack_low, stack_high);
@@ -11,18 +12,22 @@ extern "C" void* runtime_GetGlobalsTable(int globals_size, int* stack_low, int* 
   return v;
 }
 
-extern "C" void* runtime_CreateFunctionContext(void* previous, void* outer, int params_size, int* stack_low, int* stack_high) {
-  void** context = (void**)memory_allocate(4 * (3 + params_size), stack_low, stack_high);
-  context[0] = previous;
-  context[1] = outer;
-  context[2] = 0;
-  fprintf(stderr, "CreateFunctionContext %d %p returns %p\n", params_size, previous, context);
+// FIXME: get rid of params_size, need to change the caller side too.
+extern "C" FunctionContext* runtime_CreateFunctionContext(int32_t spill_count, void* outer, int32_t params_size, int* stack_low, int* stack_high) {
+  FunctionContext* context = reinterpret_cast<FunctionContext*>(memory_allocate(sizeof(FunctionContext), stack_low, stack_high));
+  context->spill_count = spill_count;
+  context->outer = reinterpret_cast<FunctionContext*>(outer);
+  fprintf(stderr, "CreateFunctionContext returns %p\n", context);
   return context;
 }
 
 int main(int argc, char** argv) {
   memory_init();
-  user_code();
+  // Create a FunctionContext (for user main) and pass it to user_code.
+  FunctionContext* function_context = runtime_CreateFunctionContext(0, nullptr, 0, nullptr, nullptr);
+  fprintf(stderr, "Calling user code\n");
+  user_code(function_context);
+  fprintf(stderr, "User code returned\n");
   memory_teardown();
   fprintf(stderr, "Runtime exiting\n");
   return 0;
