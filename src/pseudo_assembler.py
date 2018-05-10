@@ -635,7 +635,7 @@ class PseudoAssembler:
             PACallRuntimeFunction("GetGlobalsTable"), # this should be a constant too
             PAReturnValueToRegister(self.__globals_table_register),
             PAClearStack(3),
-            PAMov(PAConstant(0), self.__function_context_register)]
+            PAMov(PAConstant(0), self.__function_context_location)]
 
   def __createEpilogue(self):
     return []
@@ -752,7 +752,7 @@ class PseudoAssembler:
               PAPush(self.__stack_in_user_main_register), # stack high
               PAPush(self.__esp), # stack low
               PAPush(PAConstant(self.__metadata.function_context_shapes[instruction.function.name])), # params count
-              PAPush(self.__function_context_register), # outer
+              PAPush(self.__function_context_location), # outer
               PAPush(PAConstant(0)), # spill_count
               PACallRuntimeFunction("CreateFunctionContext"),
               PAClearStack(5),
@@ -762,13 +762,15 @@ class PseudoAssembler:
     if isinstance(instruction, AddParameterToFunctionContext):
       temp_context = self.__virtualRegister(instruction.temporary_for_function_context)
       temp = self.__virtualRegister(instruction.temporary_variable)
-      # Note +2 here, because the function context contains the previous
-      # function context, the outer function context and the return
-      # value. FIXME: magic 4 * here again.
+      # Note +3 here, because the function context contains the spill count,
+      # the outer function context and the params size. FIXME: magic 4 * here again.
       return [PAMov(temp, PARegisterAndOffset(temp_context, 4 * (3 + instruction.index)))]
 
     if isinstance(instruction, CallFunction):
       if instruction.function.variable_type == VariableType.builtin_function:
+        # Don't create a full-blown stack frame; the C side will do
+        # it. Especially, the function context is passed as a normal parameter,
+        # but not saved into the stack next to ebp.
         temp = self.__virtualRegister(instruction.temporary_for_function_context)
         code = [PAComment("Calling builtin function"),
                 PAComment("Registers"),
@@ -780,10 +782,6 @@ class PseudoAssembler:
                 PACallBuiltinFunction(instruction.function.name),
                 PAClearStack(3),
                 PAPopAllRegisters(),
-                # Restore the function context. We need to always use the same
-                # register for it, because this instruction might be in a basic
-                # block which is not always executed.
-                PAMov(PARegisterAndOffset(temp, 0), self.__function_context_register),
                 PAComment("Calling builtin function done")]
         return code
       assert(False)
@@ -842,12 +840,14 @@ class PseudoAssembler:
   def create(self, ir): # FIXME: cleaner if we give the ir to the ctor
     self.__metadata = ir.metadata
 
-    self.__globals_table_register = self.registers.nextRegister()
-    self.__function_context_register = self.registers.nextRegister()
-    self.__stack_in_user_main_register = self.registers.nextRegister()
     self.__eax = PARegister("eax")
     self.__edx = PARegister("edx")
     self.__esp = PARegister("esp")
+    self.__ebp = PARegister("ebp")
+    self.__globals_table_register = self.registers.nextRegister()
+    # FIXME: magic number which depends on stack layout
+    self.__function_context_location = PARegisterAndOffset(self.__ebp, -8)
+    self.__stack_in_user_main_register = self.registers.nextRegister()
 
     blocks = [PseudoAssemblyBasicBlock(0, [1], self.__createPrologue())]
 
