@@ -1,5 +1,7 @@
 #include "memory.h"
 
+#include "stack_walk.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <cassert>
@@ -128,7 +130,7 @@ bool find_object(int32_t* ptr_to_object, int32_t** object, int32_t* offset) {
 
   // FIXME: binary search.
   for (size_t i = 0; i < current_objects->size(); ++i) {
-    fprintf(stderr, "comparing against current object %p\n", current_objects->at(i)); 
+    // fprintf(stderr, "comparing against current object %p\n", current_objects->at(i)); 
     int32_t* maybe_right_object = current_objects->at(i);
     if (maybe_right_object == ptr_to_object) {
       *offset = 0;
@@ -211,8 +213,10 @@ void mark_and_sweep(std::stack<std::pair<int32_t**, int32_t*>>* ptrs) {
     int32_t** location = ptr_pair.first;
     int32_t* ptr = ptr_pair.second;
 
-    fprintf(stderr, "Visiting object %p\n", ptr);
-    move_object(ptr, location, ptrs);
+    if (is_in_current_chunk(ptr)) {
+      fprintf(stderr, "Mark and sweep root %p\n", ptr);
+      move_object(ptr, location, ptrs);
+    }
   }
 }
 
@@ -223,21 +227,8 @@ void do_gc(std::int32_t* stack_low, std::int32_t* stack_high) {
 
   // Discover potential pointers. They can be in the stack or in the current
   // memory chunk, pointed to by already discovered pointers.
-  int32_t* p;
-  std::stack<std::pair<int32_t**, int32_t*>> roots;
-
-  fprintf(stderr, "stack %p %p\n", stack_low, stack_high);
-
-  for (p = stack_low; p < stack_high; ++p) {
-    fprintf(stderr, "%p: %p\n", (void*)p, (void*)*p);
-    int32_t* maybe_ptr = reinterpret_cast<int32_t*>(*p);
-    if (is_in_current_chunk(maybe_ptr)) {
-      // FIXME: Is this always a pointer? Do we need to know something more
-      // complicated about the structure of the stack?
-      fprintf(stderr, "Found pointer %p\n", maybe_ptr);
-      roots.push(std::make_pair(reinterpret_cast<int32_t**>(p), maybe_ptr));
-    }
-  }
+  std::stack<std::pair<int32_t**, std::int32_t*>> roots;
+  stack_walk(stack_low, stack_high, &roots);
 
   mark_and_sweep(&roots);
 

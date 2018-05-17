@@ -1,7 +1,7 @@
 #ifndef RUNTIME_MEMORY_H
 #define RUNTIME_MEMORY_H
 
-#include <cinttypes>
+#include <cstdint>
 
 void memory_init();
 

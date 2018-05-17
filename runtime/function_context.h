@@ -1,5 +1,5 @@
-#ifndef FUNCTION_CONTEXT_H
-#define FUNCTION_CONTEXT_H
+#ifndef RUNTIME_FUNCTION_CONTEXT_H
+#define RUNTIME_FUNCTION_CONTEXT_H
 
 #include <stdio.h>
 

@@ -300,8 +300,8 @@ class PAClearStack(PseudoAssemblerInstruction):
 
 
 def spillPositionToEbpOffsetString(position):
-  # FIXME: magic numbers (2 is the offset of the spill area from ebp)
-  return "-" + str((position + 2) * 4) + "(%ebp)"
+  # FIXME: magic numbers (3 is the offset of the spill area from ebp)
+  return "-" + str((position + 3) * 4) + "(%ebp)"
 
 
 class PALoadSpilled(PseudoAssemblerInstruction):
@@ -431,7 +431,8 @@ class PASetStackHigh(PseudoAssemblerInstruction):
     self.spill_count = PAConstant(spill_count * 4)
 
   def __str__(self):
-    return "mov %esp, " + str(self.register) + "\naddl " + str(self.spill_count) + ", " + str(self.register)
+    # return "# Set stack high\nmov %esp, " + str(self.register) + "\naddl " + str(self.spill_count) + ", " + str(self.register)
+    return "# Set stack high\nmov %ebp, " + str(self.register)
 
   def getRegisters(self):
     return [[], [self.register]]
@@ -630,12 +631,11 @@ class PseudoAssembler:
     return [PAComment("prologue"),
             PASetStackHigh(self.__stack_in_user_main_register),
             PAPush(self.__stack_in_user_main_register), # stack high
-            PAPush(self.__esp), # stack low
+            PAPush(self.__ebp), # stack low
             PAPush(PAConstant(self.__metadata.function_context_shapes["%main"])),
             PACallRuntimeFunction("GetGlobalsTable"), # this should be a constant too
             PAReturnValueToRegister(self.__globals_table_register),
-            PAClearStack(3),
-            PAMov(PAConstant(0), self.__function_context_location)]
+            PAClearStack(3)]
 
   def __createEpilogue(self):
     return []
@@ -750,7 +750,7 @@ class PseudoAssembler:
       temp = self.__virtualRegister(instruction.temporary_variable)
       return [PAPushAllRegisters(),
               PAPush(self.__stack_in_user_main_register), # stack high
-              PAPush(self.__esp), # stack low
+              PAPush(self.__ebp), # stack low
               PAPush(PAConstant(self.__metadata.function_context_shapes[instruction.function.name])), # params count
               PAPush(self.__function_context_location), # outer
               PAPush(PAConstant(0)), # spill_count
@@ -777,7 +777,7 @@ class PseudoAssembler:
                 PAPushAllRegisters(),
                 PAComment("Stack high, stack low and function context"),
                 PAPush(self.__stack_in_user_main_register), # stack high
-                PAPush(self.__esp), # stack low
+                PAPush(self.__ebp), # stack low
                 PAPush(temp),
                 PACallBuiltinFunction(instruction.function.name),
                 PAClearStack(3),
