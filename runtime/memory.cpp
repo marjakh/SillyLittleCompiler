@@ -31,8 +31,14 @@ char* other_chunk = nullptr;
 char* other_chunk_cursor = nullptr;
 char* other_chunk_end = nullptr;
 
-std::vector<int32_t*>* current_objects;
-std::vector<int32_t*>* other_objects;
+std::vector<std::int32_t*>* current_objects;
+std::vector<std::int32_t*>* other_objects;
+
+static std::int32_t* stack_high = nullptr;
+
+void memory_set_stack_high(std::int32_t* stack_high_) {
+  stack_high = stack_high_;
+}
 
 // FIMXE: intptr_t?
 bool is_in_current_chunk(void* p) {
@@ -84,7 +90,7 @@ void memory_teardown() {
   delete other_objects;
 }
 
-void do_gc(std::int32_t* stack_low, std::int32_t* stack_high);
+void do_gc(std::int32_t* stack_low);
 
 int32_t* allocate_from_current_chunk(std::int32_t size) {
   if (current_chunk_cursor + size + 2 < current_chunk_end) {
@@ -119,8 +125,7 @@ void* memory_allocate_no_gc(int32_t size) {
   assert(false);
 }
 
-// FIXME: stack_high is always the same, no need to pass it more than once.
-void* memory_allocate(int32_t size, int32_t* stack_low, int32_t* stack_high) {
+void* memory_allocate(int32_t size, int32_t* stack_low) {
   fprintf(stderr, "Allocate %d\n", size);
 
   int32_t* result = 0;
@@ -133,7 +138,7 @@ void* memory_allocate(int32_t size, int32_t* stack_low, int32_t* stack_high) {
     fprintf(stderr, "Doesn't fit in the current chunk\n");
     // Doesn't fit. Collect garbage. Then try again. (Umm, actually this does GC
     // twice... FIXME.)
-    do_gc(stack_low, stack_high);
+    do_gc(stack_low);
     ++gc_count;
   }
 
@@ -238,7 +243,7 @@ void mark_and_sweep(std::stack<std::pair<int32_t**, int32_t*>>* ptrs) {
   }
 }
 
-void do_gc(std::int32_t* stack_low, std::int32_t* stack_high) {
+void do_gc(std::int32_t* stack_low) {
   fprintf(stderr, "GC starting\n");
   fprintf(stderr, "Current chunk: %p %p %p\n", current_chunk, current_chunk_cursor, current_chunk_end);
   fprintf(stderr, "%d full, no of objects: %d\n", 100 * (current_chunk_cursor - current_chunk) / (current_chunk_end - current_chunk), current_objects->size());
@@ -265,8 +270,8 @@ void do_gc(std::int32_t* stack_low, std::int32_t* stack_high) {
 
 }
 
-void memory_test_do_gc(int32_t* stack_low, int32_t* stack_high) {
-  do_gc(stack_low, stack_high);
+void memory_test_do_gc(int32_t* stack_low) {
+  do_gc(stack_low);
 }
 
 bool memory_test_is_live_object(int32_t* object) {

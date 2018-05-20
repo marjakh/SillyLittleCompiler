@@ -411,27 +411,6 @@ class PACmp(PseudoAssemblerInstruction):
     self.left = PseudoAssemblerInstruction.replaceSpilledRegisterIn(self.left, register, new_register)
     self.right = PseudoAssemblerInstruction.replaceSpilledRegisterIn(self.right, register, new_register)
 
-class PASetStackHigh(PseudoAssemblerInstruction):
-  def __init__(self, register):
-    super().__init__()
-    self.spill_count = None
-    self.register = register
-
-  def setSpillCount(self, spill_count):
-    self.spill_count = PAConstant(spill_count * POINTER_SIZE)
-
-  def __str__(self):
-    return "# Set stack high\nmov %ebp, " + str(self.register)
-
-  def getRegisters(self):
-    return [[], [self.register]]
-
-  def replaceRegisters(self, assigned_registers):
-    self.register = PseudoAssemblerInstruction.replaceRegistersIn(self.register, self, assigned_registers)
-
-  def replaceSpilledRegister(self, register, new_register):
-    self.register = PseudoAssemblerInstruction.replaceSpilledRegisterIn(self.register, register, new_register)
-
 
 class PAJumpInstruction(PseudoAssemblerInstruction):
   def __init__(self, op, label):
@@ -619,8 +598,7 @@ class PseudoAssembler:
 
   def __createPrologue(self):
     # FIXME: DEFINE %main as a constant
-    return [PAComment("prologue"),
-            PASetStackHigh(self.__stack_in_user_main_register)]
+    return [PAComment("prologue")]
 
   def __createEpilogue(self):
     return []
@@ -748,14 +726,13 @@ class PseudoAssembler:
       # FIXME: this doesn't work for inner functions yet
       temp = self.__virtualRegister(instruction.temporary_variable)
       return [PAPushAllRegisters(),
-              PAPush(self.__stack_in_user_main_register), # stack high
               PAPush(self.__ebp), # stack low
               PAPush(PAConstant(self.__metadata.function_local_counts[instruction.function.name])),
               PAPush(PAConstant(self.__metadata.function_param_counts[instruction.function.name])),
               PAPush(PAConstant(0)), # spill_count
               PAPush(self.__function_context_location), # outer
               PACallRuntimeFunction("CreateFunctionContext"),
-              PAClearStack(6),
+              PAClearStack(5),
               PAPopAllRegisters(),
               PAReturnValueToRegister(temp)]
 
@@ -775,12 +752,11 @@ class PseudoAssembler:
         code = [PAComment("Calling builtin function"),
                 PAComment("Registers"),
                 PAPushAllRegisters(),
-                PAComment("Stack high, stack low and function context"),
-                PAPush(self.__stack_in_user_main_register), # stack high
+                PAComment("Stack low and function context"),
                 PAPush(self.__ebp), # stack low
                 PAPush(temp),
                 PACallBuiltinFunction(instruction.function.name),
-                PAClearStack(3),
+                PAClearStack(2),
                 PAPopAllRegisters(),
                 PAComment("Calling builtin function done")]
         return code
@@ -845,7 +821,6 @@ class PseudoAssembler:
     self.__esp = PARegister("esp")
     self.__ebp = PARegister("ebp")
     self.__function_context_location = PARegisterAndOffset(self.__ebp, FUNCTION_CONTEXT_FROM_EBP_OFFSET * POINTER_SIZE)
-    self.__stack_in_user_main_register = self.registers.nextRegister()
 
     blocks = [PseudoAssemblyBasicBlock(0, [1], self.__createPrologue())]
 

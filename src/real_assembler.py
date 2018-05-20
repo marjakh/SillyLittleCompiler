@@ -107,6 +107,10 @@ class RealAssembler:
     program.append(PAPush(eax))
     program.append(PACall("memset"))
     program.append(PAClearStack(3))
+    #5) Let runtime know about stack high
+    program.append(PAPush(ebp))
+    program.append(PACallRuntimeFunction("SetStackHigh"))
+    program.append(PAClearStack(1))
     for r in real_registers:
       program.append(PAMov(PAConstant(0), r))
     for b in pseudo_assembly.blocks:
