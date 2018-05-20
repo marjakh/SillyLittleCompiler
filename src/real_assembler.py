@@ -9,6 +9,7 @@ class RealAssemblerInstruction:
   def __init__(self):
     pass
 
+
 class Label:
   def __init__(self, name):
     super().__init__()
@@ -96,9 +97,6 @@ class RealAssembler:
     # FIXME: create function descriptor
     # FIXME: each function needs this.
     program.append(Label("main_prologue"))
-    # Get the param (a FunctionContext which we can fill)
-    program.append(PAMov(PARegisterAndOffset(esp,  4), eax))
-    program.append(PAMov(PAConstant(spill_position), PARegisterAndOffset(eax, 0)))
     # Crete stack frame for the main function.
     # 1) Saved ebp (new ebp will point to it)
     program.append(PAPush(ebp))
@@ -106,6 +104,11 @@ class RealAssembler:
     # 2) Stack frame marker
     program.append(PAPush(PAConstant(0xc0decafe)))
     # 3) Function context pointer
+    program.append(PAPush(PAConstant(pseudo_assembly.metadata.function_local_counts["%main"])))
+    program.append(PAPush(PAConstant(spill_position)))
+    program.append(PACallRuntimeFunction("CreateMainFunctionContext"))
+    program.append(PAReturnValueToRegister(eax))
+    program.append(PAClearStack(2))
     program.append(PAPush(eax))
     #4) Space for spills
     # FIXME: magic number

@@ -481,7 +481,8 @@ class MediumLevelIR:
 
 class MediumLevelIRMetadata:
   def __init__(self):
-    self.function_context_shapes = dict()
+    self.function_param_counts = dict()
+    self.function_local_counts = dict()
 
 
 class MediumLevelIRBasicBlock:
@@ -504,11 +505,14 @@ class MediumLevelIRCreator:
     for [f, cfg] in cfgs:
       assert(f)
       if f.name == "%main":
-        metadata.function_context_shapes[f.name] = computeVariableOffsetsForNonFunctionScope(top_scope)
+        metadata.function_local_counts[f.name] = computeVariableOffsetsForNonFunctionScope(top_scope)
+        metadata.function_param_counts[f.name] = 0
       else:
-        metadata.function_context_shapes[f.name] = computeVariableOffsetsForFunction(f)
+        metadata.function_local_counts[f.name] = computeVariableOffsetsForFunction(f)
+        # FIXME: params
+        metadata.function_param_counts[f.name] = 0
 
-    addBuiltinFunctionShapes(metadata.function_context_shapes)
+    addBuiltinFunctionShapes(metadata.function_param_counts, metadata.function_local_counts)
 
     # For each function, create the medium level IR.
     is_first = True

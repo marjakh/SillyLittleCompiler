@@ -86,6 +86,39 @@ void memory_teardown() {
 
 void do_gc(std::int32_t* stack_low, std::int32_t* stack_high);
 
+int32_t* allocate_from_current_chunk(std::int32_t size) {
+  if (current_chunk_cursor + size + 2 < current_chunk_end) {
+    fprintf(stderr, "Fits in the current chunk\n");
+    // Reserve space for size and color.
+    // FIXME: compact; no need to use 8 bytes for them. Also add helpers.
+    int32_t* result = reinterpret_cast<int32_t*>(current_chunk_cursor);
+    result += 2;
+    fprintf(stderr, "Allocation result: %p\n", result);
+    memset(result, 0, size);
+    int32_t* p = reinterpret_cast<int32_t*>(current_chunk_cursor);
+    *p = size;
+    fprintf(stderr, "Object at %p, size at %p, ", result, p);
+    ++p;
+    fprintf(stderr, "color at %p\n", p);
+    *p = COLOR_WHITE;
+    current_chunk_cursor += (size + 2 * INT_SIZE);
+
+    current_objects->push_back(result);
+    return result;
+  }
+  return nullptr;
+}
+
+void* memory_allocate_no_gc(int32_t size) {
+  fprintf(stderr, "Allocate %d\n", size);
+
+  int32_t* result = allocate_from_current_chunk(size);
+  if (result != nullptr) {
+    return result;
+  }
+  assert(false);
+}
+
 // FIXME: stack_high is always the same, no need to pass it more than once.
 void* memory_allocate(int32_t size, int32_t* stack_low, int32_t* stack_high) {
   fprintf(stderr, "Allocate %d\n", size);
@@ -93,23 +126,8 @@ void* memory_allocate(int32_t size, int32_t* stack_low, int32_t* stack_high) {
   int32_t* result = 0;
   int gc_count = 0;
   while (gc_count <= 1) {
-    if (current_chunk_cursor + size + 2 < current_chunk_end) {
-      fprintf(stderr, "Fits in the current chunk\n");
-      // Reserve space for size and color.
-      // FIXME: compact; no need to use 8 bytes for them. Also add helpers.
-      result = reinterpret_cast<int32_t*>(current_chunk_cursor);
-      result += 2;
-      fprintf(stderr, "Allocation result: %p\n", result);
-      memset(result, 0, size);
-      int32_t* p = reinterpret_cast<int32_t*>(current_chunk_cursor);
-      *p = size;
-      fprintf(stderr, "Object at %p, size at %p, ", result, p);
-      ++p;
-      fprintf(stderr, "color at %p\n", p);
-      *p = COLOR_WHITE;
-      current_chunk_cursor += (size + 2 * INT_SIZE);
-
-      current_objects->push_back(result);
+    result = allocate_from_current_chunk(size);
+    if (result != nullptr) {
       return result;
     }
     fprintf(stderr, "Doesn't fit in the current chunk\n");

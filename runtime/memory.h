@@ -8,6 +8,7 @@ void memory_init();
 void memory_teardown();
 
 void* memory_allocate(std::int32_t size, std::int32_t* stack_low, std::int32_t* stack_high);
+void* memory_allocate_no_gc(std::int32_t size);
 
 // For testing purposes
 void memory_test_do_gc(std::int32_t* stack_low, std::int32_t* stack_high);

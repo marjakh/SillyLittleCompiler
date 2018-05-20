@@ -2,22 +2,13 @@
 
 from medium_level_ir import *
 from util import listToString, toString, print_error
+from constants import *
 
 """
 
 Construct low level IR ("pseudo-assembly")
 - Virtual registers.
 - Displacement addressing.
-
-
-Memory layout of objects:
-
-FunctionContext:
-link to previous function context (for restoring)
-link to outer function context (for nested functions)
-return value
-parameters
-local variables
 
 
 Division:
@@ -95,7 +86,8 @@ class PAVirtualRegister(PARegister):
   def registersReadIfSource(self):
     return [self]
 
-  # Comparison needed for sorting live ranges in register allocator. Order doesn't really matter.
+  # Comparison needed for sorting live ranges in register allocator. Order
+  # doesn't really matter.
   def __lt__(self, other):
     return self.name < other.name
 
@@ -583,8 +575,10 @@ class PseudoAssembly:
 
 
 class PseudoAssemblyMetadata:
-  def __init__(self, registers):
+  def __init__(self, registers, function_local_counts, function_param_counts):
     self.registers = registers
+    self.function_local_counts = function_local_counts
+    self.function_param_counts = function_param_counts
 
 
 class PseudoAssemblyBasicBlock:
@@ -629,13 +623,7 @@ class PseudoAssembler:
   def __createPrologue(self):
     # FIXME: DEFINE %main as a constant
     return [PAComment("prologue"),
-            PASetStackHigh(self.__stack_in_user_main_register),
-            PAPush(self.__stack_in_user_main_register), # stack high
-            PAPush(self.__ebp), # stack low
-            PAPush(PAConstant(self.__metadata.function_context_shapes["%main"])),
-            PACallRuntimeFunction("GetGlobalsTable"), # this should be a constant too
-            PAReturnValueToRegister(self.__globals_table_register),
-            PAClearStack(3)]
+            PASetStackHigh(self.__stack_in_user_main_register)]
 
   def __createEpilogue(self):
     return []
@@ -645,11 +633,18 @@ class PseudoAssembler:
     print_error(instruction)
     assert(False)
 
+  def __getFunctionContext(self, function_context):
+    return PAMov(self.__function_context_location, function_context)
+
   def __createForLoad(self, load):
     assert(isinstance(load.where, TemporaryVariable))
     temp = self.__virtualRegister(load.where)
     if isinstance(load.what, Global):
-      return [PAMov(PARegisterAndOffset(self.__globals_table_register, load.what.variable.offset), temp)]
+      # Globals are locals in the main function context.
+      function_context = self.registers.nextRegister()
+      # FIXME: take params size into account
+      return [self.__getFunctionContext(function_context),
+              PAMov(PARegisterAndOffset(function_context, load.what.variable.offset + FUNCTION_CONTEXT_HEADER_SIZE), temp)]
 
     if isinstance(load.what, Array):
       [address_register, code] = self.__createLoadArray(load.what)
@@ -667,8 +662,11 @@ class PseudoAssembler:
       # FIXME: refactor this; the array is just an address which is the value of
       # the global variable, so we should just load that value. Create a Load
       # with this temp as load.where and array.base as load.what.
+      function_context = self.registers.nextRegister()
       address_register = self.registers.nextRegister()
-      code += [PAMov(PARegisterAndOffset(self.__globals_table_register, array.base.variable.offset), address_register)]
+      code += [self.__getFunctionContext(function_context),
+               PAMov(PARegisterAndOffset(function_context, array.base.variable.offset + FUNCTION_CONTEXT_HEADER_SIZE), address_register)]
+
       [address_register2, index_code] = self.__createArrayIndexingCode(address_register, array.index)
       return [address_register2, code + index_code]
     elif isinstance(array.base, Array):
@@ -716,14 +714,18 @@ class PseudoAssembler:
 
     if isinstance(store.what, Constant):
       if isinstance(store.where, Global):
-        return [PAMov(PAConstant(store.what.value), PARegisterAndOffset(self.__globals_table_register, store.where.variable.offset))]
+        function_context = self.registers.nextRegister()
+        return [self.__getFunctionContext(function_context),
+                PAMov(PAConstant(store.what.value), PARegisterAndOffset(function_context, store.where.variable.offset + FUNCTION_CONTEXT_HEADER_SIZE))]
       if isinstance(store.where, TemporaryVariable):
         return [PAMov(PAConstant(store.what.value), self.__virtualRegister(store.where))]
     else:
       assert(isinstance(store.what, TemporaryVariable))
       if isinstance(store.where, Global):
         temp = self.__virtualRegister(store.what)
-        return [PAMov(temp, PARegisterAndOffset(self.__globals_table_register, store.where.variable.offset))]
+        function_context = self.registers.nextRegister()
+        return [self.__getFunctionContext(function_context),
+                PAMov(temp, PARegisterAndOffset(function_context, store.where.variable.offset + FUNCTION_CONTEXT_HEADER_SIZE))]
 
     # FIXME: implement the rest
     self.__cannotCreate(store)
@@ -751,11 +753,12 @@ class PseudoAssembler:
       return [PAPushAllRegisters(),
               PAPush(self.__stack_in_user_main_register), # stack high
               PAPush(self.__ebp), # stack low
-              PAPush(PAConstant(self.__metadata.function_context_shapes[instruction.function.name])), # params count
-              PAPush(self.__function_context_location), # outer
+              PAPush(PAConstant(self.__metadata.function_local_counts[instruction.function.name])),
+              PAPush(PAConstant(self.__metadata.function_param_counts[instruction.function.name])),
               PAPush(PAConstant(0)), # spill_count
+              PAPush(self.__function_context_location), # outer
               PACallRuntimeFunction("CreateFunctionContext"),
-              PAClearStack(5),
+              PAClearStack(6),
               PAPopAllRegisters(),
               PAReturnValueToRegister(temp)]
 
@@ -844,7 +847,6 @@ class PseudoAssembler:
     self.__edx = PARegister("edx")
     self.__esp = PARegister("esp")
     self.__ebp = PARegister("ebp")
-    self.__globals_table_register = self.registers.nextRegister()
     # FIXME: magic number which depends on stack layout
     self.__function_context_location = PARegisterAndOffset(self.__ebp, -8)
     self.__stack_in_user_main_register = self.registers.nextRegister()
@@ -864,6 +866,6 @@ class PseudoAssembler:
     # for b in blocks:
     #   print_debug(listToString(b.instructions, "", "", "\n"))
 
-    return PseudoAssembly(blocks, PseudoAssemblyMetadata(self.registers))
+    return PseudoAssembly(blocks, PseudoAssemblyMetadata(self.registers, self.__metadata.function_local_counts, self.__metadata.function_param_counts))
 
 # FIXME: calling convention: push the function context! so we don't need to reserve a register for it... and in the end of the function, go back.
