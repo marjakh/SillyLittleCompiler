@@ -50,13 +50,5 @@ if __name__ == "__main__":
 
   real_assembly = RealAssembler.create(pseudo_assembly)
 
-#  output = NamedTemporaryFile()
-#  output.write(bytes(listToString(real_assembly, "", "\n", "\n"), "UTF-8"))
-#  # FIXME: allow the caller to pass the object file name
-#  # print(output.name)
-#  output.flush()
-#  call(["as", "-32", "-ggstabs", "-o" "temp.o", output.name])
-#  output.close()
-
   # print("Final output:")
   print(listToString(real_assembly, "", "\n", "\n"))
