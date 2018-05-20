@@ -42,17 +42,6 @@ class SpillRegister(Register):
     super().__init__("Spill_" + str(ix))
 
 
-# FIXME: might be dead
-class SpillRegisterCreator:
-  def __init__(self):
-    self.ix = 0
-
-  def getSpillRegister(self):
-    self.ix += 1
-    return SpillRegister(self.ix)
-
-
-
 # Does mostly register allocation. Also, we need to take care of saving and
 # restoring caller-saves registers.
 class RealAssembler:
@@ -94,7 +83,6 @@ class RealAssembler:
       Label("user_code")
     ]
 
-    # FIXME: create function descriptor
     # FIXME: each function needs this.
     program.append(Label("main_prologue"))
     # Crete stack frame for the main function.
@@ -111,15 +99,14 @@ class RealAssembler:
     program.append(PAClearStack(2))
     program.append(PAPush(eax))
     #4) Space for spills
-    # FIXME: magic number
     program.append(PAComment("Number of spills: " + str(spill_position)))
-    program.append(PASub(PAConstant(spill_position * 4), esp))
+    program.append(PASub(PAConstant(spill_position * POINTER_SIZE), esp))
     program.append(PAMov(esp, eax))
-    program.append(PAPush(PAConstant(spill_position * 4)))
+    program.append(PAPush(PAConstant(spill_position * POINTER_SIZE)))
     program.append(PAPush(PAConstant(0)))
     program.append(PAPush(eax))
     program.append(PACall("memset"))
-    program.append(PAAdd(PAConstant(3 * 4), esp))
+    program.append(PAClearStack(3))
     for r in real_registers:
       program.append(PAMov(PAConstant(0), r))
     for b in pseudo_assembly.blocks:

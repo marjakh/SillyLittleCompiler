@@ -288,12 +288,11 @@ class PAClearStack(PseudoAssemblerInstruction):
     self.value = value
 
   def __str__(self):
-    return "addl $0x{0:x}, %esp".format(self.value * 4) # FIXME: magic number
+    return "addl $0x{0:x}, %esp".format(self.value * POINTER_SIZE)
 
 
 def spillPositionToEbpOffsetString(position):
-  # FIXME: magic numbers (3 is the offset of the spill area from ebp)
-  return "-" + str((position + 3) * 4) + "(%ebp)"
+  return str((SPILL_AREA_FROM_EBP_OFFSET - position) * POINTER_SIZE) + "(%ebp)"
 
 
 class PALoadSpilled(PseudoAssemblerInstruction):
@@ -419,11 +418,9 @@ class PASetStackHigh(PseudoAssemblerInstruction):
     self.register = register
 
   def setSpillCount(self, spill_count):
-    # FIXME: magic number 4
-    self.spill_count = PAConstant(spill_count * 4)
+    self.spill_count = PAConstant(spill_count * POINTER_SIZE)
 
   def __str__(self):
-    # return "# Set stack high\nmov %esp, " + str(self.register) + "\naddl " + str(self.spill_count) + ", " + str(self.register)
     return "# Set stack high\nmov %ebp, " + str(self.register)
 
   def getRegisters(self):
@@ -639,6 +636,7 @@ class PseudoAssembler:
   def __createForLoad(self, load):
     assert(isinstance(load.where, TemporaryVariable))
     temp = self.__virtualRegister(load.where)
+    # FIXME: merge globals and locals
     if isinstance(load.what, Global):
       # Globals are locals in the main function context.
       function_context = self.registers.nextRegister()
@@ -678,24 +676,23 @@ class PseudoAssembler:
     assert(False)
 
   def __createArrayIndexingCode(self, address_register, index):
-    # FIXME: magic number for size
     code = [PAComment("Indexing array")]
     if isinstance(index, Constant):
       # FIXME: does this actually happen ever?
       assert(False)
     else:
       assert(isinstance(index, TemporaryVariable))
-      constant_register = self.registers.nextRegister()
+      pointer_size_register = self.registers.nextRegister()
       address_register2 = self.registers.nextRegister()
       code += [PAMov(self.__virtualRegister(index), self.__eax),
-               PAMov(PAConstant(4), constant_register),
+               PAMov(PAConstant(POINTER_SIZE), pointer_size_register),
                PAPush(self.__edx),
                PAMov(PAConstant(0), self.__edx),
-               PAMul(constant_register),
+               PAMul(pointer_size_register),
                PAPop(self.__edx),
                PAMov(self.__eax, address_register2),
                PAAdd(address_register, address_register2)]
-      constant_register.addConflict(self.__edx)
+      pointer_size_register.addConflict(self.__edx)
     code += [PAComment("Computing array address done")]
     return [address_register2, code]
 
@@ -766,8 +763,8 @@ class PseudoAssembler:
       temp_context = self.__virtualRegister(instruction.temporary_for_function_context)
       temp = self.__virtualRegister(instruction.temporary_variable)
       # Note +3 here, because the function context contains the spill count,
-      # the outer function context and the params size. FIXME: magic 4 * here again.
-      return [PAMov(temp, PARegisterAndOffset(temp_context, 4 * (3 + instruction.index)))]
+      # the outer function context and the params size.
+      return [PAMov(temp, PARegisterAndOffset(temp_context, POINTER_SIZE * (FUNCTION_CONTEXT_PARAMS_OFFSET + instruction.index)))]
 
     if isinstance(instruction, CallFunction):
       if instruction.function.variable_type == VariableType.builtin_function:
@@ -847,8 +844,7 @@ class PseudoAssembler:
     self.__edx = PARegister("edx")
     self.__esp = PARegister("esp")
     self.__ebp = PARegister("ebp")
-    # FIXME: magic number which depends on stack layout
-    self.__function_context_location = PARegisterAndOffset(self.__ebp, -8)
+    self.__function_context_location = PARegisterAndOffset(self.__ebp, FUNCTION_CONTEXT_FROM_EBP_OFFSET * POINTER_SIZE)
     self.__stack_in_user_main_register = self.registers.nextRegister()
 
     blocks = [PseudoAssemblyBasicBlock(0, [1], self.__createPrologue())]
@@ -868,4 +864,3 @@ class PseudoAssembler:
 
     return PseudoAssembly(blocks, PseudoAssemblyMetadata(self.registers, self.__metadata.function_local_counts, self.__metadata.function_param_counts))
 
-# FIXME: calling convention: push the function context! so we don't need to reserve a register for it... and in the end of the function, go back.
