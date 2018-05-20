@@ -729,10 +729,9 @@ class PseudoAssembler:
               PAPush(self.__ebp), # stack low
               PAPush(PAConstant(self.__metadata.function_local_counts[instruction.function.name])),
               PAPush(PAConstant(self.__metadata.function_param_counts[instruction.function.name])),
-              PAPush(PAConstant(0)), # spill_count
               PAPush(self.__function_context_location), # outer
               PACallRuntimeFunction("CreateFunctionContext"),
-              PAClearStack(5),
+              PAClearStack(4),
               PAPopAllRegisters(),
               PAReturnValueToRegister(temp)]
 

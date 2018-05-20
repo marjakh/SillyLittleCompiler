@@ -93,11 +93,12 @@ class RealAssembler:
     program.append(PAPush(PAConstant(0xc0decafe)))
     # 3) Function context pointer
     program.append(PAPush(PAConstant(pseudo_assembly.metadata.function_local_counts["%main"])))
-    program.append(PAPush(PAConstant(spill_position)))
     program.append(PACallRuntimeFunction("CreateMainFunctionContext"))
     program.append(PAReturnValueToRegister(eax))
-    program.append(PAClearStack(2))
+    program.append(PAClearStack(1))
     program.append(PAPush(eax))
+    # Set spill count in function context
+    program.append(PAMov(PAConstant(spill_position), PARegisterAndOffset(eax, FUNCTION_CONTEXT_SPILL_COUNT_OFFSET * POINTER_SIZE)))
     #4) Space for spills
     program.append(PAComment("Number of spills: " + str(spill_position)))
     program.append(PASub(PAConstant(spill_position * POINTER_SIZE), esp))
