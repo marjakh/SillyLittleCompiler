@@ -82,5 +82,5 @@ class Function:
   def label(self):
     if self.name == "%main":
       return "user_main"
-    return "user_function_" + self.name
+    return "user_function_useless_" + self.name # FIXME: remove
 

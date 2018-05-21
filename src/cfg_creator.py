@@ -63,6 +63,7 @@ class CfgCreatorVisitor(ParseTreeVisitor):
     # while (foo() == 0) { ... }
     # if (foo() == 0) { ... }
     # foo(bar());
+    # FIXME: add tests for these
     self.visit_expressions = False
     self.__basic_blocks = []
     self.__basic_block_stack = [self.__newBasicBlock()]
@@ -94,6 +95,7 @@ class CfgCreatorVisitor(ParseTreeVisitor):
     assert(len(v.__basic_block_stack) == 1)
     # print_debug("Adding " + str(len(v.__basic_blocks)) + " basic blocks")
     self.__cfgs.append([statement.function, v.__basic_blocks])
+    # FIXME: maybe need to set outer function here
 
   def visitLetStatement(self, statement):
     super().visitLetStatement(statement)
@@ -201,6 +203,8 @@ class CfgCreator:
   def create(self):
     # Top scope statements might be sprinkled in between functions. Gather them
     # all in one place and create the cfg for the top scope in the end.
+
+    # FIXME: the same for inner functions too...
     main_body = []
     cfgs = []
     visitor = CfgCreatorVisitor(cfgs)
@@ -214,5 +218,8 @@ class CfgCreator:
     main_statement.function = Function(None)
     main_statement.function.name = "%main"
     visitor.visitFunctionStatement(main_statement)
+
+    # print_debug("CFGs:")
+    # print_debug(cfgs)
     return cfgs
 

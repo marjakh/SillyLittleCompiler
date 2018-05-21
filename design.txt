@@ -16,9 +16,6 @@ Stack structure
 The first local is the function context??
 
 
-How does the GC know how far to scan the stack?
-
-
 When entering user_code, the stack is:
 
 return address
@@ -31,13 +28,34 @@ function context pointer
 saved ebp << ebp
 return address
 
-
 When user_code calls a builtin:
 
 params << let's pass ebp as a param??
-callee saved registers
+caller saved registers
 spill space for user_code
-<<< and here we should have a pointer to the function context which contains the descriptor
+function context ptr
 0xc0decafe
 saved ebp << ebp
+return address
+
+When user_code calls a user function (caller):
+
+function context << needs to be popped
+caller saved registers
+spill space for user_code
+function context ptr
+0xc0decafe
+saved ebp << ebp
+return address
+
+When user_code calls a user function (callee):
+
+function context ptr
+0xc0decafe
+saved ebp << ebp
+caller saved registers
+spill space for user_code
+function context ptr
+0xc0decafe
+older saved ebp << saved ebp
 return address

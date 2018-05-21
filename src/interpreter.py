@@ -110,6 +110,7 @@ def array_builtin(parameters):
   assert(len(parameters) == 1)
   return Array(parameters[0])
 
+
 class Interpreter:
   def __init__(self, grammar, source):
     self.grammar = grammar
@@ -149,7 +150,7 @@ class Interpreter:
 
   def __executeStatements(self, statements):
     # We need to execute function declarations first since they're
-    # hoisted. Executing them doesn't do antying else than to create the
+    # hoisted. Executing them doesn't do anything else than to create the
     # corresponding Function objects.
 
     for s in statements:

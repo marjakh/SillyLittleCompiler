@@ -1,0 +1,7 @@
+function f() {
+   write(2511);
+}
+
+write(1);
+f();
+write(2);

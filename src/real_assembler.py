@@ -45,84 +45,128 @@ class SpillRegister(Register):
 # Does mostly register allocation. Also, we need to take care of saving and
 # restoring caller-saves registers.
 class RealAssembler:
+  def __init__(self):
+    self.__eax = Register("eax")
+    self.__ebx = Register("ebx")
+    self.__real_registers = [self.__ebx, Register("ecx"), Register("edx")]
+    self.__ebp = Register("ebp")
+    self.__esp = Register("esp")
 
-  @staticmethod
-  def create(pseudo_assembly):
+  # FIXME: refactor out common parts, move code to pseudo assembler.
+  def __createMainPrologue(self, spill_position, local_counts):
+    code = [Label("user_code"),
+            PAComment("prologue"),
+            # Crete stack frame for the main function.
+            # 1) Saved ebp (new ebp will point to it)
+            PAPush(self.__ebp),
+            PAMov(self.__esp, self.__ebp),
+            # 2) Stack frame marker
+            PAPush(PAConstant(0xc0decafe)),
+            # 3) Function context pointer
+            PAPush(PAConstant(local_counts)),
+            PACallRuntimeFunction("CreateMainFunctionContext"),
+            PAReturnValueToRegister(self.__eax),
+            PAClearStack(1),
+            PAPush(self.__eax),
+            # Set spill count in function context
+            PAMov(PAConstant(spill_position), PARegisterAndOffset(self.__eax, FUNCTION_CONTEXT_SPILL_COUNT_OFFSET * POINTER_SIZE)),
+            #4) Space for spills
+            PAComment("Number of spills: " + str(spill_position)),
+            PASub(PAConstant(spill_position * POINTER_SIZE), self.__esp),
+            PAMov(self.__esp, self.__eax),
+            PAPush(PAConstant(spill_position * POINTER_SIZE)),
+            PAPush(PAConstant(0)),
+            PAPush(self.__eax),
+            PACall("memset"),
+            PAClearStack(3),
+            #5) Let runtime know about stack high
+            PAPush(self.__ebp),
+            PACallRuntimeFunction("SetStackHigh"),
+            PAClearStack(1)]
+    for r in self.__real_registers:
+      code.append(PAMov(PAConstant(0), r))
+    return code
+
+  def __createFunctionPrologue(self, function_name, spill_position):
+    code = [Label("user_function_" + function_name),
+            PAComment("prologue"),
+            PAPop(self.__ebx), # Return address
+            PAPop(self.__eax), # Function context
+            PAPush(self.__ebx), # Push return address back
+            # Crete stack frame for the function.
+            # 1) Saved self.__ebp (new self.__ebp will point to it)
+            PAPush(self.__ebp),
+            PAMov(self.__esp, self.__ebp),
+            # 2) Stack frame marker
+            PAPush(PAConstant(0xc0decafe)),
+            # 3) Function context pointer
+            PAPush(self.__eax),
+            # Set spill count in function context
+            PAMov(PAConstant(spill_position), PARegisterAndOffset(self.__eax, FUNCTION_CONTEXT_SPILL_COUNT_OFFSET * POINTER_SIZE)),
+            #4) Space for spills
+            PAComment("Number of spills: " + str(spill_position)),
+            PASub(PAConstant(spill_position * POINTER_SIZE), self.__esp),
+            PAMov(self.__esp, self.__eax),
+            PAPush(PAConstant(spill_position * POINTER_SIZE)),
+            PAPush(PAConstant(0)),
+            PAPush(self.__eax),
+            PACall("memset"),
+            PAClearStack(3)]
+    return code
+
+  def create(self, pseudo_assembly):
     # FIXME: when we have functions, we need to run the register allocator for each separately.
-
-    eax = Register("eax")
-    real_registers = [Register("ebx"), Register("ecx"), Register("edx")]
-    ebp = Register("ebp")
-    esp = Register("esp")
-
-    # If we cannot assign registers for all temporary variables, we need to
-    # spill some registers.
-    spill_position = 1
-    assigned_registers = None
-    while True:
-      # print_debug("Pseudo assembly:")
-      # print_debug(pseudo_assembly)
-
-      LiveRangeAnalyser.analyse(pseudo_assembly)
-
-      action = RegisterAllocator.tryToAllocate(pseudo_assembly.metadata.registers,
-                                               real_registers)
-      if isinstance(action, Spill):
-        # print_debug("Spilling " + str(action.register) + " to position " + str(spill_position))
-        pseudo_assembly.spill(action.register, spill_position)
-        spill_position += 1
-      elif isinstance(action, RegisterAllocationDone):
-        assigned_registers = action.assigned_registers
-        break
-      else:
-        assert(False)
 
     program = [
       Label("text"),
-      GlobalDeclaration("user_code"),
-      Label("user_code")
+      GlobalDeclaration("user_code")
     ]
 
-    # FIXME: each function needs this.
-    program.append(Label("main_prologue"))
-    # Crete stack frame for the main function.
-    # 1) Saved ebp (new ebp will point to it)
-    program.append(PAPush(ebp))
-    program.append(PAMov(esp, ebp))
-    # 2) Stack frame marker
-    program.append(PAPush(PAConstant(0xc0decafe)))
-    # 3) Function context pointer
-    program.append(PAPush(PAConstant(pseudo_assembly.metadata.function_local_counts["%main"])))
-    program.append(PACallRuntimeFunction("CreateMainFunctionContext"))
-    program.append(PAReturnValueToRegister(eax))
-    program.append(PAClearStack(1))
-    program.append(PAPush(eax))
-    # Set spill count in function context
-    program.append(PAMov(PAConstant(spill_position), PARegisterAndOffset(eax, FUNCTION_CONTEXT_SPILL_COUNT_OFFSET * POINTER_SIZE)))
-    #4) Space for spills
-    program.append(PAComment("Number of spills: " + str(spill_position)))
-    program.append(PASub(PAConstant(spill_position * POINTER_SIZE), esp))
-    program.append(PAMov(esp, eax))
-    program.append(PAPush(PAConstant(spill_position * POINTER_SIZE)))
-    program.append(PAPush(PAConstant(0)))
-    program.append(PAPush(eax))
-    program.append(PACall("memset"))
-    program.append(PAClearStack(3))
-    #5) Let runtime know about stack high
-    program.append(PAPush(ebp))
-    program.append(PACallRuntimeFunction("SetStackHigh"))
-    program.append(PAClearStack(1))
-    for r in real_registers:
-      program.append(PAMov(PAConstant(0), r))
-    for b in pseudo_assembly.blocks:
-      for i in b.instructions:
-        i.replaceRegisters(assigned_registers)
-        i.setSpillCount(spill_position)
-        if not i.dead:
-          program.append(i)
-    program.append(Label("main_epilogue"))
-    program.append(PAMov(ebp, esp))
-    program.append(PAPop(ebp)) # Restore saved ebp
-    program.append(PARealReturn())
+    for [function, function_blocks] in pseudo_assembly.functions_and_blocks:
+      # FIXME: function name needs to refer the outer function. Add tests that
+      # we call the correct inner function.
+
+      # print_debug("Analyzing " + function.name)
+      # If we cannot assign registers for all temporary variables, we need to
+      # spill some registers.
+      spill_position = 1 # FIXME: why not 0?
+      assigned_registers = None
+      while True:
+        # print_debug("Pseudo assembly:")
+        # print_debug(pseudo_assembly)
+
+        LiveRangeAnalyser.analyse(function_blocks, pseudo_assembly.metadata)
+
+        action = RegisterAllocator.tryToAllocate(pseudo_assembly.metadata.registers,
+                                                 self.__real_registers)
+        if isinstance(action, Spill):
+          # print_debug("Spilling " + str(action.register) + " to position " + str(spill_position))
+          # FIXME: ugly, refactor.
+          pseudo_assembly.spill(action.register, spill_position, function_blocks)
+          spill_position += 1
+        elif isinstance(action, RegisterAllocationDone):
+          assigned_registers = action.assigned_registers
+          break
+        else:
+          assert(False)
+
+      if function.name == "%main":
+        program.extend(self.__createMainPrologue(spill_position, pseudo_assembly.metadata.function_local_counts["%main"]))
+      else:
+        program.extend(self.__createFunctionPrologue(function.name, spill_position))
+
+      for b in function_blocks:
+        for i in b.instructions:
+          i.replaceRegisters(assigned_registers)
+          i.setSpillCount(spill_position)
+          if not i.dead:
+            program.append(i)
+      if function.name == "%main":
+        program.append(Label("main_epilogue"))
+      else:
+        program.append(Label("user_function_" + function.name + "_epilogue"))
+      program.append(PAMov(self.__ebp, self.__esp))
+      program.append(PAPop(self.__ebp)) # Restore saved ebp
+      program.append(PARealReturn())
 
     return program

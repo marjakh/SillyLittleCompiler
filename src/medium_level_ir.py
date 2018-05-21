@@ -52,11 +52,10 @@ def computeVariableOffsetsForFunction(f):
   offset = 0
   for v in f.parameter_variables:
     v.offset = offset
-    # FIXME: magic. Which part should know the pointer size anyway?
-    offset += 4
+    offset += POINTER_SIZE
   for v in f.local_variables:
     v.offset = offset
-    offset += 4
+    offset += POINTER_SIZE
 
   # FIXME: how do f.local_variables relate to f.scope.variables?
   max_offset = offset
@@ -474,8 +473,8 @@ class SetReturnValueFromConstant(MediumLevelIRInstruction):
     return "%SetReturnValueFromConstant(" + str(self.value) + ")"
 
 class MediumLevelIR:
-  def __init__(self, blocks, metadata):
-    self.blocks = blocks
+  def __init__(self, functions_and_blocks, metadata):
+    self.functions_and_blocks = functions_and_blocks
     self.metadata = metadata
 
 
@@ -498,7 +497,6 @@ class MediumLevelIRCreator:
     self.__temporary_count = 0
 
   def create(self, cfgs, top_scope):
-    output = []
     metadata = MediumLevelIRMetadata()
 
     # First assign offets to variables.
@@ -515,9 +513,11 @@ class MediumLevelIRCreator:
     addBuiltinFunctionShapes(metadata.function_param_counts, metadata.function_local_counts)
 
     # For each function, create the medium level IR.
+    output = []
     is_first = True
     for [f, cfg] in cfgs:
       self.__current_function = f
+      function_output = []
       for b in cfg:
         code = self.__createForBasicBlock(b)
         if is_first:
@@ -528,7 +528,8 @@ class MediumLevelIRCreator:
           next_possible = [b.next.true_block.id, b.next.false_block.id]
         elif isinstance(b.next, BasicBlock):
           next_possible = [b.next.id]
-        output.append(MediumLevelIRBasicBlock(b.id, next_possible, code))
+        function_output.append(MediumLevelIRBasicBlock(b.id, next_possible, code))
+      output.append([f, function_output])
 
     # print_debug("Medium-level IR:")
     # for b in output:

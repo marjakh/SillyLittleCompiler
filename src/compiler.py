@@ -48,7 +48,8 @@ if __name__ == "__main__":
 
   # TODO: optimizations
 
-  real_assembly = RealAssembler.create(pseudo_assembly)
+  ra = RealAssembler()
+  real_assembly = ra.create(pseudo_assembly)
 
   # print("Final output:")
   print(listToString(real_assembly, "", "\n", "\n"))

@@ -223,7 +223,7 @@ class PACallBuiltinFunction(PACall):
 
 class PACallUserFunction(PACall):
   def __init__(self, name):
-    super().__init__("user_" + name)
+    super().__init__("user_function_" + name)
 
 
 class PAPush(PseudoAssemblerInstruction):
@@ -279,7 +279,7 @@ class PAPopAllRegisters(PseudoAssemblerInstruction):
 
   def __str__(self):
     # FIXME: refactor; don't hardcode register names here.
-    return "popl %edx\npopl %ecx\npopl %ebx\n"
+    return "popl %edx\npopl %ecx\npopl %ebx"
 
 
 class PAClearStack(PseudoAssemblerInstruction):
@@ -373,14 +373,21 @@ class PAMov(PseudoAssemblerInstruction):
     self.where = PseudoAssemblerInstruction.replaceSpilledRegisterIn(self.where, register, new_register)
 
 
-class PAReturn(PseudoAssemblerInstruction):
+class PATopLevelReturn(PseudoAssemblerInstruction):
   def __init__(self):
     super().__init__()
 
   def __str__(self):
-    # FIXME: this needs to be function specific
     return "jmp main_epilogue"
 
+
+class PAReturn(PseudoAssemblerInstruction):
+  def __init__(self, function_name):
+    super().__init__()
+    self.function_name = function_name
+
+  def __str__(self):
+    return "jmp user_function_" + self.function_name + "_epilogue"
 
 class PARealReturn(PseudoAssemblerInstruction):
   def __init__(self):
@@ -538,15 +545,15 @@ class PADiv(PseudoAssemblerInstructionWithSource):
 
 
 class PseudoAssembly:
-  def __init__(self, blocks, metadata):
-    self.blocks = blocks
+  def __init__(self, functions_and_blocks, metadata):
+    self.functions_and_blocks = functions_and_blocks
     self.metadata = metadata
 
   def __str__(self):
-    return listToString(self.blocks, "", "", "\n")
+    return listToString(self.functions_and_blocks, "", "", "\n")
 
-  def spill(self, register, position):
-    for b in self.blocks:
+  def spill(self, register, position, blocks):
+    for b in blocks:
       b.spill(register, position, self.metadata.registers)
 
 
@@ -597,7 +604,7 @@ class PseudoAssembler:
     return self.name_to_register[variable]
 
   def __createPrologue(self):
-    # FIXME: DEFINE %main as a constant
+    # FIXME: move code here
     return [PAComment("prologue")]
 
   def __createEpilogue(self):
@@ -759,10 +766,26 @@ class PseudoAssembler:
                 PAPopAllRegisters(),
                 PAComment("Calling builtin function done")]
         return code
-      assert(False)
+      elif instruction.function.variable_type == VariableType.user_function:
+        temp = self.__virtualRegister(instruction.temporary_for_function_context)
+        code = [PAComment("Calling user function"),
+                PAComment("Push all registers"),
+                PAPushAllRegisters(),
+                PAComment("Function context"),
+                PAPush(temp),
+                PACallUserFunction(instruction.function.name),
+                PAClearStack(1),
+                PAComment("Pop all registers"),
+                PAPopAllRegisters(),
+                PAComment("Calling user function done")]
+        return code
+      else:
+        self.__cannotCreate(instruction)
 
     if isinstance(instruction, Return):
-      return [PAReturn()]
+      if self.__function.name == "%main":
+        return [PATopLevelReturn()]
+      return [PAReturn(self.__function.name)]
 
     if isinstance(instruction, AddTemporaryToTemporary):
       v_from1 = self.__virtualRegister(instruction.from_variable1)
@@ -821,20 +844,29 @@ class PseudoAssembler:
     self.__ebp = PARegister("ebp")
     self.__function_context_location = PARegisterAndOffset(self.__ebp, FUNCTION_CONTEXT_FROM_EBP_OFFSET * POINTER_SIZE)
 
-    blocks = [PseudoAssemblyBasicBlock(0, [1], self.__createPrologue())]
+    output = []
+    running_id = 0
+    for [function, function_blocks] in ir.functions_and_blocks:
+      # print_debug("Pseudo assembler: Function " + str(function.name))
+      self.__function = function
+      blocks = [PseudoAssemblyBasicBlock(running_id, [running_id + 1], self.__createPrologue())]
+      running_id = running_id + 1
+      id_correction = function_blocks[0].id - running_id
+      for b in function_blocks:
+        code = []
+        for i in b.code:
+          code.extend(self.__createForInstruction(i))
+        # print_debug("has block " + str(b.id))
+        blocks.append(PseudoAssemblyBasicBlock(running_id, [i + id_correction for i in b.next_ids], code))
+        running_id = running_id + 1
 
-    for b in ir.blocks:
-      code = []
-      for i in b.code:
-        code.extend(self.__createForInstruction(i))
-      assert(b.id == len(blocks))
-      blocks.append(PseudoAssemblyBasicBlock(b.id, b.next_ids, code))
+      blocks.append(PseudoAssemblyBasicBlock(running_id, [], self.__createEpilogue()))
+      running_id = running_id + 1
 
-    blocks.append(PseudoAssemblyBasicBlock(ir.blocks[-1].id + 1, [], self.__createEpilogue()))
+      output.append([function, blocks])
+      # print_debug("Pseudo assembly for function " + function.name)
+      # for b in blocks:
+      #   print_debug(listToString(b.instructions, "", "", "\n"))
 
-    # print_debug("Pseudo assembly program:")
-    # for b in blocks:
-    #   print_debug(listToString(b.instructions, "", "", "\n"))
-
-    return PseudoAssembly(blocks, PseudoAssemblyMetadata(self.registers, self.__metadata.function_local_counts, self.__metadata.function_param_counts))
+    return PseudoAssembly(output, PseudoAssemblyMetadata(self.registers, self.__metadata.function_local_counts, self.__metadata.function_param_counts))
 
