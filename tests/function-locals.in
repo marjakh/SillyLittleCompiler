@@ -1,0 +1,17 @@
+function f1() {
+  let i = 60;
+  write(i);
+  let a = new Array(5);
+  let j = 0;
+  while (j < 5) {
+    a[j] = j + 80;
+    j = j + 1;
+  }
+  j = 0;
+  while (j < 5) {
+    write(a[j]);
+    j = j + 1;
+  }
+}
+
+f1();

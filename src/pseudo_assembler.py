@@ -621,9 +621,7 @@ class PseudoAssembler:
   def __createForLoad(self, load):
     assert(isinstance(load.where, TemporaryVariable))
     temp = self.__virtualRegister(load.where)
-    # FIXME: merge globals and locals
-    if isinstance(load.what, Global):
-      # Globals are locals in the main function context.
+    if isinstance(load.what, Global) or isinstance(load.what, Local):
       function_context = self.registers.nextRegister()
       # FIXME: take params size into account
       return [self.__getFunctionContext(function_context),
@@ -639,7 +637,7 @@ class PseudoAssembler:
   def __createLoadArray(self, array):
     assert(isinstance(array.base, StoreOrLoadTarget))
     code = [PAComment("Computing array address")]
-    if isinstance(array.base, Global):
+    if isinstance(array.base, Global) or isinstance(array.base, Local):
       # global[%temp] or global[constant]
 
       # FIXME: refactor this; the array is just an address which is the value of
@@ -695,7 +693,7 @@ class PseudoAssembler:
         return code
 
     if isinstance(store.what, Constant):
-      if isinstance(store.where, Global):
+      if isinstance(store.where, Global) or isinstance(store.where, Local):
         function_context = self.registers.nextRegister()
         return [self.__getFunctionContext(function_context),
                 PAMov(PAConstant(store.what.value), PARegisterAndOffset(function_context, store.where.variable.offset + FUNCTION_CONTEXT_HEADER_SIZE))]
@@ -703,7 +701,7 @@ class PseudoAssembler:
         return [PAMov(PAConstant(store.what.value), self.__virtualRegister(store.where))]
     else:
       assert(isinstance(store.what, TemporaryVariable))
-      if isinstance(store.where, Global):
+      if isinstance(store.where, Global) or isinstance(store.where, Local):
         temp = self.__virtualRegister(store.what)
         function_context = self.registers.nextRegister()
         return [self.__getFunctionContext(function_context),
