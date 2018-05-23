@@ -22,6 +22,7 @@ class LiveRangeAnalyser:
     # print_debug("LiveRangeAnalyzer")
     # for b in function_blocks:
     #   print_debug("block id " + str(b.id))
+    #   print_debug("next: " + listToString(b.possible_next_ids))
 
     # The IDs don't start from 0, thus we need this to find the function based
     # on id from the array.

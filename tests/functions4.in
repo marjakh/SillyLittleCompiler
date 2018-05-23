@@ -1,0 +1,11 @@
+function f3() {
+  write(3);
+  if (1 < 2) {
+    write(5);
+  } else {
+    write(6);
+  }
+  write(4);
+}
+
+f3();

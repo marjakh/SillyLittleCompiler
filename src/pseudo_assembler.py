@@ -851,7 +851,8 @@ class PseudoAssembler:
       self.__function = function
       blocks = [PseudoAssemblyBasicBlock(running_id, [running_id + 1], self.__createPrologue())]
       running_id = running_id + 1
-      id_correction = function_blocks[0].id - running_id
+      id_correction = running_id - function_blocks[0].id
+      # print_debug("id correction " + str(id_correction))
       for b in function_blocks:
         code = []
         for i in b.code:
