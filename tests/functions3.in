@@ -1,0 +1,15 @@
+function f1() {
+  write(1);
+}
+
+function f2() {
+  write(2);
+}
+
+function f3() {
+  write(3);
+  f1();
+  write(4);
+}
+
+f3();

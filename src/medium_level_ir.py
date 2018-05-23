@@ -2,11 +2,12 @@
 
 from builtin_functions import addBuiltinFunctionShapes
 from cfg_creator import BasicBlock, BasicBlockBranch
+from constants import *
 from parse_tree import *
 from scanner import TokenType
 from type_enums import ScopeType, VariableType
-from variable import Variable, Function
 from util import *
+from variable import Variable, Function
 
 """
 
