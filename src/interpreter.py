@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 
+from constants import *
 from grammar import GrammarDriver
 from grammar_rules import rules
 from parse_tree import *
@@ -7,6 +8,7 @@ from parser import Parser
 from scanner import Scanner, TokenType
 from scope_analyser import ScopeAnalyser, ScopeType, FunctionVariable
 from util import print_debug
+from variable import Function as variable_Function
 
 from enum import Enum
 
@@ -127,6 +129,12 @@ class Interpreter:
     p.parse()
     if not p.success:
       raise p.error
+
+    main_variable = FunctionVariable(MAIN_NAME, MAIN_NAME, None, None)
+    p.program.main_function = variable_Function(main_variable)
+    p.program.main_function.name = MAIN_NAME
+    p.program.main_function.unique_name = MAIN_NAME
+
     sa = ScopeAnalyser(p.program)
 
     sa.builtins.add("write")

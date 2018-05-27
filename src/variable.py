@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
 from type_enums import VariableType, ScopeType
+from util import *
 
 # Variables are created during scope analysis. Note that we create separate
 # variables for shadowing other variables, so name alone is not enough for
@@ -45,14 +46,30 @@ class Variable:
 
 # A variable which represents a function. Used for scopes.
 class FunctionVariable(Variable):
-  def __init__(self, name, allocation_scope, function_statement):
+  def __init__(self, name, unique_name, allocation_scope, function_statement):
+    # print_debug("Creating FunctionVariable with name " + name)
     # Note that allocation_scope is the scope where the function variable is
     # declared, not the scope of the function.
     super().__init__(name, VariableType.user_function, allocation_scope)
     self.function_statement = function_statement
+    self.__unique_name = unique_name # For inner functions: outer%inner
 
   def __str__(self):
     return "FunctionVariable(" + self.name + ")"
+
+  def unique_name(self):
+    return self.__unique_name
+
+
+class BuiltinFunctionVariable(Variable):
+  def __init__(self, name, allocation_scope):
+    super().__init__(name, VariableType.builtin_function, allocation_scope)
+
+  def __str__(self):
+    return "BuiltinFunctionVariable(" + self.name + ")"
+
+  def unique_name(self):
+    return self.name
 
 
 # Data about functions: what are the locals, what are the parameters, etc.
@@ -60,6 +77,7 @@ class Function:
   def __init__(self, function_variable):
     self.function_variable = function_variable
     self.scope = None
+    # FIXME: make sure this is not used in places where unique_name should be used.
     self.name = None
     # We put all variables into the function context, so that inner functions
     # can access them from there if they want to access them. Parameters are

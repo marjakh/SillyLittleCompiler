@@ -621,7 +621,7 @@ class PseudoAssembler:
   def __createForLoad(self, load):
     assert(isinstance(load.where, TemporaryVariable))
     temp = self.__virtualRegister(load.where)
-    if isinstance(load.what, Global) or isinstance(load.what, Local):
+    if isinstance(load.what, Local):
       function_context = self.registers.nextRegister()
       # FIXME: take params size into account
       return [self.__getFunctionContext(function_context),
@@ -637,11 +637,11 @@ class PseudoAssembler:
   def __createLoadArray(self, array):
     assert(isinstance(array.base, StoreOrLoadTarget))
     code = [PAComment("Computing array address")]
-    if isinstance(array.base, Global) or isinstance(array.base, Local):
-      # global[%temp] or global[constant]
+    if isinstance(array.base, Local):
+      # local[%temp] or local[constant]
 
       # FIXME: refactor this; the array is just an address which is the value of
-      # the global variable, so we should just load that value. Create a Load
+      # the local variable, so we should just load that value. Create a Load
       # with this temp as load.where and array.base as load.what.
       function_context = self.registers.nextRegister()
       address_register = self.registers.nextRegister()
@@ -693,7 +693,7 @@ class PseudoAssembler:
         return code
 
     if isinstance(store.what, Constant):
-      if isinstance(store.where, Global) or isinstance(store.where, Local):
+      if isinstance(store.where, Local):
         function_context = self.registers.nextRegister()
         return [self.__getFunctionContext(function_context),
                 PAMov(PAConstant(store.what.value), PARegisterAndOffset(function_context, store.where.variable.offset + FUNCTION_CONTEXT_HEADER_SIZE))]
@@ -701,7 +701,7 @@ class PseudoAssembler:
         return [PAMov(PAConstant(store.what.value), self.__virtualRegister(store.where))]
     else:
       assert(isinstance(store.what, TemporaryVariable))
-      if isinstance(store.where, Global) or isinstance(store.where, Local):
+      if isinstance(store.where, Local):
         temp = self.__virtualRegister(store.what)
         function_context = self.registers.nextRegister()
         return [self.__getFunctionContext(function_context),
@@ -732,8 +732,8 @@ class PseudoAssembler:
       temp = self.__virtualRegister(instruction.temporary_variable)
       return [PAPushAllRegisters(),
               PAPush(self.__ebp), # stack low
-              PAPush(PAConstant(self.__metadata.function_local_counts[instruction.function.name])),
-              PAPush(PAConstant(self.__metadata.function_param_counts[instruction.function.name])),
+              PAPush(PAConstant(self.__metadata.function_local_counts[instruction.function.unique_name()])),
+              PAPush(PAConstant(self.__metadata.function_param_counts[instruction.function.unique_name()])),
               PAPush(self.__function_context_location), # outer
               PACallRuntimeFunction("CreateFunctionContext"),
               PAClearStack(4),

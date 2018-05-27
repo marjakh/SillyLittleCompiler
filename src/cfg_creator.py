@@ -198,7 +198,7 @@ class CfgCreatorVisitor(ParseTreeVisitor):
 
 class CfgCreator:
   def __init__(self, program):
-    self._program = program
+    self.__program = program
 
   def create(self):
     # Top scope statements might be sprinkled in between functions. Gather them
@@ -208,15 +208,14 @@ class CfgCreator:
     main_body = []
     cfgs = []
     visitor = CfgCreatorVisitor(cfgs)
-    for s in self._program.statements:
+    for s in self.__program.statements:
       if isinstance(s, FunctionStatement):
         visitor.visitFunctionStatement(s)
       else:
         main_body.append(s)
     main_statement = FunctionStatement([Token(TokenType.identifier,
                                               "%main"), [], main_body], 0)
-    main_statement.function = Function(None)
-    main_statement.function.name = "%main"
+    main_statement.function = self.__program.main_function
     visitor.visitFunctionStatement(main_statement)
 
     # print_debug("CFGs:")

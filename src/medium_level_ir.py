@@ -16,11 +16,13 @@ Medium-level IR consists of basic blocks, and instructions therein.
 Loading:
 register = constant
 register = local
-register = global
+register = outer local
+register = param
 
 Storing:
 local = register
-global = register
+outer local = register
+param = register
 
 Arithmetic:
 register += register
@@ -174,7 +176,7 @@ class StoreOrLoadTarget:
 class StoreOrLoadTargetWithVariable(StoreOrLoadTarget):
   def __init__(self, variable, depth, is_param, comment):
     self.variable = variable
-    assert(depth >= -1) # -1 = global
+    assert(depth >= 0)
     self.depth = depth
     self.comment = comment
 
@@ -194,13 +196,6 @@ class Parameter(StoreOrLoadTargetWithVariable):
     assert(depth == 0)
     assert(is_param)
     super().__init__(variable, 0, True, "parameter")
-
-
-class Global(StoreOrLoadTargetWithVariable):
-  def __init__(self, variable, depth, is_param):
-    assert(depth == -1)
-    assert(is_param == False)
-    super().__init__(variable, -1, False, "global")
 
 
 class OuterFunctionLocal(StoreOrLoadTargetWithVariable):
@@ -236,8 +231,6 @@ store_or_load_targets["local"]["parameter"] = Parameter
 store_or_load_targets["outer"] = dict()
 store_or_load_targets["outer"]["not_parameter"] = OuterFunctionLocal
 store_or_load_targets["outer"]["parameter"] = OuterFunctionParameter
-store_or_load_targets["global"] = dict()
-store_or_load_targets["global"]["not_parameter"] = Global
 
 
 class Constant:
@@ -252,8 +245,8 @@ class Load(MediumLevelIRInstruction):
   def __init__(self, what, where):
     assert(isinstance(where, TemporaryVariable))
     self.where = where
-    # From: temporary, local variable, global variable, parameter, outer
-    # function local, outer function parameter
+    # From: temporary, local variable, parameter, outer function local, outer
+    # function parameter
     assert(isinstance(what, StoreOrLoadTarget))
     self.what = what
 
@@ -263,8 +256,8 @@ class Load(MediumLevelIRInstruction):
 
 class Store(MediumLevelIRInstruction):
   def __init__(self, what, where):
-    # To: temporary, local variable, global variable, parameter, outer function
-    # local, outer function parameter
+    # To: temporary, local variable, parameter, outer function local, outer
+    # function parameter
     assert(isinstance(where, StoreOrLoadTarget) or isinstance(where, TemporaryVariable))
     self.where = where
     assert(isinstance(what, Constant) or isinstance(what, TemporaryVariable))
@@ -402,6 +395,7 @@ class CreateFunctionContext(MediumLevelIRInstruction):
 
 class CreateFunctionContextForFunction(CreateFunctionContext):
   def __init__(self, temporary_variable, function):
+    # print_debug("CreateFunctionContextForFunction instruction created, name is " + function.name)
     super().__init__(temporary_variable, function, "CreateFunctionContextForFunction")
 
 
@@ -504,12 +498,12 @@ class MediumLevelIRCreator:
     for [f, cfg] in cfgs:
       assert(f)
       if f.name == "%main":
-        metadata.function_local_counts[f.name] = computeVariableOffsetsForNonFunctionScope(top_scope)
-        metadata.function_param_counts[f.name] = 0
+        metadata.function_local_counts[f.function_variable.unique_name()] = computeVariableOffsetsForNonFunctionScope(top_scope)
+        metadata.function_param_counts[f.function_variable.unique_name()] = 0
       else:
-        metadata.function_local_counts[f.name] = computeVariableOffsetsForFunction(f)
+        metadata.function_local_counts[f.function_variable.unique_name()] = computeVariableOffsetsForFunction(f)
         # FIXME: params
-        metadata.function_param_counts[f.name] = 0
+        metadata.function_param_counts[f.function_variable.unique_name()] = 0
 
     addBuiltinFunctionShapes(metadata.function_param_counts, metadata.function_local_counts)
 
@@ -517,6 +511,8 @@ class MediumLevelIRCreator:
     output = []
     is_first = True
     for [f, cfg] in cfgs:
+      # print_debug("medium level ir creation for function " + f.name)
+      # print_debug("current function " + str(f))
       self.__current_function = f
       function_output = []
       for b in cfg:
@@ -619,7 +615,6 @@ class MediumLevelIRCreator:
 
     """
     local = ...
-    global = ...
     parameter = ...
     function_context_var = ...
     array[index] = ...
@@ -643,6 +638,7 @@ class MediumLevelIRCreator:
     return code
 
   def __createStoreOrLoadTarget(self, thing):
+    # print_debug("__createStoreOrLoadTarget " + str(thing))
     if isinstance(thing, ArrayIndexExpression):
       [base, base_code] = self.__createStoreOrLoadTarget(thing.array)
       # FIXME: shortcut constant indices
@@ -656,16 +652,20 @@ class MediumLevelIRCreator:
     # FIXME: loading functions should be fine too?
     assert(variable.variable_type == VariableType.variable)
 
+    # print_debug("trying to find allocation scope...")
+    # print_debug(variable.allocation_scope)
     if variable.allocation_scope == self.__current_function.scope:
       scope = "local"
       depth = 0
-    elif variable.allocation_scope.scope_type == ScopeType.top:
-      scope = "global"
-      depth = -1
     else:
       scope = "outer"
       depth = 1
+      # print_debug("is outer")
+      # print_debug("current function is " + str(self.__current_function))
+      # print_debug("current function scope is " + str(self.__current_function.scope))
+      # print_debug("outer function is " + str(self.__current_function.outer_function))
       outer = self.__current_function.outer_function
+      # print_debug("outer, recursing to outer scope " + outer.scope)
       assert(outer)
       while variable.allocation_scope != outer.scope:
         depth += 1

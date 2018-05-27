@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
 from cfg_creator import CfgCreator
+from constants import *
 from grammar import GrammarDriver
 from grammar_rules import rules
 from parser import Parser
@@ -10,6 +11,7 @@ from scanner import Scanner
 from scope_analyser import ScopeAnalyser
 from real_assembler import RealAssembler
 from util import *
+from variable import Function, FunctionVariable
 
 import sys
 
@@ -22,6 +24,12 @@ if __name__ == "__main__":
   p.parse()
   if not p.success:
     raise p.error
+
+  main_variable = FunctionVariable(MAIN_NAME, MAIN_NAME, None, None)
+  p.program.main_function = Function(main_variable)
+  p.program.main_function.name = MAIN_NAME
+  p.program.main_function.unique_name = MAIN_NAME
+
   sa = ScopeAnalyser(p.program)
 
   sa.builtins.add("write")

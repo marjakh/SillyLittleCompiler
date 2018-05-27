@@ -1,12 +1,13 @@
 #!/usr/bin/python3
 
+from constants import *
 from grammar import GrammarDriver
 from grammar_rules import rules
 from parse_tree import ParseTreeVisitor, VariableExpression, ArrayIndexExpression
 from parser import Parser
 from scanner import Scanner
 from type_enums import VariableType, ScopeType
-from variable import Variable, FunctionVariable, Function
+from variable import Variable, FunctionVariable, BuiltinFunctionVariable, Function
 from util import print_debug
 
 from enum import Enum
@@ -34,7 +35,7 @@ class Scope:
     return None
 
   def addVariable(self, variable):
-    # print("Adding variable " + str(variable) + " to scope " + str(self))
+    # print_debug("Adding variable " + str(variable) + " to scope " + str(self))
     if self.__getVariable(variable.name):
       return False
     # Allow shadowing; here we explicitly don't care if some parent declares the
@@ -53,6 +54,7 @@ class Scope:
       return self.parent.resolve(name)
     return None
 
+  # FIXME: add printing, add scope locations.
 
 # Base class for a parse tree visitor which knows about scopes. It either
 # creates them if the scopes don't exist, or keeps track of already created
@@ -118,33 +120,36 @@ class ScopeAnalyserVisitor(ParseTreeVisitor):
   def __pushScope(self, scope, scope_type):
     if scope is None:
       scope = Scope(scope_type, self.scopes[0])
+    # print_debug("push scope " + str(scope))
     self.scopes[0].children += [scope] # FIXME: reverse the stack, this is silly
     self.scopes = [scope] + self.scopes
 
   def __popScope(self):
+    # print_debug("pop scope " + str(self.scopes[0]))
     self.scopes.pop(0)
-
 
 
 # Creates scopes and puts functions into them.
 class FirstPassScopeAnalyser(ScopeAnalyserVisitor):
-  def __init__(self, top_scope):
+  def __init__(self, top_scope, main_function):
     super().__init__(top_scope)
-    self.__function_stack = []
+    # print_debug("top scope is " + str(top_scope))
+    self.__function_stack = [main_function]
 
   def visitFunctionStatement(self, s):
     # Add the function variable into the surrounding scope.
-    # print("Adding function variable " + s.name + " into scope " + str(self.scopes[0]))
-    v = FunctionVariable(s.name, self.currentVariableAllocationScope(), s)
+    # print_debug("Adding function variable " + s.name + " into scope " + str(self.scopes[0]))
+    unique_name = self.__function_stack[-1].name + "%" + s.name
+    v = FunctionVariable(s.name, unique_name, self.currentVariableAllocationScope(), s)
     if not self.scopes[0].addVariable(v):
       raise ScopeError("ScopeError: redeclaration of variable " + s.name, s.pos)
     s.resolved_function = v
     f = Function(v)
-    if self.__function_stack:
-      f.outer_function = self.__function_stack[-1]
-      f.name = f.outer_function.name + "%" + s.name
-    else:
-      f.name = s.name
+
+    f.outer_function = self.__function_stack[-1]
+    # print_debug("function " + str(f) + " outer function is " + str(f.outer_function))
+    f.name = s.name
+
     self.__function_stack.append(f)
     s.function = f
 
@@ -244,11 +249,12 @@ class ScopeAnalyser:
 
   def analyse(self):
     self.top_scope = Scope(ScopeType.top)
+    self.__parse_tree.main_function.scope = self.top_scope
 
     for b in self.builtins:
-      self.top_scope.addVariable(Variable(b, VariableType.builtin_function, self.top_scope))
+      self.top_scope.addVariable(BuiltinFunctionVariable(b, self.top_scope))
 
-    v1 = FirstPassScopeAnalyser(self.top_scope)
+    v1 = FirstPassScopeAnalyser(self.top_scope, self.__parse_tree.main_function)
     v2 = SecondPassScopeAnalyser(self.top_scope)
     try:
       v1.visitProgram(self.__parse_tree)
