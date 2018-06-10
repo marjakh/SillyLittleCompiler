@@ -1,0 +1,8 @@
+function f1() {
+  function f2() {
+    write(9);
+  }
+  f2();
+}
+
+f1();
