@@ -59,6 +59,7 @@ class RealAssembler:
             # Crete stack frame for the main function.
             # 1) Saved ebp (new ebp will point to it)
             PAPush(self.__ebp),
+            PAPush(self.__ebx),
             PAMov(self.__esp, self.__ebp),
             # 2) Stack frame marker
             PAPush(PAConstant(0xc0decafe)),
@@ -163,10 +164,13 @@ class RealAssembler:
             program.append(i)
       if function.name == "%main":
         program.append(Label("main_epilogue"))
+        program.append(PAMov(self.__ebp, self.__esp))
+        program.append(PAPop(self.__ebx)) # Restore saved ebx
+        program.append(PAPop(self.__ebp)) # Restore saved ebp
       else:
         program.append(Label("user_function_" + function.name + "_epilogue"))
-      program.append(PAMov(self.__ebp, self.__esp))
-      program.append(PAPop(self.__ebp)) # Restore saved ebp
+        program.append(PAMov(self.__ebp, self.__esp))
+        program.append(PAPop(self.__ebp)) # Restore saved ebp
       program.append(PARealReturn())
 
     return program
