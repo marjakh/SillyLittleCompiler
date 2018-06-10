@@ -664,6 +664,12 @@ class PseudoAssembler:
 
       [address_register2, index_code] = self.__createArrayIndexingCode(address_register, array.index)
       return [address_register2, code + index_code]
+    elif isinstance(array.base, OuterFunctionLocal):
+      (outer_function_context, code) = self.__getOuterFunctionContext(array.base.depth)
+      address_register = self.registers.nextRegister()
+      code += [PAMov(PARegisterAndOffset(outer_function_context, array.base.variable.offset + FUNCTION_CONTEXT_HEADER_SIZE), address_register)]
+      [address_register2, index_code] = self.__createArrayIndexingCode(address_register, array.index)
+      return [address_register2, code + index_code]
     elif isinstance(array.base, Array):
       [address_register, load_array_code] = self.__createLoadArray(array.base)
       read_from_array_register = self.registers.nextRegister()
@@ -702,7 +708,6 @@ class PseudoAssembler:
         code += [PAMov(PAConstant(store.what.value), PARegisterAndOffset(address_register, 0)), PAComment("Store to array done")]
         return code
       else:
-        # FIXME: implement the outer function local case here too?
         assert(isinstance(store.what, TemporaryVariable))
         code += [PAMov(self.__virtualRegister(store.what), PARegisterAndOffset(address_register, 0)), PAComment("Store to array done")]
         return code

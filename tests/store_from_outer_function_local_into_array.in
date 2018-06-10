@@ -1,0 +1,9 @@
+let g = 4;
+
+function f1() {
+  let a = new Array(1);
+  a[0] = g;
+  write(a[0]);
+}
+
+f1();
