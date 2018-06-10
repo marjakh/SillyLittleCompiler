@@ -1,0 +1,16 @@
+let var_outer = 56;
+
+function f1() {
+  let var_middle = 67;
+  write(var_outer);
+  write(var_middle);
+  function f2() {
+    let var_inner = 78;
+    write(var_outer);
+    write(var_middle);
+    write(var_inner);
+  }
+  f2();
+}
+
+f1();

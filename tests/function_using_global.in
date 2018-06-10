@@ -1,0 +1,12 @@
+let a = 7;
+let b = 6;
+
+function f1() {
+  write(a);
+  write(b);
+}
+
+f1();
+a = a + 1;
+b = b - 1;
+f1();

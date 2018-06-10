@@ -618,6 +618,15 @@ class PseudoAssembler:
   def __getFunctionContext(self, function_context):
     return PAMov(self.__function_context_location, function_context)
 
+  def __getOuterFunctionContext(self, depth):
+    function_context = self.registers.nextRegister()
+    code = [self.__getFunctionContext(function_context)]
+    for i in range(depth):
+      new_function_context = self.registers.nextRegister()
+      code += [PAMov(PARegisterAndOffset(function_context, FUNCTION_CONTEXT_OUTER_FUNCTION_CONTEXT_OFFSET), new_function_context)]
+      function_context = new_function_context
+    return (function_context, code)
+
   def __createForLoad(self, load):
     assert(isinstance(load.where, TemporaryVariable))
     temp = self.__virtualRegister(load.where)
@@ -630,6 +639,11 @@ class PseudoAssembler:
     if isinstance(load.what, Array):
       [address_register, code] = self.__createLoadArray(load.what)
       return [PAComment("Load from array")] + code + [PAMov(PARegisterAndOffset(address_register, 0), temp), PAComment("Load from array done")]
+
+    if isinstance(load.what, OuterFunctionLocal):
+      (outer_function_context, code) = self.__getOuterFunctionContext(load.what.depth)
+      code += [PAMov(PARegisterAndOffset(outer_function_context, load.what.variable.offset + FUNCTION_CONTEXT_HEADER_SIZE), temp)]
+      return code
 
     # FIXME: implement the rest
     self.__cannotCreate(load)
@@ -688,6 +702,7 @@ class PseudoAssembler:
         code += [PAMov(PAConstant(store.what.value), PARegisterAndOffset(address_register, 0)), PAComment("Store to array done")]
         return code
       else:
+        # FIXME: implement the outer function local case here too?
         assert(isinstance(store.what, TemporaryVariable))
         code += [PAMov(self.__virtualRegister(store.what), PARegisterAndOffset(address_register, 0)), PAComment("Store to array done")]
         return code
@@ -699,13 +714,21 @@ class PseudoAssembler:
                 PAMov(PAConstant(store.what.value), PARegisterAndOffset(function_context, store.where.variable.offset + FUNCTION_CONTEXT_HEADER_SIZE))]
       if isinstance(store.where, TemporaryVariable):
         return [PAMov(PAConstant(store.what.value), self.__virtualRegister(store.where))]
+      if isinstance(store.where, OuterFunctionLocal):
+        (outer_function_context, code) = self.__getOuterFunctionContext(store.where.depth)
+        code += [PAMov(PAConstant(store.what.value), PARegisterAndOffset(outer_function_context, store.where.variable.offset + FUNCTION_CONTEXT_HEADER_SIZE))]
+        return code
     else:
       assert(isinstance(store.what, TemporaryVariable))
+      temp = self.__virtualRegister(store.what)
       if isinstance(store.where, Local):
-        temp = self.__virtualRegister(store.what)
         function_context = self.registers.nextRegister()
         return [self.__getFunctionContext(function_context),
                 PAMov(temp, PARegisterAndOffset(function_context, store.where.variable.offset + FUNCTION_CONTEXT_HEADER_SIZE))]
+      if isinstance(store.where, OuterFunctionLocal):
+        (outer_function_context, code) = self.__getOuterFunctionContext(store.where.depth)
+        code += [PAMov(temp, PARegisterAndOffset(outer_function_context, store.where.variable.offset + FUNCTION_CONTEXT_HEADER_SIZE))]
+        return code
 
     # FIXME: implement the rest
     self.__cannotCreate(store)
@@ -868,4 +891,3 @@ class PseudoAssembler:
       #   print_debug(listToString(b.instructions, "", "", "\n"))
 
     return PseudoAssembly(output, PseudoAssemblyMetadata(self.registers, self.__metadata.function_local_counts, self.__metadata.function_param_counts))
-
