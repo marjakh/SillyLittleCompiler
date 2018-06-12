@@ -1,0 +1,10 @@
+let a = 10;
+
+function f1() {
+  let a = 20;
+  write(a);
+}
+
+write(a);
+f1();
+write(a);
