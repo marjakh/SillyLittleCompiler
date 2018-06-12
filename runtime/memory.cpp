@@ -94,7 +94,7 @@ void do_gc(std::int32_t* stack_low);
 
 int32_t* allocate_from_current_chunk(std::int32_t size) {
   if (current_chunk_cursor + size + 2 < current_chunk_end) {
-    fprintf(stderr, "Fits in the current chunk\n");
+    // fprintf(stderr, "Fits in the current chunk\n");
     // Reserve space for size and color.
     // FIXME: compact; no need to use 8 bytes for them. Also add helpers.
     int32_t* result = reinterpret_cast<int32_t*>(current_chunk_cursor);
@@ -103,9 +103,9 @@ int32_t* allocate_from_current_chunk(std::int32_t size) {
     memset(result, 0, size);
     int32_t* p = reinterpret_cast<int32_t*>(current_chunk_cursor);
     *p = size;
-    fprintf(stderr, "Object at %p, size at %p, ", result, p);
+    // fprintf(stderr, "Object at %p, size at %p, ", result, p);
     ++p;
-    fprintf(stderr, "color at %p\n", p);
+    // fprintf(stderr, "color at %p\n", p);
     *p = COLOR_WHITE;
     current_chunk_cursor += (size + 2 * INT_SIZE);
 
