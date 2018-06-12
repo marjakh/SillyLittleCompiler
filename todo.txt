@@ -1,8 +1,15 @@
 Priorities:
-1. functions
-2. gc
-3. objects
+1. functions improvements:
+   -- as first-class
+   -- return values
+   -- parameters
+2. strings
+3. objects (need to figure out the type system!)
 4. separate compilation
+5. optimizations
+6. whatever I might need for implementing the programming language in itself :)
+   -- data structures (maybe implemented by the runtime? or call into c++?)
+   
 
 GC:
 - Add tests for a[something_that_allocates()] = something_that_allocates();
@@ -17,7 +24,6 @@ let bar = foo()[3];
 
 
 Small stuff:
-- The "globals table" can be merged with the outermost function context.
 - make gdb "start" work (somehow)
 - print out the statement as comments in the program?
 - mark some functions staticmethods if we don't need an object...
@@ -25,7 +31,6 @@ Small stuff:
 - Allow negative numbers but not always... so e.g., 1 + (-1) is OK but 1 + -1 is not.
 - logical operators!! note that they need to shortcut both in the interpreter and in the compiler.
 - python interpreter.py from stdin? or interactively?
-- break and continue
 - get rid of nth, it's too hard to implement compared to how stupid it is.
 - allow _ in func / var names
 - should using an undefined return value be a runtime error? i guess yes, it's not like it's ever intended...
@@ -36,19 +41,15 @@ Medium stuff:
 - the whole undefined thing... we need a representation for undefined, we need to init variables as undefined, and check for undefined in suitable places.
 - break and continue
 - should we allow: outer()(); when outer returns a function? Now the lang forces assigning it to a variable... in general, we should allow expression();
-- arrays
-- some way to address an arbitrary amount of memory << this will make it turing complete, right?
 - clearer distinction between the phases. when we're done with cfg creation, we should just discard the code, for example. but we must keep the results of the scope analysis around...
 - reorganize statements such as... a + b * c  -> b * c + a, a + 5 + b -> a + b + 5, and so on.
 
 
 Big stuff:
-- GC
 - Proper type system, distinguish between different functions!
   -- add types like strings and such
   -- when assigning functions it needs to be so that the assigned variable gets the proper type too, this way we can do the "param number" check at scope resolution time.. iguess??
 - Objects (so that we can also return several values)
-  -- objects referencing other objects is the big stuff!!! so we basically need garbage collection in the real code generator (the python gc will take care of it in the interpreter phase)
 - Runtime
 - Compatibility with C libraries
 
