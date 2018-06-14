@@ -632,7 +632,10 @@ class PseudoAssembler:
     temp = self.__virtualRegister(load.where)
     if isinstance(load.what, Local):
       function_context = self.registers.nextRegister()
-      # FIXME: take params size into account
+      return [self.__getFunctionContext(function_context),
+              PAMov(PARegisterAndOffset(function_context, load.what.variable.offset + FUNCTION_CONTEXT_HEADER_SIZE + self.__metadata.function_param_counts[self.__function.function_variable.unique_name()]), temp)]
+    if isinstance(load.what, Parameter):
+      function_context = self.registers.nextRegister()
       return [self.__getFunctionContext(function_context),
               PAMov(PARegisterAndOffset(function_context, load.what.variable.offset + FUNCTION_CONTEXT_HEADER_SIZE), temp)]
 
@@ -756,7 +759,6 @@ class PseudoAssembler:
       return self.__createForStore(instruction)
 
     if isinstance(instruction, CreateFunctionContextForFunction):
-      # FIXME: this doesn't work for inner functions yet
       temp = self.__virtualRegister(instruction.temporary_variable)
       return [PAPushAllRegisters(),
               PAPush(self.__ebp), # stack low
@@ -771,8 +773,6 @@ class PseudoAssembler:
     if isinstance(instruction, AddParameterToFunctionContext):
       temp_context = self.__virtualRegister(instruction.temporary_for_function_context)
       temp = self.__virtualRegister(instruction.temporary_variable)
-      # Note +3 here, because the function context contains the spill count,
-      # the outer function context and the params size.
       return [PAMov(temp, PARegisterAndOffset(temp_context, POINTER_SIZE * (FUNCTION_CONTEXT_PARAMS_OFFSET + instruction.index)))]
 
     if isinstance(instruction, CallFunction):
