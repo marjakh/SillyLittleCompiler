@@ -558,10 +558,9 @@ class PseudoAssembly:
 
 
 class PseudoAssemblyMetadata:
-  def __init__(self, registers, function_local_counts, function_param_counts):
+  def __init__(self, registers, function_param_and_local_counts):
     self.registers = registers
-    self.function_local_counts = function_local_counts
-    self.function_param_counts = function_param_counts
+    self.function_param_and_local_counts = function_param_and_local_counts
 
 
 class PseudoAssemblyBasicBlock:
@@ -763,11 +762,10 @@ class PseudoAssembler:
       temp = self.__virtualRegister(instruction.temporary_variable)
       return [PAPushAllRegisters(),
               PAPush(self.__ebp), # stack low
-              PAPush(PAConstant(self.__metadata.function_local_counts[instruction.function.unique_name()])),
-              PAPush(PAConstant(self.__metadata.function_param_counts[instruction.function.unique_name()])),
+              PAPush(PAConstant(self.__metadata.function_param_and_local_counts[instruction.function.unique_name()])),
               PAPush(self.__function_context_location), # outer
               PACallRuntimeFunction("CreateFunctionContext"),
-              PAClearStack(4),
+              PAClearStack(3),
               PAPopAllRegisters(),
               PAReturnValueToRegister(temp)]
 
@@ -896,4 +894,4 @@ class PseudoAssembler:
       # for b in blocks:
       #   print_debug(listToString(b.instructions, "", "", "\n"))
 
-    return PseudoAssembly(output, PseudoAssemblyMetadata(self.registers, self.__metadata.function_local_counts, self.__metadata.function_param_counts))
+    return PseudoAssembly(output, PseudoAssemblyMetadata(self.registers, self.__metadata.function_param_and_local_counts))

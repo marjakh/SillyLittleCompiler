@@ -1,28 +1,27 @@
-#include "memory.h"
+#include "constants.h"
 #include "function_context.h"
+#include "memory.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 
 extern "C" void user_code();
 
-extern "C" FunctionContext* runtime_CreateFunctionContext(void* outer, std::int32_t params_size, std::int32_t locals_size, int* stack_low) {
-  FunctionContext* context = reinterpret_cast<FunctionContext*>(memory_allocate(sizeof(FunctionContext) + (params_size + locals_size) * 4, stack_low));
+extern "C" FunctionContext* runtime_CreateFunctionContext(void* outer, std::int32_t params_and_locals_count, int* stack_low) {
+  FunctionContext* context = reinterpret_cast<FunctionContext*>(memory_allocate(sizeof(FunctionContext) + params_and_locals_count * POINTER_SIZE, stack_low));
   context->outer = reinterpret_cast<FunctionContext*>(outer);
   context->spill_count = 0; // Caller fills this in
-  context->params_size = params_size;
-  context->locals_size = locals_size;
+  context->params_and_locals_count = params_and_locals_count;
   fprintf(stderr, "CreateFunctionContext returns %p\n", context);
   return context;
 }
 
-extern "C" FunctionContext* runtime_CreateMainFunctionContext(std::int32_t locals_size) {
+extern "C" FunctionContext* runtime_CreateMainFunctionContext(std::int32_t locals_count) {
   // We don't have proper stack structure yet, so GC cannot happen. But we're guaranteed to have enough space in the start.
-  FunctionContext* context = reinterpret_cast<FunctionContext*>(memory_allocate_no_gc(sizeof(FunctionContext) + locals_size * 4));
+  FunctionContext* context = reinterpret_cast<FunctionContext*>(memory_allocate_no_gc(sizeof(FunctionContext) + locals_count * POINTER_SIZE));
   context->outer = nullptr;
   context->spill_count = 0; // Caller fills this in
-  context->params_size = 0;
-  context->locals_size = locals_size;
+  context->params_and_locals_count = locals_count;
   fprintf(stderr, "CreateMainFunctionContext returns %p\n", context);
   return context;
 }

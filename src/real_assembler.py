@@ -152,7 +152,7 @@ class RealAssembler:
           assert(False)
 
       if function.name == "%main":
-        program.extend(self.__createMainPrologue(spill_position, pseudo_assembly.metadata.function_local_counts["%main"]))
+        program.extend(self.__createMainPrologue(spill_position, pseudo_assembly.metadata.function_param_and_local_counts["%main"]))
       else:
         program.extend(self.__createFunctionPrologue(function.name, spill_position))
 

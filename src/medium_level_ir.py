@@ -71,7 +71,6 @@ def computeVariableOffsetsForFunction(f):
       max_offset = new_offset
   return max_offset
 
-  return offset
 
 def computeVariableOffsetsForNonFunctionScope(scope, offset=0):
   for v in scope.variables:
@@ -475,8 +474,7 @@ class MediumLevelIR:
 
 class MediumLevelIRMetadata:
   def __init__(self):
-    self.function_param_counts = dict()
-    self.function_local_counts = dict()
+    self.function_param_and_local_counts = dict()
 
 
 class MediumLevelIRBasicBlock:
@@ -498,14 +496,11 @@ class MediumLevelIRCreator:
     for [f, cfg] in cfgs:
       assert(f)
       if f.name == "%main":
-        metadata.function_local_counts[f.function_variable.unique_name()] = computeVariableOffsetsForNonFunctionScope(top_scope)
-        metadata.function_param_counts[f.function_variable.unique_name()] = 0
+        metadata.function_param_and_local_counts[f.function_variable.unique_name()] = computeVariableOffsetsForNonFunctionScope(top_scope)
       else:
-        metadata.function_local_counts[f.function_variable.unique_name()] = computeVariableOffsetsForFunction(f)
-        # FIXME: params
-        metadata.function_param_counts[f.function_variable.unique_name()] = 0
+        metadata.function_param_and_local_counts[f.function_variable.unique_name()] = computeVariableOffsetsForFunction(f)
 
-    addBuiltinFunctionShapes(metadata.function_param_counts, metadata.function_local_counts)
+    addBuiltinFunctionShapes(metadata.function_param_and_local_counts)
 
     # For each function, create the medium level IR.
     output = []
@@ -755,5 +750,3 @@ class MediumLevelIRCreator:
         prev_temporary = result_temporary
       i += 2
     return [prev_temporary, code]
-
-

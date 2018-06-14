@@ -21,7 +21,7 @@ void stack_walk(std::int32_t* stack_low, std::int32_t* stack_high, std::stack<st
     --p;
     std::cerr << "Spill count " << function_context->spill_count << std::endl;
     std::cerr << "Outer " << function_context->outer << std::endl;
-    std::cerr << "params_size " << function_context->params_size << std::endl;
+    std::cerr << "params_and_locals_count " << function_context->params_and_locals_count << std::endl;
     // Iterate spill area.
     for (int i = 0; i < function_context->spill_count; ++i) {
       int32_t* maybe_ptr = reinterpret_cast<int32_t*>(*p);
