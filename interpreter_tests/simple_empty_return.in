@@ -1,6 +1,0 @@
-function foo() {
-  write(1);
-  return;
-  write(2);
-}
-foo();

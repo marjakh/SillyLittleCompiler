@@ -12,7 +12,7 @@ extern "C" FunctionContext* runtime_CreateFunctionContext(void* outer, std::int3
   context->outer = reinterpret_cast<FunctionContext*>(outer);
   context->spill_count = 0; // Caller fills this in
   context->params_and_locals_count = params_and_locals_count;
-  fprintf(stderr, "CreateFunctionContext returns %p\n", context);
+  fprintf(stderr, "CreateFunctionContext (outer %p) returns %p\n", outer, context);
   return context;
 }
 

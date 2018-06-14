@@ -1,0 +1,19 @@
+let a = 0;
+
+function first() {
+}
+
+function second() {
+  a = 5;
+}
+
+function third() {
+  a = 1;
+}
+
+write(a);
+first();
+write(a);
+second();
+write(a);
+third();

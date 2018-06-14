@@ -799,7 +799,8 @@ class PseudoAssembler:
                 PAComment("Function context"),
                 PAPush(temp),
                 PACallUserFunction(instruction.function.name),
-                PAClearStack(1),
+                # No need to clear the stack; the user function does it.
+                # FIXME: change this maybe?
                 PAComment("Pop all registers"),
                 PAPopAllRegisters(),
                 PAComment("Calling user function done")]
