@@ -2,14 +2,13 @@ Priorities:
 1. functions improvements:
    -- as first-class
    -- return values
-   -- parameters
 2. strings
 3. objects (need to figure out the type system!)
 4. separate compilation
 5. optimizations
 6. whatever I might need for implementing the programming language in itself :)
    -- data structures (maybe implemented by the runtime? or call into c++?)
-   
+   -- I/O   
 
 GC:
 - Add tests for a[something_that_allocates()] = something_that_allocates();

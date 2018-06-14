@@ -1,0 +1,13 @@
+function f1() {
+  write(1);
+  if (5 > 6) {
+    write(2);
+  } else {
+    write(3);
+    return;
+    write(4);
+  }
+  write(5);
+}
+
+f1();
