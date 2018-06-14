@@ -1,0 +1,10 @@
+function f1(a, b, c) {
+  let d = 0;
+  d = 8;
+  write(a);
+  write(b);
+  write(c);
+  write(d);
+}
+
+f1(1, 2, 3);

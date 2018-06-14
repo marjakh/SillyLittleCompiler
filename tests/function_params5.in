@@ -1,0 +1,9 @@
+function f1(a) {
+  write(a);
+  a = a + 1;
+  write(a);
+  a = 8;
+  write(a);
+}
+
+f1(4);

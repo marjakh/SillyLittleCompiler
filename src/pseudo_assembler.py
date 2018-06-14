@@ -630,14 +630,13 @@ class PseudoAssembler:
   def __createForLoad(self, load):
     assert(isinstance(load.where, TemporaryVariable))
     temp = self.__virtualRegister(load.where)
-    if isinstance(load.what, Local):
-      function_context = self.registers.nextRegister()
-      return [self.__getFunctionContext(function_context),
-              PAMov(PARegisterAndOffset(function_context, load.what.variable.offset + FUNCTION_CONTEXT_HEADER_SIZE + self.__metadata.function_param_counts[self.__function.function_variable.unique_name()]), temp)]
-    if isinstance(load.what, Parameter):
+    if isinstance(load.what, Local) or isinstance(load.what, Parameter):
       function_context = self.registers.nextRegister()
       return [self.__getFunctionContext(function_context),
               PAMov(PARegisterAndOffset(function_context, load.what.variable.offset + FUNCTION_CONTEXT_HEADER_SIZE), temp)]
+    # FIXME: fix cases where param count doesn't match. Return some
+    # kind of error, ignore the param, or something, but don't mess up
+    # locals.
 
     if isinstance(load.what, Array):
       [address_register, code] = self.__createLoadArray(load.what)
@@ -716,8 +715,10 @@ class PseudoAssembler:
         return code
 
     if isinstance(store.what, Constant):
-      if isinstance(store.where, Local):
+      if isinstance(store.where, Local) or isinstance(store.where, Parameter):
         function_context = self.registers.nextRegister()
+        # FIXME: emit assert (here and elsewhere) that we don't index
+        # function context out of bounds
         return [self.__getFunctionContext(function_context),
                 PAMov(PAConstant(store.what.value), PARegisterAndOffset(function_context, store.where.variable.offset + FUNCTION_CONTEXT_HEADER_SIZE))]
       if isinstance(store.where, TemporaryVariable):
@@ -729,7 +730,7 @@ class PseudoAssembler:
     else:
       assert(isinstance(store.what, TemporaryVariable))
       temp = self.__virtualRegister(store.what)
-      if isinstance(store.where, Local):
+      if isinstance(store.where, Local) or isinstance(store.where, Parameter):
         function_context = self.registers.nextRegister()
         return [self.__getFunctionContext(function_context),
                 PAMov(temp, PARegisterAndOffset(function_context, store.where.variable.offset + FUNCTION_CONTEXT_HEADER_SIZE))]
