@@ -1,0 +1,10 @@
+function f1(a) {
+  f2(a);
+  f2(a + 1);
+}
+
+function f2(b) {
+  write(b);
+}
+
+f1(4);

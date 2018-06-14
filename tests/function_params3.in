@@ -1,0 +1,14 @@
+function f1(a, b, c) {
+  let d = 4;
+  let e = 5;
+  let f = 6;
+  write(a);
+  write(b);
+  write(c);
+  write(d);
+  write(e);
+  write(f);
+}
+
+f1(1, 2, 3);
+f1(7, 8, 9);
