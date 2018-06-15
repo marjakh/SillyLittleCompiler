@@ -9,9 +9,9 @@ const int pushed_register_count = 3;
 void stack_walk(std::int32_t* stack_low, std::int32_t* stack_high, std::stack<std::pair<int32_t**, std::int32_t*>>* roots) {
   std::cerr << "Stack walk " << stack_low << " " << stack_high << std::endl;
   std::int32_t* ebp = stack_low;
-  std::int32_t* p = ebp - 1;
   while (ebp <= stack_high) {
     // Verify magic number.
+    std::int32_t* p = ebp - 1;
     std::cerr << "Found frame " << ebp << std::endl;
     int32_t* magic = reinterpret_cast<int32_t*>(*(p--));
     std::cerr << "Magic number " << magic << std::endl;

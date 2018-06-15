@@ -1,0 +1,12 @@
+let a = 0;
+
+function f1() {
+  write(a);
+  a = a + 1;
+}
+
+let b = 0;
+while (b < 40) {
+  f1();
+  b = b + 1;
+}

@@ -8,7 +8,9 @@ Priorities:
 5. optimizations
 6. whatever I might need for implementing the programming language in itself :)
    -- data structures (maybe implemented by the runtime? or call into c++?)
-   -- I/O   
+   -- I/O
+7. misc
+   -- add gc stress runs
 
 GC:
 - Add tests for a[something_that_allocates()] = something_that_allocates();
