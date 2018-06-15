@@ -759,15 +759,22 @@ class PseudoAssembler:
       return self.__createForStore(instruction)
 
     if isinstance(instruction, CreateFunctionContextForFunction):
+      # Outer function is either the currently running function (if a
+      # function calls its inner function), or its outer function (if
+      # a function calls itself recursively or another function on the
+      # same level), or its outer function's outer function (if a
+      # level 2 function calls a level 1 function) and so on.
+      (function_context, code) = self.__getOuterFunctionContext(instruction.outer_function_context_depth)
       temp = self.__virtualRegister(instruction.temporary_variable)
-      return [PAPushAllRegisters(),
-              PAPush(self.__ebp), # stack low
-              PAPush(PAConstant(self.__metadata.function_param_and_local_counts[instruction.function.unique_name()])),
-              PAPush(self.__function_context_location), # outer
-              PACallRuntimeFunction("CreateFunctionContext"),
-              PAClearStack(3),
-              PAPopAllRegisters(),
-              PAReturnValueToRegister(temp)]
+      code = code + [PAPushAllRegisters(),
+                     PAPush(self.__ebp), # stack low
+                     PAPush(PAConstant(self.__metadata.function_param_and_local_counts[instruction.function.unique_name()])),
+                     PAPush(function_context), # outer
+                     PACallRuntimeFunction("CreateFunctionContext"),
+                     PAClearStack(3),
+                     PAPopAllRegisters(),
+                     PAReturnValueToRegister(temp)]
+      return code
 
     if isinstance(instruction, AddParameterToFunctionContext):
       temp_context = self.__virtualRegister(instruction.temporary_for_function_context)

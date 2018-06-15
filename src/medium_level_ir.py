@@ -393,10 +393,10 @@ class CreateFunctionContext(MediumLevelIRInstruction):
 
 
 class CreateFunctionContextForFunction(CreateFunctionContext):
-  def __init__(self, temporary_variable, function):
+  def __init__(self, temporary_variable, function, outer_function_context_depth):
     # print_debug("CreateFunctionContextForFunction instruction created, name is " + function.name)
     super().__init__(temporary_variable, function, "CreateFunctionContextForFunction")
-
+    self.outer_function_context_depth = outer_function_context_depth
 
 # Create a function context for a function stored in a variable. Note that we
 # cannot know (until at run-time) which function there is.
@@ -562,6 +562,15 @@ class MediumLevelIRCreator:
 
     return output
 
+  def __getVariableDepth(self, variable):
+    depth = 0
+    function = self.__current_function
+    while variable.allocation_scope != function.scope:
+      depth += 1
+      function = function.outer_function
+      assert(function)
+    return depth
+
   def __createForStatement(self, statement):
     # print("createForStatement")
     # print(statement)
@@ -580,7 +589,8 @@ class MediumLevelIRCreator:
       temporary_for_function_context = self.__nextTemporary()
       # FIXME: arrays impl
       if statement.is_direct():
-        code = [CreateFunctionContextForFunction(temporary_for_function_context, statement.function.resolved_variable)]
+        depth = self.__getVariableDepth(statement.function.resolved_variable)
+        code = [CreateFunctionContextForFunction(temporary_for_function_context, statement.function.resolved_variable, depth)]
       else:
         code = [CreateFunctionContextFromVariable(temporary_for_function_context, statement.function.resolved_variable)]
       for i in range(len(statement.parameters)):
@@ -680,10 +690,10 @@ class MediumLevelIRCreator:
       return [temporary, [Store(Constant(expression.value), temporary)]]
 
     if isinstance(expression, FunctionCall):
-      # FIXME: isn't this just dead code? And GetReturnValue too!
       temporary_for_function_context = self.__nextTemporary()
       if expression.is_direct():
-        code = [CreateFunctionContextForFunction(temporary_for_function_context, expression.function.resolved_variable)]
+        depth = self.__getVariableDepth(expression.function.resolved_variable)
+        code = [CreateFunctionContextForFunction(temporary_for_function_context, expression.function.resolved_variable, depth)]
       else:
         code = [CreateFunctionContextFromVariable(temporary_for_function_context, expression.function.resolved_variable)]
       for i in range(len(expression.parameters)):

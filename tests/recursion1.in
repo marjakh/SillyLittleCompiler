@@ -1,0 +1,12 @@
+let a = 10;
+
+function f1() {
+  write(1);
+  write(a);
+  if (a == 10) {
+    a = 11;
+    f1();
+  }
+}
+
+f1();
