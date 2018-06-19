@@ -32,8 +32,6 @@ Small stuff:
 - Allow negative numbers but not always... so e.g., 1 + (-1) is OK but 1 + -1 is not.
 - logical operators!! note that they need to shortcut both in the interpreter and in the compiler.
 - python interpreter.py from stdin? or interactively?
-- get rid of nth, it's too hard to implement compared to how stupid it is.
-- allow _ in func / var names
 - should using an undefined return value be a runtime error? i guess yes, it's not like it's ever intended...
 - comparing functions with ==, does it work??
 

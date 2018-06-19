@@ -1,3 +1,17 @@
+function nth(x, a, b, c) {
+  if (x == 1) {
+    return a;
+  }
+  if (x == 2) {
+    return b;
+  }
+  if (x == 3) {
+    return c;
+  }
+  return 0;
+}
+
+
 let foo = 7;
 let bar = 8;
 let baz = 9;

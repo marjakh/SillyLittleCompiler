@@ -32,8 +32,6 @@ if __name__ == "__main__":
   sa = ScopeAnalyser(p.program)
 
   sa.builtins.add("write")
-  sa.builtins.add("id")
-  sa.builtins.add("nth")
   sa.analyse()
 
   if not sa.success:
@@ -48,4 +46,3 @@ if __name__ == "__main__":
   # i = MediumLevelIRInterpreter()
   # output = i.run().strip()
   # print(output)
-

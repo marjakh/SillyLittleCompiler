@@ -100,13 +100,6 @@ def write_builtin(parameters):
   output += "\n"
   return None
 
-def id_builtin(parameters):
-  assert(len(parameters) == 1)
-  return parameters[0]
-
-def nth_builtin(parameters):
-  assert(len(parameters) >= 2)
-  return parameters[1:][parameters[0] - 1]
 
 def array_builtin(parameters):
   assert(len(parameters) == 1)
@@ -138,8 +131,6 @@ class Interpreter:
     sa = ScopeAnalyser(p.program)
 
     sa.builtins.add("write")
-    sa.builtins.add("id")
-    sa.builtins.add("nth")
     sa.builtins.add("Array")
     sa.analyse()
 
@@ -148,8 +139,6 @@ class Interpreter:
 
     # Install builtins to the top scope.
     self.__function_context_stack[0].addVariable(sa.top_scope.resolve("write"), BuiltinFunction("write", write_builtin))
-    self.__function_context_stack[0].addVariable(sa.top_scope.resolve("id"), BuiltinFunction("id", id_builtin))
-    self.__function_context_stack[0].addVariable(sa.top_scope.resolve("nth"), BuiltinFunction("nth", nth_builtin))
     self.__function_context_stack[0].addVariable(sa.top_scope.resolve("Array"), BuiltinFunction("Array", array_builtin))
 
     self.__executeStatements(p.program.statements)

@@ -1,2 +1,6 @@
-let foo = id(5);
+function f(x) {
+  return x + 1;
+}
+
+let foo = f(4);
 write(foo);

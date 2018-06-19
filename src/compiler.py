@@ -33,8 +33,6 @@ if __name__ == "__main__":
   sa = ScopeAnalyser(p.program)
 
   sa.builtins.add("write")
-  sa.builtins.add("id")
-  sa.builtins.add("nth")
   sa.builtins.add("Array")
   sa.builtins.add("test_do_gc")
   sa.builtins.add("test_is_live_object")
