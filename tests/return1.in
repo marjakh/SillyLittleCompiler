@@ -1,0 +1,6 @@
+function f1() {
+  return 3;
+}
+
+let a = f1();
+write(a);

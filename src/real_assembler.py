@@ -66,7 +66,7 @@ class RealAssembler:
             # 3) Function context pointer
             PAPush(PAConstant(local_counts)),
             PACallRuntimeFunction("CreateMainFunctionContext"),
-            PAReturnValueToRegister(self.__eax),
+            PABuiltinOrRuntimeFunctionReturnValueToRegister(self.__eax),
             PAClearStack(1),
             PAPush(self.__eax),
             # Set spill count in function context

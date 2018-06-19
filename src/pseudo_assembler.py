@@ -333,7 +333,7 @@ class PAStoreSpilled(PseudoAssemblerInstruction):
     return [[self.register], []]
 
 
-class PAReturnValueToRegister(PseudoAssemblerInstruction):
+class PABuiltinOrRuntimeFunctionReturnValueToRegister(PseudoAssemblerInstruction):
   def __init__(self, register):
     super().__init__()
     self.register = register
@@ -688,13 +688,17 @@ class PseudoAssembler:
       assert(isinstance(index, TemporaryVariable))
       pointer_size_register = self.registers.nextRegister()
       address_register2 = self.registers.nextRegister()
-      code += [PAMov(self.__virtualRegister(index), self.__eax),
+      code += [PAComment("index to eax"),
+               PAMov(self.__virtualRegister(index), self.__eax),
+               PAComment("pointer size"),
                PAMov(PAConstant(POINTER_SIZE), pointer_size_register),
+               PAComment("store the value of edx, we need to nullify it"),
                PAPush(self.__edx),
                PAMov(PAConstant(0), self.__edx),
                PAMul(pointer_size_register),
                PAPop(self.__edx),
                PAMov(self.__eax, address_register2),
+               PAComment("add base address"),
                PAAdd(address_register, address_register2)]
       pointer_size_register.addConflict(self.__edx)
     code += [PAComment("Computing array address done")]
@@ -766,14 +770,19 @@ class PseudoAssembler:
       # level 2 function calls a level 1 function) and so on.
       (function_context, code) = self.__getOuterFunctionContext(instruction.outer_function_context_depth)
       temp = self.__virtualRegister(instruction.temporary_variable)
-      code = code + [PAPushAllRegisters(),
+      code = code + [PAComment("Push all registers"),
+                     PAPushAllRegisters(),
                      PAPush(self.__ebp), # stack low
+                     PAPush(PAConstant(1)), # return value count is always 1 for now
+                     # FIXME: support multiple returns; but for that
+                     # we need to know the count upfront
                      PAPush(PAConstant(self.__metadata.function_param_and_local_counts[instruction.function.unique_name()])),
                      PAPush(function_context), # outer
                      PACallRuntimeFunction("CreateFunctionContext"),
-                     PAClearStack(3),
+                     PAClearStack(4),
+                     PAComment("Pop all registers"),
                      PAPopAllRegisters(),
-                     PAReturnValueToRegister(temp)]
+                     PABuiltinOrRuntimeFunctionReturnValueToRegister(temp)]
       return code
 
     if isinstance(instruction, AddParameterToFunctionContext):
@@ -861,10 +870,27 @@ class PseudoAssembler:
       return [PAJump(instruction.label)]
 
     if isinstance(instruction, GetReturnValue):
-      # This ignores the function context parameter. Maybe refactor and actually
-      # read the return value from the function context.
       v = self.__virtualRegister(instruction.temporary_variable)
-      return [PAReturnValueToRegister(v)]
+      if instruction.function.variable_type == VariableType.builtin_function:
+        return [PABuiltinOrRuntimeFunctionReturnValueToRegister(v)]
+      elif instruction.function.variable_type == VariableType.user_function:
+        function_context = self.__virtualRegister(instruction.temporary_for_function_context)
+        # FIXME: support multiple return values
+        return [PAMov(PARegisterAndOffset(function_context, FUNCTION_CONTEXT_PARAMS_OFFSET + self.__metadata.function_param_and_local_counts[instruction.function.unique_name()]), v)]
+      assert(False)
+
+    if isinstance(instruction, SetReturnValue):
+      # FIXME: this can set only one return value for now
+      function_context = self.registers.nextRegister()
+      code = [self.__getFunctionContext(function_context)]
+      if isinstance(instruction.value, TemporaryVariable):
+        what = self.__virtualRegister(load.where)
+      elif isinstance(instruction.value, Constant):
+        what = PAConstant(instruction.value.value)
+      else:
+        assert(False)
+      code += [PAMov(what, PARegisterAndOffset(function_context, FUNCTION_CONTEXT_PARAMS_OFFSET + self.__metadata.function_param_and_local_counts[self.__function.function_variable.unique_name()]))]
+      return code
 
     self.__cannotCreate(instruction)
 

@@ -440,31 +440,24 @@ class Return(MediumLevelIRInstruction):
 
 
 class GetReturnValue(MediumLevelIRInstruction):
-  def __init__(self, temporary_variable, temporary_for_function_context):
+  def __init__(self, temporary_variable, temporary_for_function_context, function):
     super().__init__()
     self.temporary_variable = temporary_variable
     self.temporary_for_function_context = temporary_for_function_context
+    self.function = function
 
   def __str__(self):
     return self.temporary_variable.name + " = %GetReturnValue(" + self.temporary_for_function_context.name + ")"
 
 
-class SetReturnValueFromTemporary(MediumLevelIRInstruction):
-  def __init__(self, temporary_variable):
-    super().__init__()
-    self.temporary_variable = temporary_variable
-
-  def __str__(self):
-    return "%SetReturnValueFromTemporary(" + self.temporary_variable.name + ")"
-
-
-class SetReturnValueFromConstant(MediumLevelIRInstruction):
+class SetReturnValue(MediumLevelIRInstruction):
   def __init__(self, value):
     super().__init__()
     self.value = value
 
   def __str__(self):
-    return "%SetReturnValueFromConstant(" + str(self.value) + ")"
+    return "%SetReturnValue(" + str(self.value) + ")"
+
 
 class MediumLevelIR:
   def __init__(self, functions_and_blocks, metadata):
@@ -603,10 +596,10 @@ class MediumLevelIRCreator:
       code = []
       if statement.expression:
         if isinstance(statement.expression, NumberExpression):
-          code.append(SetReturnValueFromConstant(statement.expression.value))
+          code.append(SetReturnValue(Constant(statement.expression.value)))
         else:
           [temporary, code] = self.__computeIntoTemporary(statement.expression)
-          code.append(SetReturnValueFromTemporary(temporary))
+          code.append(SetReturnValue(temporary))
       code.append(Return())
       return code
     print_error("Unable to create medium level IR for statement:")
@@ -702,7 +695,7 @@ class MediumLevelIRCreator:
         code += temporary_code + [AddParameterToFunctionContext(temporary_for_function_context, i, temporary)]
       temporary_for_return_value = self.__nextTemporary()
       code += [CallFunction(expression.function.resolved_variable, temporary_for_function_context),
-               GetReturnValue(temporary_for_return_value, temporary_for_function_context)]
+               GetReturnValue(temporary_for_return_value, temporary_for_function_context, expression.function.resolved_variable)]
       return [temporary_for_return_value, code]
 
     if isinstance(expression, VariableExpression):
