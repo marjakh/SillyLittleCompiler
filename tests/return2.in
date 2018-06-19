@@ -1,0 +1,9 @@
+function foo(x) {
+  return bar(x - 1);
+}
+
+function bar(x) {
+  return 2 * x;
+}
+
+write(foo(5));
