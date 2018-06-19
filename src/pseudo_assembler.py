@@ -884,7 +884,7 @@ class PseudoAssembler:
       function_context = self.registers.nextRegister()
       code = [self.__getFunctionContext(function_context)]
       if isinstance(instruction.value, TemporaryVariable):
-        what = self.__virtualRegister(load.where)
+        what = self.__virtualRegister(instruction.value)
       elif isinstance(instruction.value, Constant):
         what = PAConstant(instruction.value.value)
       else:

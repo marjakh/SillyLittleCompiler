@@ -184,30 +184,26 @@ class StoreOrLoadTargetWithVariable(StoreOrLoadTarget):
 
 
 class Local(StoreOrLoadTargetWithVariable):
-  def __init__(self, variable, depth, is_param):
+  def __init__(self, variable, depth):
     assert(depth == 0)
-    assert(is_param == False)
     super().__init__(variable, 0, False, "local")
 
 
 class Parameter(StoreOrLoadTargetWithVariable):
-  def __init__(self, variable, depth, is_param):
+  def __init__(self, variable, depth):
     assert(depth == 0)
-    assert(is_param)
     super().__init__(variable, 0, True, "parameter")
 
 
 class OuterFunctionLocal(StoreOrLoadTargetWithVariable):
-  def __init__(self, variable, depth, is_param):
+  def __init__(self, variable, depth):
     assert(depth > 0)
-    assert(is_param == False)
     super().__init__(variable, depth, False, "outer function local")
 
 
 class OuterFunctionParameter(StoreOrLoadTargetWithVariable):
   def __init__(self, variable, depth):
     assert(depth > 0)
-    assert(is_param)
     super().__init__(variable, depth, True, "outer function parameter")
 
 
@@ -648,6 +644,7 @@ class MediumLevelIRCreator:
 
     assert(variable)
     # FIXME: loading functions should be fine too?
+    print_debug(variable.variable_type)
     assert(variable.variable_type == VariableType.variable)
 
     # print_debug("trying to find allocation scope...")
@@ -674,7 +671,7 @@ class MediumLevelIRCreator:
       is_parameter = "parameter"
     else:
       is_parameter = "not_parameter"
-    return [store_or_load_targets[scope][is_parameter](variable, depth, variable.is_parameter), []]
+    return [store_or_load_targets[scope][is_parameter](variable, depth), []]
 
   def __computeIntoTemporary(self, expression):
     if isinstance(expression, NumberExpression):
