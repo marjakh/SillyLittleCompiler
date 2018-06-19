@@ -139,7 +139,7 @@ class FirstPassScopeAnalyser(ScopeAnalyserVisitor):
   def visitFunctionStatement(self, s):
     # Add the function variable into the surrounding scope.
     # print_debug("Adding function variable " + s.name + " into scope " + str(self.scopes[0]))
-    unique_name = self.__function_stack[-1].name + "%" + s.name
+    unique_name = self.__function_stack[-1].name + "__" + s.name
     v = FunctionVariable(s.name, unique_name, self.currentVariableAllocationScope(), s)
     if not self.scopes[0].addVariable(v):
       raise ScopeError("ScopeError: redeclaration of variable " + s.name, s.pos)
@@ -329,4 +329,3 @@ if __name__ == "__main__":
       print(sa.error.message)
     assert(sa.success == expected_success)
   print("All OK!")
-

@@ -1,0 +1,16 @@
+function foo() {
+  function bar() {
+    write(1);
+  }
+  bar();
+}
+
+function foo2() {
+  function bar() {
+    write(2);
+  }
+  bar();
+}
+
+foo();
+foo2();

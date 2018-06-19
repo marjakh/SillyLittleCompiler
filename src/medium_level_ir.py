@@ -495,7 +495,7 @@ class MediumLevelIRCreator:
     # First assign offets to variables.
     for [f, cfg] in cfgs:
       assert(f)
-      if f.name == "%main":
+      if f.name == MAIN_NAME:
         metadata.function_param_and_local_counts[f.function_variable.unique_name()] = computeVariableOffsetsForNonFunctionScope(top_scope)
       else:
         metadata.function_param_and_local_counts[f.function_variable.unique_name()] = computeVariableOffsetsForFunction(f)

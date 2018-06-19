@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 
+from constants import *
 from type_enums import VariableType, ScopeType
 from util import *
 
@@ -52,7 +53,7 @@ class FunctionVariable(Variable):
     # declared, not the scope of the function.
     super().__init__(name, VariableType.user_function, allocation_scope)
     self.function_statement = function_statement
-    self.__unique_name = unique_name # For inner functions: outer%inner
+    self.__unique_name = unique_name # For inner functions: outer__inner
 
   def __str__(self):
     return "FunctionVariable(" + self.name + ")"
@@ -98,7 +99,6 @@ class Function:
         self.local_variables.append(v)
 
   def label(self):
-    if self.name == "%main":
+    if self.name == MAIN_NAME:
       return "user_main"
     return "user_function_useless_" + self.name # FIXME: remove
-

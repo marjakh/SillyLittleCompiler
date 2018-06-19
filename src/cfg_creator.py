@@ -11,6 +11,7 @@
 
 # TODO: meaningful names for inner functions.
 
+from constants import *
 from parse_tree import *
 from scanner import *
 from type_enums import ScopeType
@@ -214,11 +215,10 @@ class CfgCreator:
       else:
         main_body.append(s)
     main_statement = FunctionStatement([Token(TokenType.identifier,
-                                              "%main"), [], main_body], 0)
+                                              MAIN_NAME), [], main_body], 0)
     main_statement.function = self.__program.main_function
     visitor.visitFunctionStatement(main_statement)
 
     # print_debug("CFGs:")
     # print_debug(cfgs)
     return cfgs
-

@@ -151,10 +151,10 @@ class RealAssembler:
         else:
           assert(False)
 
-      if function.name == "%main":
-        program.extend(self.__createMainPrologue(spill_position, pseudo_assembly.metadata.function_param_and_local_counts["%main"]))
+      if function.name == MAIN_NAME:
+        program.extend(self.__createMainPrologue(spill_position, pseudo_assembly.metadata.function_param_and_local_counts[MAIN_NAME]))
       else:
-        program.extend(self.__createFunctionPrologue(function.name, spill_position))
+        program.extend(self.__createFunctionPrologue(function.function_variable.unique_name(), spill_position))
 
       for b in function_blocks:
         for i in b.instructions:
@@ -162,13 +162,13 @@ class RealAssembler:
           i.setSpillCount(spill_position)
           if not i.dead:
             program.append(i)
-      if function.name == "%main":
+      if function.name == MAIN_NAME:
         program.append(Label("main_epilogue"))
         program.append(PAMov(self.__ebp, self.__esp))
         program.append(PAPop(self.__ebx)) # Restore saved ebx
         program.append(PAPop(self.__ebp)) # Restore saved ebp
       else:
-        program.append(Label("user_function_" + function.name + "_epilogue"))
+        program.append(Label("user_function_" + function.function_variable.unique_name() + "_epilogue"))
         program.append(PAMov(self.__ebp, self.__esp))
         program.append(PAPop(self.__ebp)) # Restore saved ebp
       program.append(PARealReturn())

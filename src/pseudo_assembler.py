@@ -805,7 +805,7 @@ class PseudoAssembler:
                 PAPushAllRegisters(),
                 PAComment("Function context"),
                 PAPush(temp),
-                PACallUserFunction(instruction.function.name),
+                PACallUserFunction(instruction.function.unique_name()),
                 # No need to clear the stack; the user function does it.
                 # FIXME: change this maybe?
                 PAComment("Pop all registers"),
@@ -816,9 +816,9 @@ class PseudoAssembler:
         self.__cannotCreate(instruction)
 
     if isinstance(instruction, Return):
-      if self.__function.name == "%main":
+      if self.__function.name == MAIN_NAME:
         return [PATopLevelReturn()]
-      return [PAReturn(self.__function.name)]
+      return [PAReturn(self.__function.function_variable.unique_name())]
 
     if isinstance(instruction, AddTemporaryToTemporary):
       v_from1 = self.__virtualRegister(instruction.from_variable1)
