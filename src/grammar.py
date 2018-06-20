@@ -181,30 +181,3 @@ class GrammarDriver:
         added_something = True
       s1.add(item)
     return added_something
-
-if __name__ == "__main__":
-  rules = [
-    GrammarRule("program", ["statement_list", "token_eos"], None),
-    GrammarRule("statement_list", ["statement", "statement_list"], None),
-    GrammarRule("statement_list", ["epsilon"], None),
-    GrammarRule("statement", ["token_identifier", "token_assign", "expression", "token_semicolon"], None),
-    GrammarRule("statement", ["token_read", "expression", "token_semicolon"], None),
-    GrammarRule("statement", ["token_write", "expression", "token_semicolon"], None),
-    GrammarRule("expression", ["add_term", "add_term_tail"], None),
-    GrammarRule("add_term_tail", ["add_op", "add_term", "add_term_tail"], None),
-    GrammarRule("add_term_tail", ["epsilon"], None),
-    GrammarRule("add_term", ["mul_term", "mul_term_tail"], None),
-    GrammarRule("mul_term_tail", ["epsilon"], None),
-    GrammarRule("mul_term_tail", ["mul_op", "mul_term", "mul_term_tail"], None),
-    GrammarRule("mul_term", ["token_number"], None),
-    GrammarRule("mul_term", ["token_identifier"], None),
-    GrammarRule("mul_term", ["token_left_paren", "expression", "token_right_paren"], None),
-    GrammarRule("add_op", ["token_plus"], None),
-    GrammarRule("add_op", ["token_minus"], None),
-    GrammarRule("mul_op", ["token_multiplication"], None),
-    GrammarRule("mul_op", ["token_division"], None),
-  ]
-  gp = GrammarDriver(rules)
-
-
-

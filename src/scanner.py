@@ -161,8 +161,3 @@ class Scanner:
       return self.__scanIdentifierOrKeyword()
 
     return Token(TokenType.invalid)
-
-if __name__ == "__main__":
-  s = Scanner("foo 133 + / - *    bar baz")
-  for i in range(1, 10):
-    print(s.nextToken())
