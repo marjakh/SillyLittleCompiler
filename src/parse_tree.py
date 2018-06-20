@@ -30,6 +30,14 @@ class ElseStatementTemp:
     self.pos = pos
 
 
+class ElseIfStatementTemp:
+  def __init__(self, items, pos):
+    self.condition = items[0]
+    self.body = items[1] or []
+    self.continuation = items[2]
+    self.pos = pos
+
+
 # Real parse tree nodes
 class ParseTreeNode:
   def __init__(self, pos):
@@ -107,8 +115,13 @@ class IfStatement(Statement):
     self.expression = items[0]
     self.then_body = items[1] or []
     if items[2]:
-      assert(isinstance(items[2], ElseStatementTemp))
-      self.else_body = items[2].body or []
+      if isinstance(items[2], ElseStatementTemp):
+        self.else_body = items[2].body or []
+      elif isinstance(items[2], ElseIfStatementTemp):
+        self.else_body = [IfStatement([items[2].condition, items[2].body, items[2].continuation], items[2].pos)]
+      else:
+        assert(False)
+
     else:
       self.else_body = []
     self.if_scope = None

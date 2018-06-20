@@ -1,0 +1,61 @@
+function f1(x) {
+  write(11);
+  if (x == 0) {
+    write(0);
+  } else if (x == 1) {
+    write(1);
+  }
+}
+
+f1(0);
+f1(1);
+f1(2);
+
+function f2(x) {
+  write(22);
+  if (x == 0) {
+    write(0);
+  } else if (x == 1) {
+    write(1);
+  } else {
+    write(2);
+  }
+}
+
+f2(0);
+f2(1);
+f2(2);
+
+function f3(x) {
+  write(33);
+  if (x == 0) {
+    write(0);
+  } else if (x == 1) {
+    write(1);
+  } else if (x == 2) {
+    write(2);
+  }
+}
+
+f3(0);
+f3(1);
+f3(2);
+f3(3);
+
+function f4(x) {
+  write(44);
+  if (x == 0) {
+    write(0);
+  } else if (x == 1) {
+    write(1);
+  } else if (x == 2) {
+    write(2);
+  } else {
+    write(3);
+  }
+}
+
+f4(0);
+f4(1);
+f4(2);
+f4(3);
