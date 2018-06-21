@@ -1,0 +1,15 @@
+function foo(x) {
+  return 2 * x;
+}
+
+if (foo(3) == 6) {
+  write(1);
+} else {
+  write(2);
+}
+
+if (foo(4) == 6) {
+  write(3);
+} else {
+  write(4);
+}
