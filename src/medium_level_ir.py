@@ -644,7 +644,6 @@ class MediumLevelIRCreator:
 
     assert(variable)
     # FIXME: loading functions should be fine too?
-    print_debug(variable.variable_type)
     assert(variable.variable_type == VariableType.variable)
 
     # print_debug("trying to find allocation scope...")
