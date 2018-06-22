@@ -1,0 +1,9 @@
+let a = 6;
+
+function foo() {
+  a = 5;
+}
+
+write(a);
+foo();
+write(a);

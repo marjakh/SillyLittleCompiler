@@ -7,6 +7,7 @@
 #include <cassert>
 #include <cstring>
 
+#include <set>
 #include <stack>
 #include <vector>
 
@@ -22,6 +23,7 @@
 #define ZAP_VALUE 0x41
 
 // FIXME: this simple version has only one memory chunk. Use a list instead.
+namespace {
 
 char* current_chunk = nullptr;
 char* current_chunk_cursor = nullptr;
@@ -33,8 +35,28 @@ char* other_chunk_end = nullptr;
 
 std::vector<std::int32_t*>* current_objects;
 std::vector<std::int32_t*>* other_objects;
+std::set<TemporaryHandle*> handles;
 
 static std::int32_t* stack_high = nullptr;
+
+bool memory_gc_stress = false;
+
+}
+
+TemporaryHandle::TemporaryHandle(std::int32_t* ptr)
+    : ptr_(ptr) {
+  handles.insert(this);
+}
+
+TemporaryHandle::~TemporaryHandle() {
+  handles.erase(this);
+}
+
+void roots_from_handles(std::stack<std::pair<std::int32_t**, std::int32_t*>>* roots) {
+  for (TemporaryHandle* handle : handles) {
+    roots->push(std::make_pair(handle->ptr_location(), handle->ptr()));
+  }
+}
 
 void memory_set_stack_high(std::int32_t* stack_high_) {
   stack_high = stack_high_;
@@ -127,8 +149,13 @@ void* memory_allocate_no_gc(int32_t size) {
 
 void* memory_allocate(int32_t size, int32_t* stack_low) {
   fprintf(stderr, "Allocate %d\n", size);
-
   int32_t* result = 0;
+  if (memory_gc_stress) {
+    do_gc(stack_low);
+    result = allocate_from_current_chunk(size);
+    assert(result != nullptr);
+    return result;
+  }
   int gc_count = 0;
   while (gc_count <= 1) {
     result = allocate_from_current_chunk(size);
@@ -227,7 +254,7 @@ bool move_object(int32_t* ptr_to_object, int32_t** new_ptr, std::stack<std::pair
   return true;
 }
 
-void mark_and_sweep(std::stack<std::pair<int32_t**, int32_t*>>* ptrs) {
+void mark_and_sweep(std::stack<std::pair<std::int32_t**, int32_t*>>* ptrs) {
   // Iterate through known objects.
   while (!ptrs->empty()) {
     auto ptr_pair = ptrs->top();
@@ -252,6 +279,7 @@ void do_gc(std::int32_t* stack_low) {
   // memory chunk, pointed to by already discovered pointers.
   std::stack<std::pair<int32_t**, std::int32_t*>> roots;
   stack_walk(stack_low, stack_high, &roots);
+  roots_from_handles(&roots);
 
   mark_and_sweep(&roots);
 
@@ -272,6 +300,10 @@ void do_gc(std::int32_t* stack_low) {
 
 void memory_test_do_gc(int32_t* stack_low) {
   do_gc(stack_low);
+}
+
+void memory_test_set_gc_stress() {
+  memory_gc_stress = true;
 }
 
 bool memory_test_is_live_object(int32_t* object) {

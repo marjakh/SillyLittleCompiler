@@ -25,12 +25,14 @@ void stack_walk(std::int32_t* stack_low, std::int32_t* stack_high, std::stack<st
     // Iterate spill area.
     for (int i = 0; i < function_context->spill_count; ++i) {
       int32_t* maybe_ptr = reinterpret_cast<int32_t*>(*p);
+      std::cerr << "Spilled: " << maybe_ptr << std::endl;
       roots->push(std::make_pair(reinterpret_cast<int32_t**>(p), maybe_ptr));
       --p;
     }
     // Iterate pushed registers.
     for (int i = 0; i < pushed_register_count; ++i) {
       int32_t* maybe_ptr = reinterpret_cast<int32_t*>(*p);
+      std::cerr << "Pushed: " << maybe_ptr << std::endl;
       roots->push(std::make_pair(reinterpret_cast<int32_t**>(p), maybe_ptr));
       --p;
     }

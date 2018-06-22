@@ -1,7 +1,6 @@
 Priorities:
 1. functions improvements:
    -- as first-class
-   -- return values
 2. strings
 3. objects (need to figure out the type system!)
 4. separate compilation
@@ -10,7 +9,7 @@ Priorities:
    -- data structures (maybe implemented by the runtime? or call into c++?)
    -- I/O
 7. misc
-   -- add gc stress runs
+
 
 GC:
 - Add tests for a[something_that_allocates()] = something_that_allocates();

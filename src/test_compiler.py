@@ -34,8 +34,8 @@ class Result:
     return Result(TestResultStatus.error, output, longer_output)
 
 
-def getOutput(input_file_name):
-  print("Running test " + input_file_name)
+def getOutput(input_file_name, gc_stress):
+  print("Running test " + input_file_name + ", gc_stress " + str(gc_stress))
 
   input_file_path = os.path.join(test_path, input_file_name)
   input_file = open(input_file_path, 'r')
@@ -56,15 +56,18 @@ def getOutput(input_file_name):
       output = error_search.group(2)
     return Result.testError(output, error_line)
 
-  output = subprocess.check_output(["/tmp/a.out"]).decode("utf-8").strip()
+  command = ["/tmp/a.out"]
+  if gc_stress:
+    command = command + ["--gc-stress"]
+  output = subprocess.check_output(command).decode("utf-8").strip()
   return Result.testOk(output)
 
 skipped = 0
 
-def runTest(input_file_name, test_path, expect_error):
+def runTest(input_file_name, test_path, expect_error, gc_stress):
   global skipped
 
-  result = getOutput(input_file_name)
+  result = getOutput(input_file_name, gc_stress)
 
   output_file_name = input_file_name[:-2] + "out"
   if not os.path.isfile(os.path.join(test_path, output_file_name)):
@@ -110,10 +113,16 @@ if __name__ == '__main__':
     bad_files.sort()
 
     for input_file_name in good_files:
-      runTest(input_file_name, test_path, False)
+      runTest(input_file_name, test_path, False, False)
 
     for input_file_name in bad_files:
-      runTest(input_file_name, test_path, True)
+      runTest(input_file_name, test_path, True, False)
+
+    for input_file_name in good_files:
+      runTest(input_file_name, test_path, False, True)
+
+    for input_file_name in bad_files:
+      runTest(input_file_name, test_path, True, True)
 
     if skipped > 0:
       print("Some tests skipped")

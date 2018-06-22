@@ -4,12 +4,15 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 extern "C" void user_code();
 
-extern "C" FunctionContext* runtime_CreateFunctionContext(void* outer, std::int32_t params_and_locals_count, int return_value_count, int* stack_low) {
+extern "C" FunctionContext* runtime_CreateFunctionContext(std::int32_t* outer, std::int32_t params_and_locals_count, int return_value_count, int* stack_low) {
+  // If the allocation causes GC, it will invalidate "outer".
+  TemporaryHandle outer_handle(outer);
   FunctionContext* context = reinterpret_cast<FunctionContext*>(memory_allocate(sizeof(FunctionContext) + (params_and_locals_count + return_value_count) * POINTER_SIZE, stack_low));
-  context->outer = reinterpret_cast<FunctionContext*>(outer);
+  context->outer = reinterpret_cast<FunctionContext*>(outer_handle.ptr());
   context->spill_count = 0; // Caller fills this in
   context->params_and_locals_count = params_and_locals_count;
   context->return_value_count = return_value_count;
@@ -34,6 +37,9 @@ extern "C" void runtime_SetStackHigh(std::int32_t* stack_high) {
 }
 
 int main(int argc, char** argv) {
+  if (argc >= 2 && strcmp(argv[1], "--gc-stress") == 0) {
+    memory_test_set_gc_stress();
+  }
   memory_init();
   fprintf(stderr, "Calling user code\n");
   user_code();
