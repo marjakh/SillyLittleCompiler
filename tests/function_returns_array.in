@@ -1,0 +1,8 @@
+function foo() {
+  let r = new Array(1);
+  r[0] = 250;
+  return r;
+}
+
+let a = foo();
+write(a[0]);
