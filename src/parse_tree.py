@@ -13,7 +13,15 @@ class AssignmentStatementContinuation:
 class ArrayIndexContinuation:
   def __init__(self, items, pos):
     self.index_expression = items[0]
-    assert(items[1] is None or isinstance(items[1], ArrayIndexContinuation))
+    assert(items[1] is None or isinstance(items[1], ArrayIndexContinuation) or isinstance(items[1], FunctionCallContinuation))
+    self.continuation = items[1]
+    self.pos = pos
+
+
+class FunctionCallContinuation:
+  def __init__(self, items, pos):
+    self.call_expression = items[0]
+    assert(items[1] is None or isinstance(items[1], ArrayIndexContinuation) or isinstance(items[1], FunctionCallContinuation))
     self.continuation = items[1]
     self.pos = pos
 
@@ -82,7 +90,7 @@ class AssignmentStatement(Statement):
   def __init__(self, items, pos):
     super().__init__(pos)
     assert(len(items) == 2)
-    assert(isinstance(items[0], VariableExpression) or isinstance(items[0], ArrayIndexExpression))
+    assert(isinstance(items[0], VariableExpression) or isinstance(items[0], ArrayIndexExpression) or isinstance(items[0], FunctionCall))
     self.where = items[0]
     self.expression = items[1]
 
@@ -97,6 +105,8 @@ class AssignmentStatement(Statement):
       return self.where.name
     elif isinstance(self.where, ArrayIndexExpression):
       return self.where.arrayName()
+    elif isinstance(self.where, FunctionCall):
+      return self.where.function.name()
     assert(False)
 
   def resolvedVariable(self):
@@ -104,6 +114,8 @@ class AssignmentStatement(Statement):
     if isinstance(self.where, VariableExpression):
       return self.where.resolvedVariable()
     elif isinstance(self.where, ArrayIndexExpression):
+      return self.where.resolvedVariable()
+    elif isinstance(self.where, FunctionCall):
       return self.where.resolvedVariable()
     assert(False)
 
@@ -167,14 +179,11 @@ class Expression(ParseTreeNode):
 
 
 class FunctionCall(Expression):
-  def __init__(self, items, pos):
+  def __init__(self, function, parameters, pos):
     super().__init__(pos)
-    assert(isinstance(items[0], VariableExpression) or isinstance(items[0], ArrayIndexExpression))
-    self.function = items[0]
-    if items[1] is None:
-      self.parameters = []
-    else:
-      self.parameters = items[1]
+    assert(isinstance(function, VariableExpression) or isinstance(function, ArrayIndexExpression) or isinstance(function, FunctionCall))
+    self.function = function
+    self.parameters = parameters or []
 
   def __str__(self):
     return "FunctionCall(" + str(self.function) + ", " + listToString(self.parameters) + ")"
@@ -205,7 +214,7 @@ class VariableExpression(Expression):
 class ArrayIndexExpression(Expression):
   def __init__(self, array, index, pos):
     super().__init__(pos)
-    assert(isinstance(array, VariableExpression) or isinstance(array, ArrayIndexExpression))
+    assert(isinstance(array, VariableExpression) or isinstance(array, ArrayIndexExpression) or isinstance(array, FunctionCall))
     assert(isinstance(index, Expression))
     self.array = array
     self.index = index
@@ -250,7 +259,7 @@ class NewExpression(Expression):
     super().__init__(pos)
     self.class_name = items[0].value
     self.parameters = items[1] or []
-    self.function_call = FunctionCall([VariableExpression(self.class_name, pos), self.parameters], pos)
+    self.function_call = FunctionCall(VariableExpression(self.class_name, pos), self.parameters, pos)
 
   def accept(self, visitor):
     visitor.visitNewExpression(self)

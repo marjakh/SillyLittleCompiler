@@ -677,6 +677,11 @@ class PseudoAssembler:
       reference_array_code = [PAMov(PARegisterAndOffset(address_register, 0), read_from_array_register)]
       [address_register2, index_code] = self.__createArrayIndexingCode(read_from_array_register, array.index)
       return [address_register2, code + load_array_code + reference_array_code + index_code]
+    elif isinstance(array.base, TemporaryStoreOrLoadTarget):
+      temp = self.__virtualRegister(array.base.temporary)
+      [address_register, index_code] = self.__createArrayIndexingCode(temp, array.index)
+      return [address_register, index_code]
+
     assert(False)
 
   def __createArrayIndexingCode(self, address_register, index):

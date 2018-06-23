@@ -3,7 +3,7 @@
 from constants import *
 from grammar import GrammarDriver
 from grammar_rules import rules
-from parse_tree import ParseTreeVisitor, VariableExpression, ArrayIndexExpression
+from parse_tree import ParseTreeVisitor, VariableExpression, ArrayIndexExpression, FunctionCall
 from parser import Parser
 from scanner import Scanner
 from type_enums import VariableType, ScopeType
@@ -183,13 +183,15 @@ class SecondPassScopeAnalyser(ScopeAnalyserVisitor):
   def visitAssignmentStatement(self, s):
     super().visitAssignmentStatement(s)
 
-    self.__visitVariableExpressionOrArrayIndexExpression(s.where)
+    self.__visitVariableExpressionOrArrayIndexExpressionOrFunctionCall(s.where)
 
-  def __visitVariableExpressionOrArrayIndexExpression(self, e):
+  def __visitVariableExpressionOrArrayIndexExpressionOrFunctionCall(self, e):
     if isinstance(e, VariableExpression):
       self.visitVariableExpression(e)
     elif isinstance(e, ArrayIndexExpression):
       self.visitArrayIndexExpression(e)
+    elif isinstance(e, FunctionCall):
+      self.visitFunctionCall(e)
     else:
       assert(False)
 
@@ -202,7 +204,7 @@ class SecondPassScopeAnalyser(ScopeAnalyserVisitor):
       v.referred_by_inner_functions = True
 
   def visitArrayIndexExpression(self, e):
-    self.__visitVariableExpressionOrArrayIndexExpression(e.array)
+    self.__visitVariableExpressionOrArrayIndexExpressionOrFunctionCall(e.array)
     e.index.accept(self)
 
   def visitFunctionStatementEndBody(self, s):
@@ -222,7 +224,7 @@ class SecondPassScopeAnalyser(ScopeAnalyserVisitor):
   def visitFunctionCall(self, s):
     super().visitFunctionCall(s)
 
-    self.__visitVariableExpressionOrArrayIndexExpression(s.function)
+    self.__visitVariableExpressionOrArrayIndexExpressionOrFunctionCall(s.function)
 
     # We cannot check parameter count here, because we might be calling a
     # function via a variable!

@@ -120,20 +120,27 @@ class GrammarDriver:
       productions = self.rules[item]
       for (production, rule) in productions:
         predictSet = set()
-        #print("Processing: " + str(item) + " -> " + str(production))
+        # print_debug("Processing: " + str(item) + " -> " + str(production))
 
         # A -> B C, predict to use this rule if the symbol in first(B) or if B can be epsilon and the symbol in first(C), or if all can be epsilon and symbol in follow(A).
         for i in range(len(production)):
+          # print_debug("Case 1: adding to predictSet: " + str(self.first[production[i]]))
           GrammarDriver.__addSetToSet(predictSet, self.first[production[i]])
           if not self.canBeEpsilon[production[i]]:
             break
           if i < len(production) - 1:
+            # print_debug("Case 2: adding to predictSet: " + str(self.first[production[i]]))
             GrammarDriver.__addSetToSet(predictSet, self.first[production[i + 1]])
           else: # all can be epsilon
+            # print_debug("Case 3: adding to predictSet: " + str(self.first[production[i]]))
             GrammarDriver.__addSetToSet(predictSet, self.follow[item])
         for f in predictSet:
           if f in self.predictions[item]:
+            print_debug("Going to fail; rule " + str(item) + " -> " + str(production))
+            print_debug("Already in predictions[" + str(item) + "]: " + str(f))
             self.success = False
+            assert(False)
+          # print_debug("Adding: predictions[" + str(item) + "][" + str(f) + "]")
           self.predictions[item][f] = (production, rule)
 
     # print_debug("first:")

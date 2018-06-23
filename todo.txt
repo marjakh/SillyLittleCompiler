@@ -9,10 +9,7 @@ Priorities:
    -- data structures (maybe implemented by the runtime? or call into c++?)
    -- I/O
 7. misc
-
-
-GC:
-- Add tests for a[something_that_allocates()] = something_that_allocates();
+   -- syntax error positions
 
 Random bugs / corner cases:
 - Add tests for what happens when trying to access the return value for write.
@@ -21,6 +18,7 @@ Random bugs / corner cases:
 Arrays:
 - Parsing more complicated cases doesn't work (probably)
 let bar = foo()[3];
+- Also longer: foo()() or foo()[0]() etc.
 
 
 Small stuff:

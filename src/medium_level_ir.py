@@ -219,6 +219,16 @@ class Array(StoreOrLoadTarget):
     return str(self.base) + "[" + self.index.name + "]"
 
 
+class TemporaryStoreOrLoadTarget(StoreOrLoadTarget):
+  def __init__(self, temporary):
+    assert(isinstance(temporary, TemporaryVariable))
+    self.temporary = temporary
+    self.comment = "temporary"
+
+  def __str__(self):
+    return str(self.temporary)
+
+
 store_or_load_targets = dict()
 store_or_load_targets["local"] = dict()
 store_or_load_targets["local"]["not_parameter"] = Local
@@ -639,6 +649,10 @@ class MediumLevelIRCreator:
       # FIXME: shortcut constant indices
       [temporary_for_index, code] = self.__computeIntoTemporary(thing.index)
       return [Array(base, temporary_for_index), base_code + code]
+
+    if isinstance(thing, FunctionCall):
+      [temporary_for_return, code] = self.__computeIntoTemporary(thing)
+      return [TemporaryStoreOrLoadTarget(temporary_for_return), code]
 
     assert(isinstance(thing, VariableExpression))
     variable = thing.resolved_variable

@@ -1,0 +1,28 @@
+
+function foo1() {
+  return new Array(1);
+}
+
+function foo2() {
+  let r = new Array(1);
+  r[0] = 7;
+  return r;
+}
+
+let global_array = new Array(1);
+global_array[0] = 10;
+
+function foo3() {
+  return global_array;
+}
+
+foo1()[0] = 9;
+
+let bar2 = foo2()[0];
+write(bar2);
+
+let bar3 = foo3()[0];
+write(bar3);
+
+foo3()[0] = 11;
+write(global_array[0]);

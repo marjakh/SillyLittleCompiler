@@ -54,35 +54,30 @@ def flatten_items(items, pos = None):
       new_items += [i]
   return new_items
 
-def dispatch_assignment_or_function_call(items, pos):
+def dispatch_assignment_continuation(items, pos):
   assert(len(items) == 2)
   if isinstance(items[1], AssignmentStatementContinuation):
     return AssignmentStatement([items[0], items[1].expression], pos)
-  assert(isinstance(items[1], ParameterList))
-  return FunctionCall([items[0], items[1].parameters], pos)
-
-
-def dispatch_variable_or_function_call(items, pos):
-  assert(len(items) == 2)
-  assert(isinstance(items[0], VariableExpression) or isinstance(items[0], ArrayIndexExpression))
-  if isinstance(items[1], ParameterList):
-    return FunctionCall([items[0], items[1].parameters], pos)
+  assert(items[1] is None)
   return items[0]
 
-
-def dispatch_array_index(items, pos):
+def dispatch_array_index_or_function_call(items, pos):
   assert(len(items) == 2)
 
   def to_expression(item, pos):
-    if isinstance(item, ArrayIndexExpression):
+    if isinstance(item, ArrayIndexExpression) or isinstance(item, FunctionCall):
       return item
     return VariableExpression(item.value, pos)
 
   if items[1] is None:
     return to_expression(items[0], pos)
 
-  assert(isinstance(items[1], ArrayIndexContinuation))
-  return dispatch_array_index([ArrayIndexExpression(to_expression(items[0], pos), items[1].index_expression, pos), items[1].continuation], pos)
+  if isinstance(items[1], ArrayIndexContinuation):
+    return dispatch_array_index_or_function_call([ArrayIndexExpression(to_expression(items[0], pos), items[1].index_expression, pos), items[1].continuation], pos)
+  elif isinstance(items[1], FunctionCallContinuation):
+    return dispatch_array_index_or_function_call([FunctionCall(to_expression(items[0], pos), items[1].call_expression, pos), items[1].continuation], pos)
+  else:
+    assert(False)
 
 
 rules = [
@@ -93,9 +88,17 @@ rules = [
     GrammarRule("statement_list", ["statement", "statement_list"], flatten(2)),
 
     GrammarRule("statement",
-                ["identifier_or_array", "assignment_or_function_call"],
-                lambda: Gatherer("AssignmentStatementOrFunctionCallGatherer",
-                                 [True, True], dispatch_assignment_or_function_call)),
+                ["identifier_or_array_or_function_call", "assignment_continuation"],
+                lambda: Gatherer("AssignmentStatement",
+                                 [True, True], dispatch_assignment_continuation)),
+    GrammarRule("assignment_continuation",
+                ["token_assign", "expression", "token_semicolon"],
+                lambda: Gatherer("AssignmentStatementContinuationGatherer",
+                                 [False, True, False],
+                                 lambda items, pos: AssignmentStatementContinuation(items, pos))),
+
+    GrammarRule("assignment_continuation", ["token_semicolon"], lambda: Gatherer("None", [False], lambda items, pos: None)),
+
     GrammarRule("statement",
                 ["token_keyword_let", "token_identifier", "token_assign", "expression", "token_semicolon"],
                 lambda: Gatherer("LetStatementGatherer",
@@ -125,17 +128,6 @@ rules = [
                 ["token_comma", "token_identifier", "parameter_name_list_continuation"],
                 lambda: Gatherer("ParameterNameListContinuationGatherer", [False, True, True],
                                  lambda items, pos: flatten_items(items))),
-
-    GrammarRule("assignment_or_function_call",
-                ["token_assign", "expression", "token_semicolon"],
-                lambda: Gatherer("AssignmentStatementContinuationGatherer",
-                                 [False, True, False],
-                                 lambda items, pos: AssignmentStatementContinuation(items, pos))),
-    GrammarRule("assignment_or_function_call",
-                ["token_left_paren", "parameter_list", "token_right_paren", "token_semicolon"],
-                lambda: Gatherer("FunctionCallContinuationGatherer",
-                                 [False, True, False, False],
-                                 lambda items, pos: ParameterList(items[0], pos))),
 
     GrammarRule("statement",
                 ["token_keyword_if", "token_left_paren", "bool_expression", "token_right_paren",
@@ -183,14 +175,7 @@ rules = [
     GrammarRule("mul_term", ["token_number"],
                 lambda: Gatherer("NumberExpression", [True],
                                  lambda items, pos: NumberExpression(items[0].value, pos))),
-
-    GrammarRule("mul_term", ["identifier_or_array", "maybe_function_call"],
-                lambda: Gatherer("VariableOrFunctionCallGatherer",
-                                 [True, True], dispatch_variable_or_function_call)),
-
-    GrammarRule("maybe_function_call", ["epsilon"], None),
-    GrammarRule("maybe_function_call", ["token_left_paren", "parameter_list", "token_right_paren"],
-                lambda: Gatherer("ParameterListGatherer", [False, True, False], lambda items, pos: ParameterList(items[0], pos))),
+    GrammarRule("mul_term", ["identifier_or_array_or_function_call"], just_route),
 
     GrammarRule("parameter_list", ["epsilon"], None),
     GrammarRule("parameter_list", ["expression", "parameter_list_continuation"], flatten(2)),
@@ -212,7 +197,8 @@ rules = [
     GrammarRule("bool_op", ["token_greater_than"], just_route),
     GrammarRule("bool_op", ["token_greater_or_equals"], just_route),
 
-    GrammarRule("identifier_or_array", ["token_identifier", "identifier_or_array_continuation"], lambda: Gatherer("ArrayIndex", [True, True], dispatch_array_index)),
-    GrammarRule("identifier_or_array_continuation", ["epsilon"], None),
-    GrammarRule("identifier_or_array_continuation", ["token_left_bracket", "expression", "token_right_bracket", "identifier_or_array_continuation"], lambda: Gatherer("ArrayIndex", [False, True, False, True], lambda items, pos: ArrayIndexContinuation(items, pos))),
+    GrammarRule("identifier_or_array_or_function_call", ["token_identifier", "array_or_function_call_continuation"], lambda: Gatherer("ArrayIndexOrFunctionCall", [True, True], dispatch_array_index_or_function_call)),
+    GrammarRule("array_or_function_call_continuation", ["epsilon"], None),
+    GrammarRule("array_or_function_call_continuation", ["token_left_bracket", "expression", "token_right_bracket", "array_or_function_call_continuation"], lambda: Gatherer("ArrayIndex", [False, True, False, True], lambda items, pos: ArrayIndexContinuation(items, pos))),
+    GrammarRule("array_or_function_call_continuation", ["token_left_paren", "parameter_list", "token_right_paren", "array_or_function_call_continuation"], lambda: Gatherer("FunctionCall", [False, True, False, True], lambda items, pos: FunctionCallContinuation(items, pos))),
 ]
