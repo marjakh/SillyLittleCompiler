@@ -513,8 +513,9 @@ class MediumLevelIRCreator:
       output.append([f, function_output])
 
     # print_debug("Medium-level IR:")
-    # for b in output:
-    #   print_debug(listToString(b.code, "", "", "\n"))
+    # for [function, blocks] in output:
+    #   for b in blocks:
+    #     print_debug(listToString(b.code, "", "", "\n"))
 
     return MediumLevelIR(output, metadata)
 
