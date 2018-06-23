@@ -109,16 +109,6 @@ class AssignmentStatement(Statement):
       return self.where.function.name()
     assert(False)
 
-  def resolvedVariable(self):
-    # FIXME: huh?
-    if isinstance(self.where, VariableExpression):
-      return self.where.resolvedVariable()
-    elif isinstance(self.where, ArrayIndexExpression):
-      return self.where.resolvedVariable()
-    elif isinstance(self.where, FunctionCall):
-      return self.where.resolvedVariable()
-    assert(False)
-
 
 class IfStatement(Statement):
   def __init__(self, items, pos):
@@ -224,15 +214,6 @@ class ArrayIndexExpression(Expression):
 
   def accept(self, visitor):
     visitor.visitArrayIndexExpression(self)
-
-  def resolvedVariable(self):
-    # FIXME: it can also be a function return value: f()[3]. Make this more
-    # generic.
-    if isinstance(self.array, VariableExpression):
-      return self.array.resolved_variable
-    elif isinstance(self.array, ArrayIndexExpression):
-      return self.array.resolvedVariable()
-    assert(False)
 
   def arrayName(self):
     if isinstance(self.array, VariableExpression):

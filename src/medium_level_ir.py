@@ -625,9 +625,6 @@ class MediumLevelIRCreator:
     array[index] = ...
     """
 
-    # FIXME: there shouldn't be a resolvedVariable in the statement (but there
-    # is - fix that!).. maybe there should be one in statement.where.
-
     [where, code] = self.__createStoreOrLoadTarget(statement.where)
 
     if isinstance(statement.expression, NumberExpression):

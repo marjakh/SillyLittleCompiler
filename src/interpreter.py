@@ -176,15 +176,15 @@ class Interpreter:
       return (False, None)
     if isinstance(s, AssignmentStatement):
       if isinstance(s.where, VariableExpression):
-        assert(s.resolvedVariable())
+        assert(s.where.resolvedVariable())
 
         new_value = self.__evaluateExpression(s.expression)
         # Maybe the variable is in the current function context...
-        if s.resolvedVariable().allocation_scope.scope_type == ScopeType.function:
-          self.__function_context_stack[0].updateVariable(s.resolvedVariable(), new_value)
+        if s.where.resolvedVariable().allocation_scope.scope_type == ScopeType.function:
+          self.__function_context_stack[0].updateVariable(s.where.resolvedVariable(), new_value)
         else: # Or in the top scope.
-          assert(s.resolvedVariable().allocation_scope.scope_type == ScopeType.top)
-          self.__function_context_stack[-1].updateVariable(s.resolvedVariable(), new_value)
+          assert(s.where.resolvedVariable().allocation_scope.scope_type == ScopeType.top)
+          self.__function_context_stack[-1].updateVariable(s.where.resolvedVariable(), new_value)
       elif isinstance(s.where, ArrayIndexExpression):
         self.__evaluateExpression(s.where.array).setData(self.__evaluateExpression(s.where.index), self.__evaluateExpression(s.expression))
       else:
@@ -274,7 +274,6 @@ class Interpreter:
       if e.items[1].token_type == TokenType.greater_or_equals:
         return e1 >= e2
     if isinstance(e, FunctionCall):
-      # FIXME: arrays impl
       parameters = [self.__evaluateExpression(p) for p in e.parameters]
       assert(e.function.resolvedVariable())
       f = e.function.resolvedVariable()
