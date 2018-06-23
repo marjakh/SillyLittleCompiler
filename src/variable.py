@@ -97,8 +97,3 @@ class Function:
         self.parameter_variables.append(v)
       else:
         self.local_variables.append(v)
-
-  def label(self):
-    if self.name == MAIN_NAME:
-      return "user_main"
-    return "user_function_useless_" + self.name # FIXME: remove

@@ -513,7 +513,7 @@ class MediumLevelIRCreator:
         code = self.__createForBasicBlock(b)
         if is_first:
           is_first = False
-          code = [Comment("function " + f.name), Label(f.label())] + code
+          code = [Comment("function " + f.name)] + code
         next_possible = []
         if isinstance(b.next, BasicBlockBranch):
           next_possible = [b.next.true_block.id, b.next.false_block.id]
