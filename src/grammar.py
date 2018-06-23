@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 
 from collections import defaultdict
-from util import listToString
+from util import listToString, print_debug
 
 class SyntaxError(BaseException):
   def __init__(self, pos = None, message = None):
@@ -136,18 +136,18 @@ class GrammarDriver:
             self.success = False
           self.predictions[item][f] = (production, rule)
 
-    # print("first:")
+    # print_debug("first:")
     # for item in self.first:
-    #   print(str(item) + " -> " + str(self.first[item]))
+    #   print_debug(str(item) + " -> " + str(self.first[item]))
 
-    # print("follow:")
+    # print_debug("follow:")
     # for item in self.follow:
-    #   print(str(item) + " -> " + str(self.follow[item]))
+    #   print_debug(str(item) + " -> " + str(self.follow[item]))
 
-    # print("predict:")
+    # print_debug("predict:")
     # for item in self.predictions:
     #   for f in self.predictions[item]:
-    #     print("(" + str(item) + ", " + str(f) + ") -> " + str(self.predictions[item][f]))
+    #     print_debug("(" + str(item) + ", " + str(f) + ") -> " + str(self.predictions[item][f]))
 
     assert(self.success)
     # print("success: " + str(self.success))
