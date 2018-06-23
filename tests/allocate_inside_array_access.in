@@ -1,0 +1,15 @@
+let a = new Array(1);
+
+function foo() {
+  let b = new Array(1);
+  return 0;
+}
+
+function bar() {
+  let b = new Array(1);
+  return 8;
+}
+
+a[foo()] = bar();
+
+write(a[0]);
