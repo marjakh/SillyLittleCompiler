@@ -10,5 +10,10 @@ struct FunctionContext {
   int32_t return_value_count;
 };
 
+struct Function {
+  FunctionContext* function_context;
+  int32_t* code_address;
+};
+
 
 #endif

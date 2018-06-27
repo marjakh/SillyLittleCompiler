@@ -226,6 +226,43 @@ class PACallUserFunction(PACall):
     super().__init__("user_function_" + name)
 
 
+class PACallFunctionFromAddress(PseudoAssemblerInstruction):
+  def __init__(self, function_address_register):
+    super().__init__()
+    self.function_address_register = function_address_register
+
+  def __str__(self):
+    return "call *" + str(self.function_address_register)
+
+  def getRegisters(self):
+    return [self.function_address_register.registersReadIfSource(), []]
+
+  def replaceRegisters(self, assigned_registers):
+    self.function_address_register = PseudoAssemblerInstruction.replaceRegistersIn(self.function_address_register, self, assigned_registers)
+
+  def replaceSpilledRegister(self, register, new_register):
+    self.function_address_register = PseudoAssemblerInstruction.replaceSpilledRegisterIn(self.function_address, register, new_register)
+
+
+class PALea(PseudoAssemblerInstruction):
+  def __init__(self, what, where):
+    super().__init__()
+    self.what = what
+    self.where = where
+
+  def __str__(self):
+    return "lea " + str(self.what) + ", " + str(self.where)
+
+  def getRegisters(self):
+    return [self.where.registersReadIfTarget(), self.where.registersWrittenIfTarget()]
+
+  def replaceRegisters(self, assigned_registers):
+    self.where = PseudoAssemblerInstruction.replaceRegistersIn(self.where, self, assigned_registers)
+
+  def replaceSpilledRegister(self, register, new_register):
+    self.where = PseudoAssemblerInstruction.replaceSpilledRegisterIn(self.where, register, new_register)
+
+
 class PAPush(PseudoAssemblerInstruction):
   def __init__(self, what):
     super().__init__()
@@ -646,6 +683,9 @@ class PseudoAssembler:
       code += [PAMov(PARegisterAndOffset(outer_function_context, load.what.variable.offset + FUNCTION_CONTEXT_HEADER_SIZE), temp)]
       return code
 
+    if isinstance(load.what, TemporaryStoreOrLoadTarget):
+      return [PAMov(self.__virtualRegister(load.what.temporary), temp)]
+
     # FIXME: implement the rest
     self.__cannotCreate(load)
 
@@ -826,6 +866,24 @@ class PseudoAssembler:
                 PAPopAllRegisters(),
                 PAComment("Calling user function done")]
         return code
+      elif instruction.function.variable_type == VariableType.temporary:
+        function_context = self.registers.nextRegister()
+        address = self.registers.nextRegister()
+        function = self.__virtualRegister(instruction.function)
+        code = [PAComment("Calling user function (indirect)"),
+                PAComment("Get FunctionContext and function address from Function"),
+                PAMov(PARegisterAndOffset(function, FUNCTION_OFFSET_FUNCTION_CONTEXT * POINTER_SIZE), function_context),
+                PAMov(PARegisterAndOffset(function, FUNCTION_OFFSET_ADDRESS * POINTER_SIZE), address),
+                PAComment("Push all registers"),
+                PAPushAllRegisters(),
+                PAPush(function_context),
+                PACallFunctionFromAddress(address),
+                # No need to clear the stack; the user function does it.
+                # FIXME: change this maybe?
+                PAComment("Pop all registers"),
+                PAPopAllRegisters(),
+                PAComment("Calling user function done")]
+        return code
       else:
         self.__cannotCreate(instruction)
 
@@ -896,6 +954,27 @@ class PseudoAssembler:
         assert(False)
       code += [PAMov(what, PARegisterAndOffset(function_context, FUNCTION_CONTEXT_PARAMS_OFFSET + self.__metadata.function_param_and_local_counts[self.__function.function_variable.unique_name()]))]
       return code
+
+    if isinstance(instruction, CreateFunctionContextFromVariable):
+      return [PAMov(self.__virtualRegister(instruction.function), self.__virtualRegister(instruction.temporary_variable))]
+
+    if isinstance(instruction, CreateFunction):
+      function_context = self.__virtualRegister(instruction.function_context)
+      temp_for_address = self.registers.nextRegister()
+      function = self.__virtualRegister(instruction.function)
+      code = [PAComment("Push all registers"),
+              PALea("user_function_" + instruction.function_variable.unique_name(), temp_for_address),
+              PAPushAllRegisters(),
+              PAPush(self.__ebp), # stack low
+              PAPush(temp_for_address),
+              PAPush(function_context),
+              PACallRuntimeFunction("CreateFunction"),
+              PAClearStack(3),
+              PAComment("Pop all registers"),
+              PAPopAllRegisters(),
+              PABuiltinOrRuntimeFunctionReturnValueToRegister(function)]
+      return code
+
 
     self.__cannotCreate(instruction)
 

@@ -404,17 +404,23 @@ class CreateFunctionContextForFunction(CreateFunctionContext):
     super().__init__(temporary_variable, function, "CreateFunctionContextForFunction")
     self.outer_function_context_depth = outer_function_context_depth
 
+
 # Create a function context for a function stored in a variable. Note that we
 # cannot know (until at run-time) which function there is.
 class CreateFunctionContextFromVariable(CreateFunctionContext):
-  def __init__(self, temporary_variable, variable_name):
-    super().__init__(temporary_variable, variable_name, "CreateFunctionContextFromVariable")
-# TODO: how does this work actually? How do we create a function context? Does
-# the compiler generate data structures so that we know for each inner function
-# how its function context looks like (especially, the number of parameters),
-# and then...
+  def __init__(self, temporary_variable, variable):
+    super().__init__(temporary_variable, variable, "CreateFunctionContextFromVariable")
 
-# FIXME: assigning functions into variables is unimplemented. We need to create a Function object... and then it must be possible to create a FunctionContext based on it. And the Function object must point to the code. Should the compiler generate them?
+
+class CreateFunction:
+  def __init__(self, function, function_context, function_variable):
+    self.function = function
+    self.function_context = function_context
+    self.function_variable = function_variable
+
+  def __str__(self):
+    return self.function.name + " = %Function(" + self.function_context.name + ", " + self.function_variable.name + ")"
+
 
 class AddParameterToFunctionContext(MediumLevelIRInstruction):
   def __init__(self, temporary_for_function_context, index, temporary_variable):
@@ -597,7 +603,11 @@ class MediumLevelIRCreator:
         # TODO: optimization: if the parameter is trivial, we don't need to store it into a temporary
         [temporary, temporary_code] = self.__computeIntoTemporary(statement.parameters[i])
         code += temporary_code + [AddParameterToFunctionContext(temporary_for_function_context, i, temporary)]
-      code += [CallFunction(statement.function.resolved_variable, temporary_for_function_context)]
+      if statement.is_direct():
+        code += [CallFunction(statement.function.resolved_variable, temporary_for_function_context)]
+      else:
+        [temporary, temporary_code] = self.__computeIntoTemporary(statement.function)
+        code += temporary_code + [CallFunction(temporary, temporary_for_function_context)]
       return code
     if isinstance(statement, ReturnStatement):
       code = []
@@ -655,6 +665,16 @@ class MediumLevelIRCreator:
     variable = thing.resolved_variable
 
     assert(variable)
+
+    if variable.variable_type == VariableType.user_function:
+      # var = func; actually means creating a Function and making
+      # var point to it.
+      temporary_for_function_context = self.__nextTemporary()
+      temporary_for_function = self.__nextTemporary()
+      depth = self.__getVariableDepth(variable)
+      code = [CreateFunctionContextForFunction(temporary_for_function_context, variable, depth), CreateFunction(temporary_for_function, temporary_for_function_context, variable)]
+      return [TemporaryStoreOrLoadTarget(temporary_for_function), code]
+
     # FIXME: loading functions should be fine too?
     assert(variable.variable_type == VariableType.variable)
 

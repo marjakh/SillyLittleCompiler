@@ -20,6 +20,16 @@ extern "C" FunctionContext* runtime_CreateFunctionContext(std::int32_t* outer, s
   return context;
 }
 
+extern "C" Function* runtime_CreateFunction(FunctionContext* function_context, std::int32_t* code_address, int* stack_low) {
+  // If the allocation causes GC, it will invalidate "outer".
+  TemporaryHandle function_context_handle(reinterpret_cast<std::int32_t*>(function_context));
+  Function* function = reinterpret_cast<Function*>(memory_allocate(sizeof(Function), stack_low));
+  function->function_context = reinterpret_cast<FunctionContext*>(function_context_handle.ptr());
+  function->code_address = code_address;
+  fprintf(stderr, "CreateFunction returns %p\n", function);
+  return function;
+}
+
 extern "C" FunctionContext* runtime_CreateMainFunctionContext(std::int32_t locals_count) {
   // We don't have proper stack structure yet, so GC cannot
   // happen. But we're guaranteed to have enough space in the start.
