@@ -939,7 +939,7 @@ class PseudoAssembler:
       elif instruction.function.variable_type == VariableType.user_function:
         function_context = self.__virtualRegister(instruction.temporary_for_function_context)
         # FIXME: support multiple return values
-        return [PAMov(PARegisterAndOffset(function_context, FUNCTION_CONTEXT_PARAMS_OFFSET + self.__metadata.function_param_and_local_counts[instruction.function.unique_name()]), v)]
+        return [PAMov(PARegisterAndOffset(function_context, (FUNCTION_CONTEXT_PARAMS_OFFSET + self.__metadata.function_param_and_local_counts[instruction.function.unique_name()]) * POINTER_SIZE), v)]
       assert(False)
 
     if isinstance(instruction, SetReturnValue):
@@ -952,7 +952,7 @@ class PseudoAssembler:
         what = PAConstant(instruction.value.value)
       else:
         assert(False)
-      code += [PAMov(what, PARegisterAndOffset(function_context, FUNCTION_CONTEXT_PARAMS_OFFSET + self.__metadata.function_param_and_local_counts[self.__function.function_variable.unique_name()]))]
+      code += [PAMov(what, PARegisterAndOffset(function_context, (FUNCTION_CONTEXT_PARAMS_OFFSET + self.__metadata.function_param_and_local_counts[self.__function.function_variable.unique_name()]) * POINTER_SIZE))]
       return code
 
     if isinstance(instruction, CreateFunctionContextFromVariable):
