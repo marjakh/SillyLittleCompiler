@@ -1,0 +1,6 @@
+function foo(x) {
+  write(x);
+}
+
+let a = foo;
+a(300);
