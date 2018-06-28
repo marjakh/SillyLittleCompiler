@@ -76,7 +76,7 @@ def computeVariableOffsetsForNonFunctionScope(scope, offset=0):
   for v in scope.variables:
     if v.variable_type == VariableType.variable:
       v.offset = offset
-      offset += 4
+      offset += POINTER_SIZE
   max_offset = offset
   for s in scope.children:
     if s.scope_type == ScopeType.function:
