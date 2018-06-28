@@ -13,6 +13,7 @@ struct FunctionContext {
 struct Function {
   FunctionContext* function_context;
   int32_t* code_address;
+  int32_t return_value_offset;
 };
 
 

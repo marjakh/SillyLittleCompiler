@@ -1,0 +1,7 @@
+function foo() {
+  return 10;
+}
+
+let a = foo;
+let b = a();
+write(b);

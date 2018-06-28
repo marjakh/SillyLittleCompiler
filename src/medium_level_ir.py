@@ -593,12 +593,13 @@ class MediumLevelIRCreator:
     # the function context, we just need to nullify relevant fields.
     if isinstance(statement, FunctionCall):
       temporary_for_function_context = self.__nextTemporary()
-      # FIXME: arrays impl
+      temporary_for_function = None
       if statement.is_direct():
         depth = self.__getVariableDepth(statement.function.resolved_variable)
         code = [CreateFunctionContextForFunction(temporary_for_function_context, statement.function.resolved_variable, depth)]
       else:
-        code = [CreateFunctionContextFromVariable(temporary_for_function_context, statement.function.resolved_variable)]
+        [temporary_for_function, temporary_code] = self.__computeIntoTemporary(statement.function)
+        code = temporary_code + [CreateFunctionContextFromVariable(temporary_for_function_context, temporary_for_function)]
       for i in range(len(statement.parameters)):
         # TODO: optimization: if the parameter is trivial, we don't need to store it into a temporary
         [temporary, temporary_code] = self.__computeIntoTemporary(statement.parameters[i])
@@ -606,8 +607,7 @@ class MediumLevelIRCreator:
       if statement.is_direct():
         code += [CallFunction(statement.function.resolved_variable, temporary_for_function_context)]
       else:
-        [temporary, temporary_code] = self.__computeIntoTemporary(statement.function)
-        code += temporary_code + [CallFunction(temporary, temporary_for_function_context)]
+         code += temporary_code + [CallFunction(temporary_for_function, temporary_for_function_context)]
       return code
     if isinstance(statement, ReturnStatement):
       code = []
@@ -712,18 +712,25 @@ class MediumLevelIRCreator:
 
     if isinstance(expression, FunctionCall):
       temporary_for_function_context = self.__nextTemporary()
+      temporary_for_function = None
       if expression.is_direct():
         depth = self.__getVariableDepth(expression.function.resolved_variable)
         code = [CreateFunctionContextForFunction(temporary_for_function_context, expression.function.resolved_variable, depth)]
       else:
-        code = [CreateFunctionContextFromVariable(temporary_for_function_context, expression.function.resolved_variable)]
+        [temporary_for_function, temporary_code] = self.__computeIntoTemporary(expression.function)
+        code = temporary_code + [CreateFunctionContextFromVariable(temporary_for_function_context, temporary_for_function)]
       for i in range(len(expression.parameters)):
         # TODO: optimization: if the parameter is trivial, we don't need to store it into a temporary
         [temporary, temporary_code] = self.__computeIntoTemporary(expression.parameters[i])
         code += temporary_code + [AddParameterToFunctionContext(temporary_for_function_context, i, temporary)]
       temporary_for_return_value = self.__nextTemporary()
-      code += [CallFunction(expression.function.resolved_variable, temporary_for_function_context),
-               GetReturnValue(temporary_for_return_value, temporary_for_function_context, expression.function.resolved_variable)]
+      if expression.is_direct():
+        code += [CallFunction(expression.function.resolved_variable, temporary_for_function_context),
+                 GetReturnValue(temporary_for_return_value, temporary_for_function_context, expression.function.resolved_variable)]
+      else:
+        code += [CallFunction(temporary_for_function, temporary_for_function_context),
+                 GetReturnValue(temporary_for_return_value, temporary_for_function_context, temporary_for_function)]
+
       return [temporary_for_return_value, code]
 
     if isinstance(expression, VariableExpression):

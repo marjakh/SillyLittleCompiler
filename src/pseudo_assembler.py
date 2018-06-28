@@ -678,7 +678,7 @@ class PseudoAssembler:
       [address_register, code] = self.__createLoadArray(load.what)
       return [PAComment("Load from array")] + code + [PAMov(PARegisterAndOffset(address_register, 0), temp), PAComment("Load from array done")]
 
-    if isinstance(load.what, OuterFunctionLocal):
+    if isinstance(load.what, OuterFunctionLocal) or isinstance(load.what, OuterFunctionParameter):
       (outer_function_context, code) = self.__getOuterFunctionContext(load.what.depth)
       code += [PAMov(PARegisterAndOffset(outer_function_context, load.what.variable.offset + FUNCTION_CONTEXT_HEADER_SIZE), temp)]
       return code
@@ -940,6 +940,16 @@ class PseudoAssembler:
         function_context = self.__virtualRegister(instruction.temporary_for_function_context)
         # FIXME: support multiple return values
         return [PAMov(PARegisterAndOffset(function_context, (FUNCTION_CONTEXT_PARAMS_OFFSET + self.__metadata.function_param_and_local_counts[instruction.function.unique_name()]) * POINTER_SIZE), v)]
+      elif instruction.function.variable_type == VariableType.temporary:
+        function_context = self.__virtualRegister(instruction.temporary_for_function_context)
+        function = self.__virtualRegister(instruction.function)
+        temp = self.registers.nextRegister()
+        return [
+            # Read the param and local count from Function
+            PAMov(PARegisterAndOffset(function, FUNCTION_OFFSET_RETURN_VALUE_OFFSET * POINTER_SIZE), temp),
+            PAAdd(function_context, temp),
+            PAMov(PARegisterAndOffset(temp, 0), v)]
+
       assert(False)
 
     if isinstance(instruction, SetReturnValue):
@@ -956,7 +966,7 @@ class PseudoAssembler:
       return code
 
     if isinstance(instruction, CreateFunctionContextFromVariable):
-      return [PAMov(self.__virtualRegister(instruction.function), self.__virtualRegister(instruction.temporary_variable))]
+      return [PAMov(PARegisterAndOffset(self.__virtualRegister(instruction.function), FUNCTION_OFFSET_FUNCTION_CONTEXT * POINTER_SIZE), self.__virtualRegister(instruction.temporary_variable))]
 
     if isinstance(instruction, CreateFunction):
       function_context = self.__virtualRegister(instruction.function_context)
@@ -966,10 +976,11 @@ class PseudoAssembler:
               PALea("user_function_" + instruction.function_variable.unique_name(), temp_for_address),
               PAPushAllRegisters(),
               PAPush(self.__ebp), # stack low
+              PAPush(PAConstant(self.__metadata.function_param_and_local_counts[instruction.function_variable.unique_name()])),
               PAPush(temp_for_address),
               PAPush(function_context),
               PACallRuntimeFunction("CreateFunction"),
-              PAClearStack(3),
+              PAClearStack(4),
               PAComment("Pop all registers"),
               PAPopAllRegisters(),
               PABuiltinOrRuntimeFunctionReturnValueToRegister(function)]
