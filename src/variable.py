@@ -94,6 +94,10 @@ class Function:
   def addVariable(self, v):
     if v.variable_type == VariableType.variable:
       if v.is_parameter:
+        for p in self.parameter_variables:
+          assert(p.name != v.name)
         self.parameter_variables.append(v)
       else:
+        for l in self.local_variables:
+          assert(l.name != v.name)
         self.local_variables.append(v)

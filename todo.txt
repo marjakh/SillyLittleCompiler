@@ -13,6 +13,7 @@ Priorities:
 
 Random bugs / corner cases:
 - Check all usages of PARegisterAndOffset; shouldn't we multiply by POINTER_SIZE everywhere?
+- Not sure if the "locals and params count" is correct, maybe that's multiplied by POINTER_SIZE..
 - Add tests for what happens when trying to access the return value for write.
 - Too many syntax errors: grammar.SyntaxError: SyntaxError: Syntax error: Expected identifier_or_array_continuation, got token_identifier. (33) (for "asdf asdf")
 

@@ -170,7 +170,8 @@ class SecondPassScopeAnalyser(ScopeAnalyserVisitor):
     for v in scope.variables:
       function.addVariable(v)
     for s in scope.children:
-      SecondPassScopeAnalyser.__addVariablesFromScopeChainToFunction(function, s)
+      if s.scope_type != ScopeType.function:
+        SecondPassScopeAnalyser.__addVariablesFromScopeChainToFunction(function, s)
 
   def visitLetStatement(self, s):
     super().visitLetStatement(s)

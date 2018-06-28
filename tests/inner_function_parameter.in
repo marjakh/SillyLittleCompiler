@@ -1,0 +1,12 @@
+function bar() {
+  function inner(x) { write(x); }
+  inner(700);
+}
+
+bar();
+
+function outer(y) {
+  write(y);
+}
+
+outer(800);
