@@ -240,11 +240,14 @@ store_or_load_targets["outer"]["parameter"] = OuterFunctionParameter
 
 class Constant:
   def __init__(self, value):
-    self.value = value
+    # Value not tagged with the integer tag.
+    self.__value = value
 
   def __str__(self):
-    return str(self.value)
+    return str(self.__value)
 
+  def tagged_value(self):
+    return self.__value * INT_TAG_MULTIPLIER
 
 class Load(MediumLevelIRInstruction):
   def __init__(self, what, where):

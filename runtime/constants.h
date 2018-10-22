@@ -9,4 +9,6 @@
 
 #define SPILL_AREA_FROM_EBP_OFFSET 3
 
+#define INT_TAG_SHIFT 1
+
 #endif

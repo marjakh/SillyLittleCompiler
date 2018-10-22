@@ -53,6 +53,8 @@ class PARegister(Register):
 
 class PAConstant:
   def __init__(self, value):
+    # Value must be tagged with the int tag (if we want it).
+    assert(type(value) is int)
     self.value = value
 
   def __str__(self):
@@ -548,6 +550,16 @@ class PASub(PseudoAssemblerInstructionOperatingOnRegister):
     # FIXME: from and to are not the correct names
     super().__init__(from1, to, "subl")
 
+class PAArithmeticShiftRight(PseudoAssemblerInstructionOperatingOnRegister):
+  def __init__(self, from1, to):
+    # FIXME: from and to are not the correct names
+    super().__init__(from1, to, "sarl")
+
+class PAArithmeticShiftLeft(PseudoAssemblerInstructionOperatingOnRegister):
+  def __init__(self, from1, to):
+    # FIXME: from and to are not the correct names
+    super().__init__(from1, to, "sall")
+
 
 # Pseudo assembler instruction with one implicit source (constant, register or
 # register + offset) and an implicit target register.
@@ -736,7 +748,7 @@ class PseudoAssembler:
       code += [PAComment("index to eax"),
                PAMov(self.__virtualRegister(index), self.__eax),
                PAComment("pointer size"),
-               PAMov(PAConstant(POINTER_SIZE), pointer_size_register),
+               PAMov(PAConstant(POINTER_SIZE // INT_TAG_MULTIPLIER), pointer_size_register),
                PAComment("store the value of edx, we need to nullify it"),
                PAPush(self.__edx),
                PAMov(PAConstant(0), self.__edx),
@@ -755,7 +767,7 @@ class PseudoAssembler:
       [address_register, code] = self.__createLoadArray(store.where)
       code.insert(0, PAComment("Store to array"))
       if isinstance(store.what, Constant):
-        code += [PAMov(PAConstant(store.what.value), PARegisterAndOffset(address_register, 0)), PAComment("Store to array done")]
+        code += [PAMov(PAConstant(store.what.tagged_value()), PARegisterAndOffset(address_register, 0)), PAComment("Store to array done")]
         return code
       else:
         assert(isinstance(store.what, TemporaryVariable))
@@ -768,12 +780,12 @@ class PseudoAssembler:
         # FIXME: emit assert (here and elsewhere) that we don't index
         # function context out of bounds
         return [self.__getFunctionContext(function_context),
-                PAMov(PAConstant(store.what.value), PARegisterAndOffset(function_context, store.where.variable.offset + FUNCTION_CONTEXT_HEADER_SIZE))]
+                PAMov(PAConstant(store.what.tagged_value()), PARegisterAndOffset(function_context, store.where.variable.offset + FUNCTION_CONTEXT_HEADER_SIZE))]
       if isinstance(store.where, TemporaryVariable):
-        return [PAMov(PAConstant(store.what.value), self.__virtualRegister(store.where))]
+        return [PAMov(PAConstant(store.what.tagged_value()), self.__virtualRegister(store.where))]
       if isinstance(store.where, OuterFunctionLocal):
         (outer_function_context, code) = self.__getOuterFunctionContext(store.where.depth)
-        code += [PAMov(PAConstant(store.what.value), PARegisterAndOffset(outer_function_context, store.where.variable.offset + FUNCTION_CONTEXT_HEADER_SIZE))]
+        code += [PAMov(PAConstant(store.what.tagged_value()), PARegisterAndOffset(outer_function_context, store.where.variable.offset + FUNCTION_CONTEXT_HEADER_SIZE))]
         return code
     else:
       assert(isinstance(store.what, TemporaryVariable))
@@ -914,6 +926,7 @@ class PseudoAssembler:
               PAMov(PAConstant(0), self.__edx),
               PAMul(v_from2),
               PAPop(self.__edx),
+              PAArithmeticShiftRight(PAConstant(INT_TAG_SHIFT), self.__eax),
               PAMov(self.__eax, v_to)]
 
     if isinstance(instruction, DivideTemporaryByTemporary):
@@ -921,7 +934,13 @@ class PseudoAssembler:
       v_from2 = self.__virtualRegister(instruction.from_variable2)
       v_to = self.__virtualRegister(instruction.to_variable)
       # FIXME: this is inefficient. We might not need to push edx.
-      return [PAMov(v_from1, self.__eax), PAPush(self.__edx), PACustom("cdq"), PADiv(v_from2), PAPop(self.__edx), PAMov(self.__eax, v_to)]
+      return [PAMov(v_from1, self.__eax),
+              PAPush(self.__edx),
+              PACustom("cdq"),
+              PADiv(v_from2),
+              PAPop(self.__edx),
+              PAArithmeticShiftLeft(PAConstant(INT_TAG_SHIFT), self.__eax),
+              PAMov(self.__eax, v_to)]
 
     if isinstance(instruction, TestWithOperator):
       v_left = self.__virtualRegister(instruction.left)
@@ -959,7 +978,7 @@ class PseudoAssembler:
       if isinstance(instruction.value, TemporaryVariable):
         what = self.__virtualRegister(instruction.value)
       elif isinstance(instruction.value, Constant):
-        what = PAConstant(instruction.value.value)
+        what = PAConstant(instruction.value.tagged_value())
       else:
         assert(False)
       code += [PAMov(what, PARegisterAndOffset(function_context, (FUNCTION_CONTEXT_PARAMS_OFFSET + self.__metadata.function_param_and_local_counts[self.__function.function_variable.unique_name()]) * POINTER_SIZE))]

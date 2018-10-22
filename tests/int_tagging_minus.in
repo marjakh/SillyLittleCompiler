@@ -1,0 +1,17 @@
+let a = 6;
+let b = 3;
+let c = a - b;
+write(c);
+
+
+// Negative numbers
+
+let d = 0 - 5;
+write(d);
+
+// Negative result
+
+let e = 7;
+let f = 16;
+let g = e - f;
+write(g);

@@ -10,6 +10,11 @@ Priorities:
    -- I/O
 7. misc
    -- syntax error positions
+   -- need better object descriptors (maybe not everything that looks like a pointer is a pointer, if we're inside an object) (at least needed for implementing bigger numbers)
+8. Errors
+   -- Throw a runtime error if we try to do "pointer + int" or sth.
+   -- If we try to index into an integer
+   -- Array with negative length (runtime func needs to be able to throw an error)
 
 Random bugs / corner cases:
 - Check all usages of PARegisterAndOffset; shouldn't we multiply by POINTER_SIZE everywhere?

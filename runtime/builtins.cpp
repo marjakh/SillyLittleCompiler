@@ -4,13 +4,13 @@
 #include <stdio.h>
 
 extern "C" void builtin_write(void** function_context, int* stack_low) {
-  int32_t value = (int32_t) function_context[FUNCTION_CONTEXT_PARAMS_OFFSET];
+  int32_t value = (int32_t) function_context[FUNCTION_CONTEXT_PARAMS_OFFSET] >> INT_TAG_SHIFT;
   printf("%d\n", value);
 }
 
 extern "C" void* builtin_Array(void** function_context, int* stack_low) {
   fprintf(stderr, "Calling builtin_Array, %p\n", stack_low);
-  int32_t size = (int32_t) function_context[FUNCTION_CONTEXT_PARAMS_OFFSET];
+  int32_t size = (int32_t) function_context[FUNCTION_CONTEXT_PARAMS_OFFSET] >> INT_TAG_SHIFT;
   void* array = memory_allocate(size * sizeof(int), stack_low);
   fprintf(stderr, "Array of size %d is %p\n", size, array);
   return array;
