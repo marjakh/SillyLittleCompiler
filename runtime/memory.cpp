@@ -1,6 +1,7 @@
 #include "memory.h"
 
 #include "stack_walk.h"
+#include "tagging.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -43,8 +44,8 @@ bool memory_gc_stress = false;
 
 }
 
-TemporaryHandle::TemporaryHandle(std::int32_t* ptr)
-    : ptr_(ptr) {
+TemporaryHandle::TemporaryHandle(std::int32_t* tagged_ptr)
+    : tagged_ptr_(tagged_ptr) {
   handles.insert(this);
 }
 
@@ -54,7 +55,7 @@ TemporaryHandle::~TemporaryHandle() {
 
 void roots_from_handles(std::stack<std::pair<std::int32_t**, std::int32_t*>>* roots) {
   for (TemporaryHandle* handle : handles) {
-    roots->push(std::make_pair(handle->ptr_location(), handle->ptr()));
+    roots->push(std::make_pair(handle->ptr_location(), handle->untagged_ptr()));
   }
 }
 
@@ -137,7 +138,7 @@ int32_t* allocate_from_current_chunk(std::int32_t size) {
   return nullptr;
 }
 
-void* memory_allocate_no_gc(int32_t size) {
+int32_t* memory_allocate_no_gc(int32_t size) {
   fprintf(stderr, "Allocate %d\n", size);
 
   int32_t* result = allocate_from_current_chunk(size);
@@ -147,7 +148,7 @@ void* memory_allocate_no_gc(int32_t size) {
   assert(false);
 }
 
-void* memory_allocate(int32_t size, int32_t* stack_low) {
+int32_t* memory_allocate(int32_t size, int32_t* stack_low) {
   fprintf(stderr, "Allocate %d\n", size);
   int32_t* result = 0;
   if (memory_gc_stress) {
@@ -175,6 +176,7 @@ void* memory_allocate(int32_t size, int32_t* stack_low) {
   return nullptr;
 }
 
+// FIXME: why do we need this? Sounds inefficient...
 bool find_object(int32_t* ptr_to_object, int32_t** object, int32_t* offset) {
   // ptr_to_object is a pointer to somewhere inside the object.
 
@@ -206,6 +208,7 @@ bool move_object(int32_t* ptr_to_object, int32_t** new_ptr, std::stack<std::pair
   int32_t* object;
   int32_t offset;
 
+  // FIXME: wat?
   if (!find_object(ptr_to_object, &object, &offset)) {
     fprintf(stderr, "Ptr doesn't belong to an object\n");
     return false;
@@ -216,7 +219,7 @@ bool move_object(int32_t* ptr_to_object, int32_t** new_ptr, std::stack<std::pair
   fprintf(stderr, "Moving object %p\n", object);
   if (color == COLOR_MOVED) {
     int32_t* new_address = reinterpret_cast<int32_t*>(get_byte_size(object));
-    *new_ptr = new_address + offset;
+    *new_ptr = tag_pointer(new_address + offset);
     fprintf(stderr, "Already moved\n");
     return true;
   }
@@ -239,18 +242,19 @@ bool move_object(int32_t* ptr_to_object, int32_t** new_ptr, std::stack<std::pair
   set_color(object, COLOR_MOVED);
   set_byte_size(object, reinterpret_cast<int32_t>(new_address));
 
-  // Go through all the fields. If something looks like an object, mark it as
+  // Go through all the fields. If something is tagged as a pointer, mark it as
   // something that has to be moved.
   int32_t* p = new_address;
   for (size_t i = 0; i < byte_size / INT_SIZE; ++i) {
-    if (is_in_current_chunk(reinterpret_cast<void*>(*p))) {
-      fprintf(stderr, "Discovered pointer %p\n", reinterpret_cast<void*>(*p));
-      ptrs->push(std::make_pair(reinterpret_cast<int32_t**>(p), reinterpret_cast<int32_t*>(*p)));
+    int32_t* maybe_ptr = reinterpret_cast<int32_t*>(*p);
+    if (has_pointer_tag(maybe_ptr) && is_in_current_chunk(maybe_ptr)) {
+      fprintf(stderr, "Discovered pointer %p\n", maybe_ptr);
+      ptrs->push(std::make_pair(reinterpret_cast<int32_t**>(p), untag_pointer(maybe_ptr)));
     }
     p++;
   }
 
-  *new_ptr = new_address + offset;
+  *new_ptr = tag_pointer(new_address + offset);
   return true;
 }
 
@@ -263,8 +267,10 @@ void mark_and_sweep(std::stack<std::pair<std::int32_t**, int32_t*>>* ptrs) {
     int32_t** location = ptr_pair.first;
     int32_t* ptr = ptr_pair.second;
 
+    // FIXME: when is it not in current chunk?
     if (is_in_current_chunk(ptr)) {
       fprintf(stderr, "Mark and sweep root %p\n", ptr);
+      assert(!has_pointer_tag(ptr));
       move_object(ptr, location, ptrs);
     }
   }

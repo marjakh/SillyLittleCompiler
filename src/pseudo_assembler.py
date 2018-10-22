@@ -664,24 +664,40 @@ class PseudoAssembler:
     assert(False)
 
   def __getFunctionContext(self, function_context):
-    return PAMov(self.__function_context_location, function_context)
+    return [PAMov(self.__function_context_location, function_context)]
+
+  # FIXME: add (optional) asserts that something is tagged whenever untagging it
+  def __getUntaggedFunctionContext(self, function_context):
+    return [PAMov(self.__function_context_location, function_context),
+            PASub(PAConstant(PTR_TAG), function_context)]
 
   def __getOuterFunctionContext(self, depth):
     function_context = self.registers.nextRegister()
-    code = [self.__getFunctionContext(function_context)]
+    code = self.__getFunctionContext(function_context)
     for i in range(depth):
+      untagged_function_context = self.registers.nextRegister()
       new_function_context = self.registers.nextRegister()
-      code += [PAMov(PARegisterAndOffset(function_context, FUNCTION_CONTEXT_OUTER_FUNCTION_CONTEXT_OFFSET), new_function_context)]
+      code += [PAMov(function_context, untagged_function_context),
+               PASub(PAConstant(PTR_TAG), untagged_function_context),
+               PAMov(PARegisterAndOffset(untagged_function_context, FUNCTION_CONTEXT_OUTER_FUNCTION_CONTEXT_OFFSET), new_function_context)]
       function_context = new_function_context
     return (function_context, code)
+
+  def __getUntaggedOuterFunctionContext(self, depth):
+    (function_context, code) = self.__getOuterFunctionContext(depth)
+    untagged_function_context = self.registers.nextRegister()
+    code += [PAMov(function_context, untagged_function_context),
+             PASub(PAConstant(PTR_TAG), untagged_function_context)]
+    return (untagged_function_context, code)
 
   def __createForLoad(self, load):
     assert(isinstance(load.where, TemporaryVariable))
     temp = self.__virtualRegister(load.where)
     if isinstance(load.what, Local) or isinstance(load.what, Parameter):
       function_context = self.registers.nextRegister()
-      return [self.__getFunctionContext(function_context),
-              PAMov(PARegisterAndOffset(function_context, load.what.variable.offset + FUNCTION_CONTEXT_HEADER_SIZE), temp)]
+      untagged_function_context = self.registers.nextRegister()
+      return self.__getUntaggedFunctionContext(untagged_function_context) + [
+          PAMov(PARegisterAndOffset(untagged_function_context, load.what.variable.offset + FUNCTION_CONTEXT_HEADER_SIZE), temp)]
     # FIXME: fix cases where param count doesn't match. Return some
     # kind of error, ignore the param, or something, but don't mess up
     # locals.
@@ -692,7 +708,10 @@ class PseudoAssembler:
 
     if isinstance(load.what, OuterFunctionLocal) or isinstance(load.what, OuterFunctionParameter):
       (outer_function_context, code) = self.__getOuterFunctionContext(load.what.depth)
-      code += [PAMov(PARegisterAndOffset(outer_function_context, load.what.variable.offset + FUNCTION_CONTEXT_HEADER_SIZE), temp)]
+      untagged_outer_function_context = self.registers.nextRegister()
+      code += [PAMov(outer_function_context, untagged_outer_function_context),
+               PASub(PAConstant(PTR_TAG), untagged_outer_function_context),
+               PAMov(PARegisterAndOffset(untagged_outer_function_context, load.what.variable.offset + FUNCTION_CONTEXT_HEADER_SIZE), temp)]
       return code
 
     if isinstance(load.what, TemporaryStoreOrLoadTarget):
@@ -710,17 +729,20 @@ class PseudoAssembler:
       # FIXME: refactor this; the array is just an address which is the value of
       # the local variable, so we should just load that value. Create a Load
       # with this temp as load.where and array.base as load.what.
-      function_context = self.registers.nextRegister()
+      untagged_function_context = self.registers.nextRegister()
       address_register = self.registers.nextRegister()
-      code += [self.__getFunctionContext(function_context),
-               PAMov(PARegisterAndOffset(function_context, array.base.variable.offset + FUNCTION_CONTEXT_HEADER_SIZE), address_register)]
+      code += self.__getUntaggedFunctionContext(untagged_function_context) + [
+          PAMov(PARegisterAndOffset(untagged_function_context, array.base.variable.offset + FUNCTION_CONTEXT_HEADER_SIZE), address_register)]
 
       [address_register2, index_code] = self.__createArrayIndexingCode(address_register, array.index)
       return [address_register2, code + index_code]
     elif isinstance(array.base, OuterFunctionLocal):
       (outer_function_context, code) = self.__getOuterFunctionContext(array.base.depth)
+      untagged_outer_function_context = self.registers.nextRegister()
       address_register = self.registers.nextRegister()
-      code += [PAMov(PARegisterAndOffset(outer_function_context, array.base.variable.offset + FUNCTION_CONTEXT_HEADER_SIZE), address_register)]
+      code += [PAMov(outer_function_context, untagged_outer_function_context),
+               PASub(PAConstant(PTR_TAG), untagged_outer_function_context),
+               PAMov(PARegisterAndOffset(untagged_outer_function_context, array.base.variable.offset + FUNCTION_CONTEXT_HEADER_SIZE), address_register)]
       [address_register2, index_code] = self.__createArrayIndexingCode(address_register, array.index)
       return [address_register2, code + index_code]
     elif isinstance(array.base, Array):
@@ -755,7 +777,8 @@ class PseudoAssembler:
                PAMul(pointer_size_register),
                PAPop(self.__edx),
                PAMov(self.__eax, address_register2),
-               PAComment("add base address"),
+               PAComment("untag base address + add base address"),
+               PASub(PAConstant(1), address_register),
                PAAdd(address_register, address_register2)]
       pointer_size_register.addConflict(self.__edx)
     code += [PAComment("Computing array address done")]
@@ -776,27 +799,27 @@ class PseudoAssembler:
 
     if isinstance(store.what, Constant):
       if isinstance(store.where, Local) or isinstance(store.where, Parameter):
-        function_context = self.registers.nextRegister()
+        untagged_function_context = self.registers.nextRegister()
         # FIXME: emit assert (here and elsewhere) that we don't index
         # function context out of bounds
-        return [self.__getFunctionContext(function_context),
-                PAMov(PAConstant(store.what.tagged_value()), PARegisterAndOffset(function_context, store.where.variable.offset + FUNCTION_CONTEXT_HEADER_SIZE))]
+        return self.__getUntaggedFunctionContext(untagged_function_context) + [
+            PAMov(PAConstant(store.what.tagged_value()), PARegisterAndOffset(untagged_function_context, store.where.variable.offset + FUNCTION_CONTEXT_HEADER_SIZE))]
       if isinstance(store.where, TemporaryVariable):
         return [PAMov(PAConstant(store.what.tagged_value()), self.__virtualRegister(store.where))]
       if isinstance(store.where, OuterFunctionLocal):
-        (outer_function_context, code) = self.__getOuterFunctionContext(store.where.depth)
-        code += [PAMov(PAConstant(store.what.tagged_value()), PARegisterAndOffset(outer_function_context, store.where.variable.offset + FUNCTION_CONTEXT_HEADER_SIZE))]
+        (untagged_outer_function_context, code) = self.__getUntaggedOuterFunctionContext(store.where.depth)
+        code += [PAMov(PAConstant(store.what.tagged_value()), PARegisterAndOffset(untagged_outer_function_context, store.where.variable.offset + FUNCTION_CONTEXT_HEADER_SIZE))]
         return code
     else:
       assert(isinstance(store.what, TemporaryVariable))
       temp = self.__virtualRegister(store.what)
       if isinstance(store.where, Local) or isinstance(store.where, Parameter):
-        function_context = self.registers.nextRegister()
-        return [self.__getFunctionContext(function_context),
-                PAMov(temp, PARegisterAndOffset(function_context, store.where.variable.offset + FUNCTION_CONTEXT_HEADER_SIZE))]
+        untagged_function_context = self.registers.nextRegister()
+        return self.__getUntaggedFunctionContext(untagged_function_context) + [
+            PAMov(temp, PARegisterAndOffset(untagged_function_context, store.where.variable.offset + FUNCTION_CONTEXT_HEADER_SIZE))]
       if isinstance(store.where, OuterFunctionLocal):
-        (outer_function_context, code) = self.__getOuterFunctionContext(store.where.depth)
-        code += [PAMov(temp, PARegisterAndOffset(outer_function_context, store.where.variable.offset + FUNCTION_CONTEXT_HEADER_SIZE))]
+        (untagged_outer_function_context, code) = self.__getUntaggedOuterFunctionContext(store.where.depth)
+        code += [PAMov(temp, PARegisterAndOffset(untagged_outer_function_context, store.where.variable.offset + FUNCTION_CONTEXT_HEADER_SIZE))]
         return code
 
     # FIXME: implement the rest
@@ -844,8 +867,11 @@ class PseudoAssembler:
 
     if isinstance(instruction, AddParameterToFunctionContext):
       temp_context = self.__virtualRegister(instruction.temporary_for_function_context)
+      untagged_temp_context = self.registers.nextRegister()
       temp = self.__virtualRegister(instruction.temporary_variable)
-      return [PAMov(temp, PARegisterAndOffset(temp_context, POINTER_SIZE * (FUNCTION_CONTEXT_PARAMS_OFFSET + instruction.index)))]
+      return [PAMov(temp_context, untagged_temp_context),
+              PASub(PAConstant(PTR_TAG), untagged_temp_context),
+              PAMov(temp, PARegisterAndOffset(untagged_temp_context, POINTER_SIZE * (FUNCTION_CONTEXT_PARAMS_OFFSET + instruction.index)))]
 
     if isinstance(instruction, CallFunction):
       if instruction.function.variable_type == VariableType.builtin_function:
@@ -882,10 +908,13 @@ class PseudoAssembler:
         function_context = self.registers.nextRegister()
         address = self.registers.nextRegister()
         function = self.__virtualRegister(instruction.function)
+        untagged_function = self.registers.nextRegister()
         code = [PAComment("Calling user function (indirect)"),
                 PAComment("Get FunctionContext and function address from Function"),
-                PAMov(PARegisterAndOffset(function, FUNCTION_OFFSET_FUNCTION_CONTEXT * POINTER_SIZE), function_context),
-                PAMov(PARegisterAndOffset(function, FUNCTION_OFFSET_ADDRESS * POINTER_SIZE), address),
+                PAMov(function, untagged_function),
+                PASub(PAConstant(PTR_TAG), untagged_function),
+                PAMov(PARegisterAndOffset(untagged_function, FUNCTION_OFFSET_FUNCTION_CONTEXT * POINTER_SIZE), function_context),
+                PAMov(PARegisterAndOffset(untagged_function, FUNCTION_OFFSET_ADDRESS * POINTER_SIZE), address),
                 PAComment("Push all registers"),
                 PAPushAllRegisters(),
                 PAPush(function_context),
@@ -957,35 +986,47 @@ class PseudoAssembler:
         return [PABuiltinOrRuntimeFunctionReturnValueToRegister(v)]
       elif instruction.function.variable_type == VariableType.user_function:
         function_context = self.__virtualRegister(instruction.temporary_for_function_context)
+        untagged_function_context = self.registers.nextRegister()
         # FIXME: support multiple return values
-        return [PAMov(PARegisterAndOffset(function_context, (FUNCTION_CONTEXT_PARAMS_OFFSET + self.__metadata.function_param_and_local_counts[instruction.function.unique_name()]) * POINTER_SIZE), v)]
+        return [PAMov(function_context, untagged_function_context),
+                PASub(PAConstant(PTR_TAG), untagged_function_context),
+                PAMov(PARegisterAndOffset(untagged_function_context, (FUNCTION_CONTEXT_PARAMS_OFFSET + self.__metadata.function_param_and_local_counts[instruction.function.unique_name()]) * POINTER_SIZE), v)]
       elif instruction.function.variable_type == VariableType.temporary:
         function_context = self.__virtualRegister(instruction.temporary_for_function_context)
         function = self.__virtualRegister(instruction.function)
+        untagged_function_context = self.registers.nextRegister()
+        untagged_function = self.registers.nextRegister()
         temp = self.registers.nextRegister()
         return [
+            PAMov(function, untagged_function),
+            PASub(PAConstant(PTR_TAG), untagged_function),
             # Read the param and local count from Function
-            PAMov(PARegisterAndOffset(function, FUNCTION_OFFSET_RETURN_VALUE_OFFSET * POINTER_SIZE), temp),
-            PAAdd(function_context, temp),
+            PAMov(PARegisterAndOffset(untagged_function, FUNCTION_OFFSET_RETURN_VALUE_OFFSET * POINTER_SIZE), temp),
+            PAMov(function_context, untagged_function_context),
+            PASub(PAConstant(PTR_TAG), untagged_function_context),
+            PAAdd(untagged_function_context, temp),
             PAMov(PARegisterAndOffset(temp, 0), v)]
 
       assert(False)
 
     if isinstance(instruction, SetReturnValue):
       # FIXME: this can set only one return value for now
-      function_context = self.registers.nextRegister()
-      code = [self.__getFunctionContext(function_context)]
+      untagged_function_context = self.registers.nextRegister()
+      code = self.__getUntaggedFunctionContext(untagged_function_context)
       if isinstance(instruction.value, TemporaryVariable):
         what = self.__virtualRegister(instruction.value)
       elif isinstance(instruction.value, Constant):
         what = PAConstant(instruction.value.tagged_value())
       else:
         assert(False)
-      code += [PAMov(what, PARegisterAndOffset(function_context, (FUNCTION_CONTEXT_PARAMS_OFFSET + self.__metadata.function_param_and_local_counts[self.__function.function_variable.unique_name()]) * POINTER_SIZE))]
+      code += [PAMov(what, PARegisterAndOffset(untagged_function_context, (FUNCTION_CONTEXT_PARAMS_OFFSET + self.__metadata.function_param_and_local_counts[self.__function.function_variable.unique_name()]) * POINTER_SIZE))]
       return code
 
     if isinstance(instruction, CreateFunctionContextFromVariable):
-      return [PAMov(PARegisterAndOffset(self.__virtualRegister(instruction.function), FUNCTION_OFFSET_FUNCTION_CONTEXT * POINTER_SIZE), self.__virtualRegister(instruction.temporary_variable))]
+      untagged_function = self.registers.nextRegister()
+      return [PAMov(self.__virtualRegister(instruction.function), untagged_function),
+              PASub(PAConstant(PTR_TAG), untagged_function),
+              PAMov(PARegisterAndOffset(untagged_function, FUNCTION_OFFSET_FUNCTION_CONTEXT * POINTER_SIZE), self.__virtualRegister(instruction.temporary_variable))]
 
     if isinstance(instruction, CreateFunction):
       function_context = self.__virtualRegister(instruction.function_context)

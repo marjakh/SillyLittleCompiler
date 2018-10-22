@@ -118,11 +118,12 @@ if __name__ == '__main__':
     for input_file_name in bad_files:
       runTest(input_file_name, test_path, True, False)
 
-    # for input_file_name in good_files:
-    #   runTest(input_file_name, test_path, False, True)
+    # gc stress
+    for input_file_name in good_files:
+      runTest(input_file_name, test_path, False, True)
 
-    # for input_file_name in bad_files:
-    #   runTest(input_file_name, test_path, True, True)
+    for input_file_name in bad_files:
+      runTest(input_file_name, test_path, True, True)
 
     if skipped > 0:
       print("Some tests skipped")

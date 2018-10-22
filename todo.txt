@@ -1,3 +1,5 @@
+FIXME: why is the spill count so high in fibonacci.in?
+
 Priorities:
 1. functions improvements:
    -- as first-class
@@ -15,6 +17,7 @@ Priorities:
    -- Throw a runtime error if we try to do "pointer + int" or sth.
    -- If we try to index into an integer
    -- Array with negative length (runtime func needs to be able to throw an error)
+   -- passing a ptr where we should pass an int (e.g., length of array)
 
 Random bugs / corner cases:
 - Check all usages of PARegisterAndOffset; shouldn't we multiply by POINTER_SIZE everywhere?

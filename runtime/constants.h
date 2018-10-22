@@ -9,6 +9,9 @@
 
 #define SPILL_AREA_FROM_EBP_OFFSET 3
 
-#define INT_TAG_SHIFT 1
+#define TAG_SHIFT 1
+
+#define PTR_TAG 1
+#define PTR_TAG_MASK 1
 
 #endif
