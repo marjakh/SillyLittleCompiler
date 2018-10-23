@@ -1,5 +1,3 @@
-FIXME: why is the spill count so high in fibonacci.in?
-
 Priorities:
 1. functions improvements:
    -- as first-class
