@@ -103,6 +103,8 @@ def print_builtin(parameters):
 
 def array_builtin(parameters):
   assert(len(parameters) == 1)
+  if type(parameters[0]) is not int:
+    raise RuntimeError("array size must be an int")
   return Array(parameters[0])
 
 

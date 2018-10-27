@@ -1,24 +1,32 @@
 #include "constants.h"
+#include "errors.h"
 #include "memory.h"
 #include "tagging.h"
 
-#include <stdio.h>
+#include <cstdio>
 
 extern "C" void builtin_print(void** tagged_function_context, int* stack_low) {
   int32_t* function_context = untag_pointer(tagged_function_context);
   int32_t value = reinterpret_cast<int32_t>(function_context[FUNCTION_CONTEXT_PARAMS_OFFSET]);
-  value = untag_int(value);
-  printf("%d\n", value);
+  if (has_int_tag(value)) {
+    value = untag_int(value);
+    printf("%d\n", value);
+  }
+  // FIXME: else print the type
 }
 
 extern "C" void* builtin_Array(void** tagged_function_context, int* stack_low) {
   fprintf(stderr, "Calling builtin_Array, %p\n", stack_low);
   int32_t* function_context = untag_pointer(tagged_function_context);
   int32_t size = reinterpret_cast<int32_t>(function_context[FUNCTION_CONTEXT_PARAMS_OFFSET]);
-  size = untag_int(size);
-  int32_t* array = memory_allocate(size * sizeof(int), stack_low);
-  fprintf(stderr, "Array of size %d is %p\n", size, array);
-  return tag_pointer(array);
+  if (has_int_tag(size)) {
+    size = untag_int(size);
+    int32_t* array = memory_allocate(size * sizeof(int), stack_low);
+    fprintf(stderr, "Array of size %d is %p\n", size, array);
+    return tag_pointer(array);
+  } else {
+    terminate_with_runtime_error("Array size must be an int");
+  }
 }
 
 extern "C" void* builtin_test_do_gc(void** tagged_function_context, int* stack_low) {

@@ -3,9 +3,9 @@
 #include "stack_walk.h"
 #include "tagging.h"
 
-#include <stdio.h>
-#include <stdlib.h>
 #include <cassert>
+#include <cstdio>
+#include <cstdlib>
 #include <cstring>
 
 #include <set>

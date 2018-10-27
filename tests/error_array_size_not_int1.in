@@ -1,0 +1,2 @@
+let a = new Array(0);
+let b = new Array(a);
