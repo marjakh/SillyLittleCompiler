@@ -766,12 +766,19 @@ class PseudoAssembler:
 
     assert(False)
 
-  def __createIntTagCheck(self, value_register):
+  def __createIntTagCheck(self, value_register, jump_to):
     temp = self.registers.nextRegister()
     return [PAMov(value_register, temp),
             PAAnd(PAConstant(INT_PTR_TAG_MASK), temp),
             PACmp(PAConstant(INT_TAG), temp),
-            PAJumpNotEquals(self.__label_error_array_index_not_int)]
+            PAJumpNotEquals(jump_to)]
+
+  def __createPointerTagCheck(self, value_register, jump_to):
+    temp = self.registers.nextRegister()
+    return [PAMov(value_register, temp),
+            PAAnd(PAConstant(INT_PTR_TAG_MASK), temp),
+            PACmp(PAConstant(PTR_TAG), temp),
+            PAJumpNotEquals(jump_to)]
 
   def __createArrayIndexingCode(self, address_register, index):
     code = [PAComment("Indexing array")]
@@ -783,7 +790,8 @@ class PseudoAssembler:
       pointer_size_register = self.registers.nextRegister()
       address_register2 = self.registers.nextRegister()
       index_register = self.__virtualRegister(index)
-      code += self.__createIntTagCheck(index_register)
+      code += self.__createIntTagCheck(index_register, self.__label_error_array_index_not_int)
+      code += self.__createPointerTagCheck(address_register, self.__label_error_array_base_not_array)
       code += [PAComment("index to eax"),
                PAMov(index_register, self.__eax),
                PAComment("pointer size"),
@@ -1078,6 +1086,7 @@ class PseudoAssembler:
     self.__function_context_location = PARegisterAndOffset(self.__ebp, FUNCTION_CONTEXT_FROM_EBP_OFFSET * POINTER_SIZE)
 
     self.__label_error_array_index_not_int = "error_array_index_not_int"
+    self.__label_error_array_base_not_array = "error_array_base_not_array"
 
     output = []
     running_id = 0
@@ -1104,5 +1113,6 @@ class PseudoAssembler:
       # for b in blocks:
       #   print_debug(listToString(b.instructions, "", "", "\n"))
 
-    error_handlers = [[self.__label_error_array_index_not_int, ERROR_ID_ARRAY_INDEX_NOT_INT]]
+    error_handlers = [[self.__label_error_array_index_not_int, ERROR_ID_ARRAY_INDEX_NOT_INT],
+                      [self.__label_error_array_base_not_array, ERROR_ID_ARRAY_BASE_NOT_ARRAY]]
     return PseudoAssembly(output, error_handlers, PseudoAssemblyMetadata(self.registers, self.__metadata.function_param_and_local_counts))

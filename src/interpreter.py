@@ -193,7 +193,10 @@ class Interpreter:
           assert(s.where.resolvedVariable().allocation_scope.scope_type == ScopeType.top)
           self.__function_context_stack[-1].updateVariable(s.where.resolvedVariable(), new_value)
       elif isinstance(s.where, ArrayIndexExpression):
-        self.__evaluateExpression(s.where.array).setData(self.__evaluateExpression(s.where.index), self.__evaluateExpression(s.expression))
+        array = self.__evaluateExpression(s.where.array)
+        if type(array) is not Array:
+          raise InterpreterException("RuntimeError: Array base not an array")
+        array.setData(self.__evaluateExpression(s.where.index), self.__evaluateExpression(s.expression))
       else:
         assert(False)
       return (False, None)
@@ -336,6 +339,8 @@ class Interpreter:
 
     if isinstance(e, ArrayIndexExpression):
       array = self.__evaluateExpression(e.array)
+      if type(array) is not Array:
+        raise InterpreterException("RuntimeError: Array base not an array")
       index = self.__evaluateExpression(e.index)
       return array.getData(index)
 

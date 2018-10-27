@@ -8,7 +8,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-const char* error_messages[] = {"Array index not an int"};
+const char* error_messages[] = {"Array index not an int",
+                                "Array base not an array"};
 
 extern "C" void user_code();
 
