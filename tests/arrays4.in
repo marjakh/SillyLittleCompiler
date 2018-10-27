@@ -11,4 +11,4 @@ while (i < len + 1) {
   sum = sum + a[i - 1];
   i = i + 1;
 }
-write(sum);
+print(sum);

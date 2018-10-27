@@ -3,4 +3,4 @@ function f(x) {
 }
 
 let foo = 5;
-write(f(foo));
+print(f(foo));

@@ -1,8 +1,8 @@
 let i = 0;
 while (i < 10) {
   if (i < 5) {
-    write(0);
-    write(i);
+    print(0);
+    print(i);
   }
   i = i + 1;
 }

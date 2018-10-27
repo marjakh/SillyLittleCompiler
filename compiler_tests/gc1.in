@@ -9,8 +9,8 @@ test_do_gc();
 // pointing to them.
 
 if (test_is_live_object(a) != 0) {
-  write(1);
+  print(1);
   if (test_is_live_object(a[0]) != 0) {
-    write(2);
+    print(2);
   }
 }

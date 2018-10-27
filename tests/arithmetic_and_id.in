@@ -2,6 +2,6 @@ function id(x) {
   return x;
 }
 
-write(id(1));
-write(id(1) + id(4));
-write(id(1) + id(4) * (id(3) - id(4)) / id(2));
+print(id(1));
+print(id(1) + id(4));
+print(id(1) + id(4) * (id(3) - id(4)) / id(2));

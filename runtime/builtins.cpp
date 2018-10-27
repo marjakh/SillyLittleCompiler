@@ -4,7 +4,7 @@
 
 #include <stdio.h>
 
-extern "C" void builtin_write(void** tagged_function_context, int* stack_low) {
+extern "C" void builtin_print(void** tagged_function_context, int* stack_low) {
   int32_t* function_context = untag_pointer(tagged_function_context);
   int32_t value = reinterpret_cast<int32_t>(function_context[FUNCTION_CONTEXT_PARAMS_OFFSET]);
   value = untag_int(value);

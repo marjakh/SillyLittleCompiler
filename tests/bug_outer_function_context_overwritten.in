@@ -11,9 +11,9 @@ function third() {
   a = 1;
 }
 
-write(a);
+print(a);
 first();
-write(a);
+print(a);
 second();
-write(a);
+print(a);
 third();

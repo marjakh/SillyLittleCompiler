@@ -1,13 +1,13 @@
 function foo() {
   function bar() {
-    write(1);
+    print(1);
   }
   bar();
 }
 
 function foo2() {
   function bar() {
-    write(2);
+    print(2);
   }
   bar();
 }

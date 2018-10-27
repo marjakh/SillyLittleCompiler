@@ -1,6 +1,6 @@
 function foo() {
-  function innerhelper() { write(600); }
-  function inner() { write(500); innerhelper(); }
+  function innerhelper() { print(600); }
+  function inner() { print(500); innerhelper(); }
   return inner;
 }
 
@@ -8,8 +8,8 @@ let f = foo();
 f();
 
 function bar() {
-  function innerhelper() { write(700); }
-  function inner(x) { write(x); innerhelper(); }
+  function innerhelper() { print(700); }
+  function inner(x) { print(x); innerhelper(); }
   return inner;
 }
 

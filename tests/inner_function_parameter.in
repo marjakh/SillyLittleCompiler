@@ -1,12 +1,12 @@
 function bar() {
-  function inner(x) { write(x); }
+  function inner(x) { print(x); }
   inner(700);
 }
 
 bar();
 
 function outer(y) {
-  write(y);
+  print(y);
 }
 
 outer(800);

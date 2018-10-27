@@ -9,6 +9,6 @@ while (i < len) {
 }
 i = 0;
 while (i < len) {
-  write(a[i]);
+  print(a[i]);
   i = i + 1;
 }

@@ -4,15 +4,15 @@ let a = new Array(1);
 a[0] = 9;
 let b = a;
 
-write(a[0]);
+print(a[0]);
 if (a == b) {
-  write(200);
+  print(200);
 }
 
 test_do_gc();
 
-write(a[0]);
+print(a[0]);
 if (a == b) {
-  write(200);
+  print(200);
 }
   

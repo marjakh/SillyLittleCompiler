@@ -1,8 +1,8 @@
 function explicityreturnsempty() {
   return;
 }
-write(explicityreturnsempty());
+print(explicityreturnsempty());
 
 function implicitlyreturnsempty() {
 }
-write(implicitlyreturnsempty());
+print(implicitlyreturnsempty());

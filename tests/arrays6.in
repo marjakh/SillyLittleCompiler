@@ -7,6 +7,6 @@ while (i < 3) {
 }
 i = 0;
 while (i < 3) {
-  write(a[i]);
+  print(a[i]);
   i = i + 1;
 }

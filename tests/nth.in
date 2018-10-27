@@ -15,6 +15,6 @@ function nth(x, a, b, c) {
 let foo = 7;
 let bar = 8;
 let baz = 9;
-write(nth(1, foo, bar, baz));
-write(nth(2, foo, bar, baz));
-write(nth(3, foo, bar, baz));
+print(nth(1, foo, bar, baz));
+print(nth(2, foo, bar, baz));
+print(nth(3, foo, bar, baz));

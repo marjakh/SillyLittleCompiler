@@ -4,4 +4,4 @@ function foo(x) {
 
 let y = 0;
 foo(y);
-write(y);
+print(y);

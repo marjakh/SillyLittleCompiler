@@ -1,18 +1,18 @@
 let a = 5;
 let b = 4;
 let c = a * b;
-write(c);
+print(c);
 
 let d = 0 - 4;
 // Right operand negative
 let e = a * d;
-write(e);
+print(e);
 
 // Left operand negative
 let f = d * a;
-write(f);
+print(f);
 
 // Both operands negative
 let g = 0 - 5;
 let h = d * g;
-write(h);
+print(h);

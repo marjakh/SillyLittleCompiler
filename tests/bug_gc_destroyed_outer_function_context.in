@@ -4,6 +4,6 @@ function foo() {
   a = 5;
 }
 
-write(a);
+print(a);
 foo();
-write(a);
+print(a);

@@ -1,1 +1,1 @@
-function function() { write(1); }
+function function() { print(1); }

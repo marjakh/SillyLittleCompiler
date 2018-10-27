@@ -4,11 +4,11 @@ function foo() {
   let x = 0;
   if (count > 0) {
     x = x + 1;
-    write(x);
+    print(x);
     count = count - 1;
     foo();
   }
-  write(x);
+  print(x);
 }
 
 foo();

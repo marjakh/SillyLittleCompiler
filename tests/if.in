@@ -2,5 +2,5 @@ function f(x) {
   return x + 1;
 }
 
-if (f(1) == f(2)) { write(10); } else { write(20); }
-if (f(1) == f(1)) { write(10); } else { write(20); }
+if (f(1) == f(2)) { print(10); } else { print(20); }
+if (f(1) == f(1)) { print(10); } else { print(20); }

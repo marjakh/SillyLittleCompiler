@@ -2,4 +2,4 @@ let a = 1;
 let b = 2;
 let c = 3;
 let d = 4;
-write(a - b - c - d);
+print(a - b - c - d);

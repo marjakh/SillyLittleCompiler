@@ -12,4 +12,4 @@ function bar() {
 
 a[foo()] = bar();
 
-write(a[0]);
+print(a[0]);

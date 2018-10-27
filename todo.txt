@@ -1,3 +1,16 @@
+Reduce type confusion:
+- Add error handling system for terminating the program if something goes wrong.
+- Add metadata for arrays (array length), change array indexing code.
+- Add strings, string handling runtime functions, and metadata for strings.
+- Add taggedness checks to generated code.
+- Add type metadata for internal classes like FunctionContext / Function and check it before indexing the class.
+- Represent FunctionContext and Function as classes in the code generation (so that the indexing code + type checks are generated automatically)
+- Add user-defined objects and type checks for them.
+- When I add objects, I also need to annotate parameters / variables, so that I know what x.prop means.
+  -- Then I need to also disallow assigning an object to a different type into a variable.
+- Then the compiler could whine at build time if I pass an object of the wrong type..
+
+
 Priorities:
 1. functions improvements:
    -- as first-class
@@ -20,7 +33,7 @@ Priorities:
 Random bugs / corner cases:
 - Check all usages of PARegisterAndOffset; shouldn't we multiply by POINTER_SIZE everywhere?
 - Not sure if the "locals and params count" is correct, maybe that's multiplied by POINTER_SIZE..
-- Add tests for what happens when trying to access the return value for write.
+- Add tests for what happens when trying to access the return value for print.
 - Too many syntax errors: grammar.SyntaxError: SyntaxError: Syntax error: Expected identifier_or_array_continuation, got token_identifier. (33) (for "asdf asdf")
 
 - This test:
@@ -50,7 +63,6 @@ Small stuff:
 - make gdb "start" work (somehow)
 - print out the statement as comments in the program?
 - mark some functions staticmethods if we don't need an object...
-- write->print
 - Allow negative numbers but not always... so e.g., 1 + (-1) is OK but 1 + -1 is not.
 - logical operators!! note that they need to shortcut both in the interpreter and in the compiler.
 - python interpreter.py from stdin? or interactively?

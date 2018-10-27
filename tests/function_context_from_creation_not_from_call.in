@@ -1,5 +1,5 @@
 function outer(x, what, f) {
-  function inner() { write(x); }
+  function inner() { print(x); }
   if (what == 1) {
     return inner;
   }

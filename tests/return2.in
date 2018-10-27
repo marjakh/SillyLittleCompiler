@@ -6,4 +6,4 @@ function bar(x) {
   return 2 * x;
 }
 
-write(foo(5));
+print(foo(5));

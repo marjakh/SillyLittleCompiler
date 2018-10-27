@@ -90,7 +90,7 @@ class BuiltinFunction:
     return self.code(parameters)
 
 
-def write_builtin(parameters):
+def print_builtin(parameters):
   assert(len(parameters) == 1)
   global output
   if parameters[0] == None:
@@ -130,7 +130,7 @@ class Interpreter:
 
     sa = ScopeAnalyser(p.program)
 
-    sa.builtins.add("write")
+    sa.builtins.add("print")
     sa.builtins.add("Array")
     sa.analyse()
 
@@ -138,7 +138,7 @@ class Interpreter:
       raise sa.error
 
     # Install builtins to the top scope.
-    self.__function_context_stack[0].addVariable(sa.top_scope.resolve("write"), BuiltinFunction("write", write_builtin))
+    self.__function_context_stack[0].addVariable(sa.top_scope.resolve("print"), BuiltinFunction("print", print_builtin))
     self.__function_context_stack[0].addVariable(sa.top_scope.resolve("Array"), BuiltinFunction("Array", array_builtin))
 
     self.__executeStatements(p.program.statements)

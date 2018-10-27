@@ -1,8 +1,8 @@
 function helper() {
-  write(111);
+  print(111);
   return 0;
 }
 
-write(222);
+print(222);
 let a = helper();
-write(333);
+print(333);

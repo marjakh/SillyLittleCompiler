@@ -1,7 +1,7 @@
-write(1);
+print(1);
 let i = 10;
 while (i < 10) {
-  write(2);
+  print(2);
   i = i + 1;
 }
-write(3);
+print(3);

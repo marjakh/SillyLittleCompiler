@@ -1,7 +1,7 @@
 let i = 10;
 
 function foo() {
-  write(i);
+  print(i);
   i = i - 1;
   if (i > 0) {
     foo();

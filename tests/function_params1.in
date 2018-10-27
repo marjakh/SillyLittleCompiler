@@ -1,5 +1,5 @@
 function f1(a) {
-  write(a);
+  print(a);
 }
 
 f1(3);

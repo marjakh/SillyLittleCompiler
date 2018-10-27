@@ -13,9 +13,9 @@ while (i < x) {
   j = 0;
   while (j < y) {
     a[i][j] = i * 10 + j;
-    write(i);
-    write(j);
-    write(a[i][j]);
+    print(i);
+    print(j);
+    print(a[i][j]);
    j = j + 1;
   }
   i = i + 1;
@@ -25,9 +25,9 @@ i = 0;
 while (i < x) {
   j = 0;
   while (j < y) {
-    write(i);
-    write(j);
-    write(a[i][j]);
+    print(i);
+    print(j);
+    print(a[i][j]);
     j = j + 1;
   }
   i = i + 1;

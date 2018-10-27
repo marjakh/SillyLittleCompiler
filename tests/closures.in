@@ -5,7 +5,7 @@ function outer(x) {
     return innerinner;
   }
   return inner;
-  function inner2() { write(a); write(x); }
+  function inner2() { print(a); print(x); }
 }
 
 let shouldbeinner = outer(6);

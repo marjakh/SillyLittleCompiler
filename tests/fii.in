@@ -6,4 +6,4 @@ if (0 == 1) {
   a = 6;
 }
 
-write(a);
+print(a);

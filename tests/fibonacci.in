@@ -6,6 +6,6 @@ function fibonacci(n) {
 
 let i = 1;
 while (i <= 10) {
-  write(fibonacci(i));
+  print(fibonacci(i));
   i = i + 1;
 }

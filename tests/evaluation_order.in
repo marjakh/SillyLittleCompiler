@@ -1,21 +1,21 @@
 function foo() {
-  write(1);
+  print(1);
   return 0;
 }
 
 function bar() {
-  write(2);
+  print(2);
   return 0;
 }
 
 let a = 5;
 let b = 6;
-write(11);
+print(11);
 let c = 1 + a + foo() + 2 + bar() + b;
 
 function baz(x, y) {
 }
 
-write(12);
+print(12);
 baz(foo(), bar());
-write(13);
+print(13);

@@ -2,7 +2,7 @@ let a = new Array(1);
 a[0] = 13;
 
 let b = a;
-write(b[0]);
+print(b[0]);
 
 b[0] = 14;
-write(a[0]);
+print(a[0]);

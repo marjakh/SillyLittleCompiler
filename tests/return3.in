@@ -3,13 +3,13 @@ function foo(x) {
 }
 
 if (foo(3) == 6) {
-  write(1);
+  print(1);
 } else {
-  write(2);
+  print(2);
 }
 
 if (foo(4) == 6) {
-  write(3);
+  print(3);
 } else {
-  write(4);
+  print(4);
 }

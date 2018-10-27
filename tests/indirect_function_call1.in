@@ -1,5 +1,5 @@
 function foo() {
-  write(2);
+  print(2);
 }
 
 let a = foo;

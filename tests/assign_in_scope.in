@@ -1,22 +1,22 @@
 let foo = 0;
 if (foo == 0) {
-   write(foo);
+   print(foo);
    foo = 1;
-   write(foo);
+   print(foo);
 } else {
-   write(foo);
+   print(foo);
    foo = 2;
-   write(foo);
+   print(foo);
 }
-write(foo);
+print(foo);
 let bar = 0;
 if (bar != 0) {
-   write(bar);
+   print(bar);
    bar = 1;
-   write(bar);
+   print(bar);
 } else {
-   write(bar);
+   print(bar);
    bar = 2;
-   write(bar);
+   print(bar);
 }
-write(bar);
+print(bar);

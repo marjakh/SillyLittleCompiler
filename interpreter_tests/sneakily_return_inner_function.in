@@ -6,7 +6,7 @@ function sneakystore(f) {
 
 function outer() {
   let b = 8;
-  function inner() { write(b); }
+  function inner() { print(b); }
   sneakystore(inner);
 }
 

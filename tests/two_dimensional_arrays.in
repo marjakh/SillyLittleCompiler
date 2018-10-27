@@ -17,7 +17,7 @@ i = 0;
 while (i < size_x) {
   j = 0;
   while (j < size_y) {
-    write(a[i][j]);
+    print(a[i][j]);
     j = j + 1;
   }
   i = i + 1;

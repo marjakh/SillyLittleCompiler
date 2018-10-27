@@ -1,7 +1,7 @@
 let foo = 8;
 
 function outer() {
-  function foo() { write(600); }
+  function foo() { print(600); }
   foo();
 }
 outer();

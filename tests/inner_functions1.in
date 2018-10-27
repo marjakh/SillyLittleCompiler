@@ -1,6 +1,6 @@
 function f1() {
   function f2() {
-    write(9);
+    print(9);
   }
   f2();
 }

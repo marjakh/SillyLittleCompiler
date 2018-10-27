@@ -1,5 +1,5 @@
 let x = 0;
 
-function foo(x) { write(x); }
+function foo(x) { print(x); }
 
 foo(10);

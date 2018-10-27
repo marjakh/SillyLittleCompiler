@@ -2,7 +2,7 @@ foo();
 outer();
 
 function foo() {
-  write(7);
+  print(7);
 }
 
 function outer() {
@@ -10,5 +10,5 @@ function outer() {
      bar();
    }
    inner();
-   function bar() { write(9); }
+   function bar() { print(9); }
 }

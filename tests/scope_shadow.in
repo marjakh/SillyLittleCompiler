@@ -2,41 +2,41 @@ let foo = 0;
 if (foo == 0) {
   let foo = 0;
   foo = 1;
-  write(foo);
+  print(foo);
 } else {
   let foo = 0;
   foo = 2;
-  write(foo);
+  print(foo);
 }
-write(foo);
+print(foo);
 
 let bar = 0;
 if (bar != 0) {
   let bar = 0;
   bar = 1;
-  write(bar);
+  print(bar);
 } else {
   let bar = 0;
   bar = 2;
-  write(bar);
+  print(bar);
 }
-write(bar);
+print(bar);
 
 let baz = 0;
 let count = 0;
 while (count == 0) {
   let baz = 0;
   baz = 3;
-  write(baz);
+  print(baz);
   count = 1;
 }
-write(baz);
+print(baz);
 
 let quux = 0;
 function quuxuser() {
   let quux = 0;
   quux = 4;
-  write(quux);
+  print(quux);
 }
 quuxuser();
-write(quux);
+print(quux);

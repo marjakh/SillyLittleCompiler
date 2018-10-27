@@ -1,2 +1,2 @@
-write(x);
+print(x);
 let x = 0;

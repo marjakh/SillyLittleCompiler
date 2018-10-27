@@ -1,9 +1,9 @@
 function f1(x) {
-  write(11);
+  print(11);
   if (x == 0) {
-    write(0);
+    print(0);
   } else if (x == 1) {
-    write(1);
+    print(1);
   }
 }
 
@@ -12,13 +12,13 @@ f1(1);
 f1(2);
 
 function f2(x) {
-  write(22);
+  print(22);
   if (x == 0) {
-    write(0);
+    print(0);
   } else if (x == 1) {
-    write(1);
+    print(1);
   } else {
-    write(2);
+    print(2);
   }
 }
 
@@ -27,13 +27,13 @@ f2(1);
 f2(2);
 
 function f3(x) {
-  write(33);
+  print(33);
   if (x == 0) {
-    write(0);
+    print(0);
   } else if (x == 1) {
-    write(1);
+    print(1);
   } else if (x == 2) {
-    write(2);
+    print(2);
   }
 }
 
@@ -43,15 +43,15 @@ f3(2);
 f3(3);
 
 function f4(x) {
-  write(44);
+  print(44);
   if (x == 0) {
-    write(0);
+    print(0);
   } else if (x == 1) {
-    write(1);
+    print(1);
   } else if (x == 2) {
-    write(2);
+    print(2);
   } else {
-    write(3);
+    print(3);
   }
 }
 

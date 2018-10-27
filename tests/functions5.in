@@ -1,13 +1,13 @@
 function f1() {
-  write(1);
+  print(1);
 }
 
 function f3() {
-  write(3);
+  print(3);
   if (1 < 2) {
     f1();
   }
-  write(4);
+  print(4);
 }
 
 f3();

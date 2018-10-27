@@ -1,2 +1,2 @@
 let foo = 0;
-function foo() { write(0); }
+function foo() { print(0); }

@@ -15,7 +15,7 @@ let i = 1;
 while (i < 50) {
   let j = 1;
   while (j < 50) {
-    write(gcd(i, j));
+    print(gcd(i, j));
     j = j + 1;
   }
   i = i + 1;

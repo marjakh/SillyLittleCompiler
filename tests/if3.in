@@ -1,17 +1,17 @@
 let a = 10;
 let b = 13;
 if (a == 10) {
-  write(0);
+  print(0);
   if (b == 12) {
-    write(1);
+    print(1);
   } else {
-    write(2);
+    print(2);
   }
-  write(3);
+  print(3);
   if (b == 13) {
-    write(4);
+    print(4);
   } else {
-    write(5);
+    print(5);
   }
-  write(6);
+  print(6);
 }

@@ -10,4 +10,4 @@ function baz() {
   return 3;
 }
 
-write(foo() + bar() + baz());
+print(foo() + bar() + baz());

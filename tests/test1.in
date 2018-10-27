@@ -1,2 +1,2 @@
 let a = 42;
-write(a);
+print(a);

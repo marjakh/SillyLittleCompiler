@@ -2,6 +2,6 @@ function f(x) {
   return x + 1;
 }
 
-let indirectwrite = write;
+let indirectprint = print;
 let indirectf = f;
-indirectwrite(indirectf(10));
+indirectprint(indirectf(10));

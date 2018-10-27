@@ -26,10 +26,10 @@ function third() {
 }
 
 
-write(a);
+print(a);
 first();
-write(a);
+print(a);
 second();
-write(a);
+print(a);
 third();
-write(a);
+print(a);

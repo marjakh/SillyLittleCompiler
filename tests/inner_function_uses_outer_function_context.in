@@ -1,15 +1,15 @@
 function outer() {
   let x = 22;
-  function innerhelper() { write(33); }
-  function inner() { write(x); innerhelper(); }
+  function innerhelper() { print(33); }
+  function inner() { print(x); innerhelper(); }
   inner();
 }
 outer();
 
 function outer2() {
   let x = 44;
-  function innerhelper() { write(55); }
-  function inner() { function innerinner() { write(x); innerhelper(); } innerinner(); }
+  function innerhelper() { print(55); }
+  function inner() { function innerinner() { print(x); innerhelper(); } innerinner(); }
   inner();
 }
 outer2();

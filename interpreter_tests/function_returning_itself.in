@@ -1,5 +1,5 @@
 function foo() {
-  write(100);
+  print(100);
   return foo;
 }
 

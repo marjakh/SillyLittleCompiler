@@ -10,6 +10,6 @@ a[i] = 10;
 
 let j = 0;
 while (j < len) {
-  write(a[j]);
+  print(a[j]);
   j = j + 1;
 }

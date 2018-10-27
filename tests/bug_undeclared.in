@@ -4,7 +4,7 @@ function foo() {
   if (count > 0) {
     x = x + 1;
   }
-  write(x);
+  print(x);
 }
 
 foo();

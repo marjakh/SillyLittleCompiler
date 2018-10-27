@@ -19,10 +19,10 @@ function foo3() {
 foo1()[0] = 9;
 
 let bar2 = foo2()[0];
-write(bar2);
+print(bar2);
 
 let bar3 = foo3()[0];
-write(bar3);
+print(bar3);
 
 foo3()[0] = 11;
-write(global_array[0]);
+print(global_array[0]);

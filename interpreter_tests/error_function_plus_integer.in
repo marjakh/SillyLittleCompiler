@@ -1,2 +1,2 @@
 function foo() { }
-write(foo + 3);
+print(foo + 3);

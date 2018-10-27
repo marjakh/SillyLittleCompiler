@@ -1,2 +1,2 @@
 let foo = 33;
-write(foo);
+print(foo);

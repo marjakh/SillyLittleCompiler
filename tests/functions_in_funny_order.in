@@ -1,3 +1,3 @@
 function foo() { bar(); }
-function bar() { write(1); }
+function bar() { print(1); }
 foo();

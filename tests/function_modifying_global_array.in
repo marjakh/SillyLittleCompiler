@@ -12,6 +12,6 @@ function f1() {
 f1();
 let i = 0;
 while (i < size) {
-  write(a[i]);
+  print(a[i]);
   i = i + 1;
 }

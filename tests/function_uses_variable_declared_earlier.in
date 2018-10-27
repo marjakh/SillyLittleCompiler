@@ -2,5 +2,5 @@ let x = 8;
 foo();
 
 function foo() {
-  write(x);
+  print(x);
 }

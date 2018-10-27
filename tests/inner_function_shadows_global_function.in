@@ -1,7 +1,7 @@
-function foo(x) { write(x); }
+function foo(x) { print(x); }
 
 function outer() {
-  function foo() { write(600); }
+  function foo() { print(600); }
   foo();
 }
 outer();

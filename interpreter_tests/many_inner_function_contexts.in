@@ -7,5 +7,5 @@ function outer(x) {
 let outer1 = outer(1);
 let outer2 = outer(2);
 
-write(outer1());
-write(outer2());
+print(outer1());
+print(outer2());

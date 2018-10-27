@@ -1,24 +1,24 @@
 function foo(i) {
-  write(100);
-  write(i);
+  print(100);
+  print(i);
   i = i - 1;
   if (i > 0) {
     foo(i);
   }
-  write(200);
-  write(i);
+  print(200);
+  print(i);
 }
 
 foo(5);
 
 function bar(i) {
-  write(300);
-  write(i);
+  print(300);
+  print(i);
   if (i > 0) {
     bar(i - 1);
   }
-  write(400);
-  write(i);
+  print(400);
+  print(i);
 }
 
 bar(5);

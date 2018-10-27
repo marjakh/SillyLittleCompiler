@@ -2,7 +2,7 @@ function foo() {
   let x = 0;
   function inner() {
     let x = 10;
-    write(x);
+    print(x);
   }
   inner();
 }

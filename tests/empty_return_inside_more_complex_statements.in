@@ -2,7 +2,7 @@ function foo() {
   if (1 == 1) {
     return;
   }
-  write(666);
+  print(666);
 }
 
 function bar() {
@@ -10,20 +10,20 @@ function bar() {
   } else {
     return;
   }
-  write(666);
+  print(666);
 }
 
 function baz() {
   while (1 == 1) {
     return;
   }
-  write(666);
+  print(666);
 }
 
-write(1);
+print(1);
 foo();
-write(3);
+print(3);
 bar();
-write(5);
+print(5);
 baz();
-write(7);
+print(7);

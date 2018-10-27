@@ -6,7 +6,7 @@ function outer() {
       let x = 10;
       inner();
     }
-    write(x);
+    print(x);
     return doublyinner;
   }
 
@@ -17,11 +17,11 @@ function outer() {
 outer();
 
 function outer2() {
-  function foo() { write(8); }
+  function foo() { print(8); }
 
   function inner() {
     function doublyinner() {
-      function foo() { write(18); }
+      function foo() { print(18); }
       inner();
     }
     foo();
@@ -38,7 +38,7 @@ function outer3() {
   let x = 9;
   function inner() {
     function inner2() {
-      write(x);
+      print(x);
     }
     return inner2;
   }

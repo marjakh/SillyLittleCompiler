@@ -1,93 +1,93 @@
 let a = 42;
 if (a < 41) {
-  write(0);
+  print(0);
 } else {
-  write(1);
+  print(1);
 }
 if (a <= 41) {
-  write(2);
+  print(2);
 } else {
-  write(3);
+  print(3);
 }
 if (a == 41) {
-  write(4);
+  print(4);
 } else {
-  write(5);
+  print(5);
 }
 if (a != 41) {
-  write(6);
+  print(6);
 } else {
-  write(7);
+  print(7);
 }
 if (a > 41) {
-  write(8);
+  print(8);
 } else {
-  write(9);
+  print(9);
 }
 if (a >= 41) {
-  write(10);
+  print(10);
 } else {
-  write(11);
+  print(11);
 }
 
 if (a < 42) {
-  write(12);
+  print(12);
 } else {
-  write(13);
+  print(13);
 }
 if (a <= 42) {
-  write(14);
+  print(14);
 } else {
-  write(15);
+  print(15);
 }
 if (a == 42) {
-  write(16);
+  print(16);
 } else {
-  write(17);
+  print(17);
 }
 if (a != 42) {
-  write(18);
+  print(18);
 } else {
-  write(19);
+  print(19);
 }
 if (a > 42) {
-  write(20);
+  print(20);
 } else {
-  write(21);
+  print(21);
 }
 if (a >= 42) {
-  write(22);
+  print(22);
 } else {
-  write(23);
+  print(23);
 }
 
 if (a < 43) {
-  write(24);
+  print(24);
 } else {
-  write(25);
+  print(25);
 }
 if (a <= 43) {
-  write(26);
+  print(26);
 } else {
-  write(27);
+  print(27);
 }
 if (a == 43) {
-  write(28);
+  print(28);
 } else {
-  write(29);
+  print(29);
 }
 if (a != 43) {
-  write(30);
+  print(30);
 } else {
-  write(31);
+  print(31);
 }
 if (a > 43) {
-  write(32);
+  print(32);
 } else {
-  write(33);
+  print(33);
 }
 if (a >= 43) {
-  write(34);
+  print(34);
 } else {
-  write(35);
+  print(35);
 }

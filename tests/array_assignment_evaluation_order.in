@@ -1,15 +1,15 @@
 function foo() {
-  write(0);
+  print(0);
   return 0;
 }
 
 function bar() {
-  write(1);
+  print(1);
   return 0;
 }
 
 function baz() {
-  write(2);
+  print(2);
   return 2;
 }
 

@@ -22,7 +22,7 @@ root_array_ix = 0;
 while (root_array_ix < 5) {
   let k = 0;
   while (k < 40) {
-    write(root_array[root_array_ix][k]);
+    print(root_array[root_array_ix][k]);
     k = k + 1;
   }
   root_array_ix = root_array_ix + 1;

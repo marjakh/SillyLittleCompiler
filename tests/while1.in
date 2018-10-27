@@ -1,5 +1,5 @@
 let foo = 0;
 while (foo < 10) {
-  write(foo);
+  print(foo);
   foo = foo + 1;
 }

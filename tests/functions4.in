@@ -1,11 +1,11 @@
 function f3() {
-  write(3);
+  print(3);
   if (1 < 2) {
-    write(5);
+    print(5);
   } else {
-    write(6);
+    print(6);
   }
-  write(4);
+  print(4);
 }
 
 f3();
