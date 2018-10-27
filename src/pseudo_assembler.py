@@ -550,10 +550,17 @@ class PASub(PseudoAssemblerInstructionOperatingOnRegister):
     # FIXME: from and to are not the correct names
     super().__init__(from1, to, "subl")
 
+
+class PAAnd(PseudoAssemblerInstructionOperatingOnRegister):
+  def __init__(self, from1, to):
+    # FIXME: from and to are not the correct names
+    super().__init__(from1, to, "andl")
+
 class PAArithmeticShiftRight(PseudoAssemblerInstructionOperatingOnRegister):
   def __init__(self, from1, to):
     # FIXME: from and to are not the correct names
     super().__init__(from1, to, "sarl")
+
 
 class PAArithmeticShiftLeft(PseudoAssemblerInstructionOperatingOnRegister):
   def __init__(self, from1, to):
@@ -594,8 +601,9 @@ class PADiv(PseudoAssemblerInstructionWithSource):
 
 
 class PseudoAssembly:
-  def __init__(self, functions_and_blocks, metadata):
+  def __init__(self, functions_and_blocks, error_handlers, metadata):
     self.functions_and_blocks = functions_and_blocks
+    self.error_handlers = error_handlers
     self.metadata = metadata
 
   def __str__(self):
@@ -758,6 +766,13 @@ class PseudoAssembler:
 
     assert(False)
 
+  def __createIntTagCheck(self, value_register):
+    temp = self.registers.nextRegister()
+    return [PAMov(value_register, temp),
+            PAAnd(PAConstant(INT_PTR_TAG_MASK), temp),
+            PACmp(PAConstant(INT_TAG), temp),
+            PAJumpNotEquals(self.__label_error_array_index_not_int)]
+
   def __createArrayIndexingCode(self, address_register, index):
     code = [PAComment("Indexing array")]
     if isinstance(index, Constant):
@@ -767,8 +782,10 @@ class PseudoAssembler:
       assert(isinstance(index, TemporaryVariable))
       pointer_size_register = self.registers.nextRegister()
       address_register2 = self.registers.nextRegister()
+      index_register = self.__virtualRegister(index)
+      code += self.__createIntTagCheck(index_register)
       code += [PAComment("index to eax"),
-               PAMov(self.__virtualRegister(index), self.__eax),
+               PAMov(index_register, self.__eax),
                PAComment("pointer size"),
                # No need to untag the index, since we divice by
                # INT_TAG_MULTIPLIER here.
@@ -1060,6 +1077,8 @@ class PseudoAssembler:
     self.__ebp = PARegister("ebp")
     self.__function_context_location = PARegisterAndOffset(self.__ebp, FUNCTION_CONTEXT_FROM_EBP_OFFSET * POINTER_SIZE)
 
+    self.__label_error_array_index_not_int = "error_array_index_not_int"
+
     output = []
     running_id = 0
     for [function, function_blocks] in ir.functions_and_blocks:
@@ -1085,4 +1104,5 @@ class PseudoAssembler:
       # for b in blocks:
       #   print_debug(listToString(b.instructions, "", "", "\n"))
 
-    return PseudoAssembly(output, PseudoAssemblyMetadata(self.registers, self.__metadata.function_param_and_local_counts))
+    error_handlers = [[self.__label_error_array_index_not_int, ERROR_ID_ARRAY_INDEX_NOT_INT]]
+    return PseudoAssembly(output, error_handlers, PseudoAssemblyMetadata(self.registers, self.__metadata.function_param_and_local_counts))

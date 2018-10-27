@@ -60,7 +60,7 @@ let bar = foo()[3];
 
 
 Small stuff:
-- make gdb "start" work (somehow)
+- test for exact error message for non-runtime errors too
 - print out the statement as comments in the program?
 - mark some functions staticmethods if we don't need an object...
 - Allow negative numbers but not always... so e.g., 1 + (-1) is OK but 1 + -1 is not.

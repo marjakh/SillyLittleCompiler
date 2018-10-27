@@ -9,11 +9,11 @@
 
 template<typename T>
 bool has_pointer_tag(T* value) {
-  return (reinterpret_cast<int32_t>(value) & PTR_TAG_MASK) == PTR_TAG;
+  return (reinterpret_cast<int32_t>(value) & INT_PTR_TAG_MASK) == PTR_TAG;
 }
 
 inline bool has_pointer_tag(int32_t value) {
-  return (value & PTR_TAG_MASK) == PTR_TAG;
+  return (value & INT_PTR_TAG_MASK) == PTR_TAG;
 }
 
 inline bool has_int_tag(int32_t value) {

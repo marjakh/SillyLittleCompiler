@@ -60,9 +60,12 @@ def getOutput(input_file_name, gc_stress):
   if gc_stress:
     command = command + ["--gc-stress"]
   output = subprocess.check_output(command).decode("utf-8")
+  lines = output.split('\n')
+  if len(lines) < 2:
+    return Result.testOk(output.strip())
   last_line = output.split('\n')[-2]
   if last_line.startswith("RuntimeError"):
-    return Result.testError("RuntimeError", output)
+    return Result.testError(last_line, output)
   return Result.testOk(output.strip())
 
 skipped = 0

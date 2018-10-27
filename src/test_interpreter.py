@@ -2,7 +2,7 @@
 
 from grammar import GrammarDriver
 from grammar_rules import rules
-from interpreter import Interpreter
+from interpreter import Interpreter, InterpreterException
 
 import os
 
@@ -62,6 +62,8 @@ def run_tests_in(test_path):
     try:
       i = Interpreter(grammar, input)
       i.run()
+    except InterpreterException as e:
+      output = e.message
     except BaseException as e:
       output = e.__class__.__name__
     else:

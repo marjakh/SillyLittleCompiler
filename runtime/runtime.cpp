@@ -1,4 +1,5 @@
 #include "constants.h"
+#include "errors.h"
 #include "function_context.h"
 #include "memory.h"
 #include "tagging.h"
@@ -6,6 +7,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+const char* error_messages[] = {"Array index not an int"};
 
 extern "C" void user_code();
 
@@ -48,6 +51,10 @@ extern "C" void* runtime_CreateMainFunctionContext(std::int32_t locals_count) {
 
 extern "C" void runtime_SetStackHigh(std::int32_t* stack_high) {
   memory_set_stack_high(stack_high);
+}
+
+extern "C" void runtime_Error(int32_t error_index) {
+  terminate_with_runtime_error(error_messages[error_index]);
 }
 
 int main(int argc, char** argv) {

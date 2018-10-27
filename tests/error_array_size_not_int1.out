@@ -1,1 +1,1 @@
-RuntimeError
+RuntimeError: Array size not an int

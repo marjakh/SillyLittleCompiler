@@ -175,4 +175,8 @@ class RealAssembler:
         program.append(PAPop(self.__ebp)) # Restore saved ebp
       program.append(PARealReturn())
 
+    for [handler_label, error_index] in pseudo_assembly.error_handlers:
+      program += [PALabel(handler_label),
+                  PAPush(PAConstant(error_index)),
+                  PACallRuntimeFunction("Error")]
     return program

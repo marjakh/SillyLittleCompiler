@@ -25,7 +25,7 @@ extern "C" void* builtin_Array(void** tagged_function_context, int* stack_low) {
     fprintf(stderr, "Array of size %d is %p\n", size, array);
     return tag_pointer(array);
   } else {
-    terminate_with_runtime_error("Array size must be an int");
+    terminate_with_runtime_error("Array size not an int");
   }
 }
 

@@ -11,7 +11,8 @@
 
 #define TAG_SHIFT 1
 
+#define INT_TAG 0
 #define PTR_TAG 1
-#define PTR_TAG_MASK 1
+#define INT_PTR_TAG_MASK 1
 
 #endif

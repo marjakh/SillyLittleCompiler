@@ -1,0 +1,3 @@
+let a = new Array(1);
+let b = new Array(1);
+b[a] = 0;

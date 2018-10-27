@@ -16,8 +16,9 @@ import sys
 
 output = ""
 
-class RuntimeError(BaseException):
+class InterpreterException(BaseException):
   def __init__(self, message, pos = None):
+    BaseException.__init__(self)
     self.message = message
     self.pos = pos
 
@@ -73,10 +74,14 @@ class Array:
     self.values = [None]*size
 
   def getData(self, index):
+    if type(index) is not int:
+      raise InterpreterException("RuntimeError: Array index not an int")
     # FIXME: better runtime error for overflow
     return self.values[index]
 
   def setData(self, index, new_value):
+    if type(index) is not int:
+      raise InterpreterException("RuntimeError: Array index not an int")
     # FIXME: better runtime error for overflow
     self.values[index] = new_value
 
@@ -104,7 +109,7 @@ def print_builtin(parameters):
 def array_builtin(parameters):
   assert(len(parameters) == 1)
   if type(parameters[0]) is not int:
-    raise RuntimeError("array size must be an int")
+    raise InterpreterException("RuntimeError: Array size not an int")
   return Array(parameters[0])
 
 
