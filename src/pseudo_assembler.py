@@ -770,6 +770,8 @@ class PseudoAssembler:
       code += [PAComment("index to eax"),
                PAMov(self.__virtualRegister(index), self.__eax),
                PAComment("pointer size"),
+               # No need to untag the index, since we divice by
+               # INT_TAG_MULTIPLIER here.
                PAMov(PAConstant(POINTER_SIZE // INT_TAG_MULTIPLIER), pointer_size_register),
                PAComment("store the value of edx, we need to nullify it"),
                PAPush(self.__edx),
