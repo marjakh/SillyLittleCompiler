@@ -1,5 +1,7 @@
 Reduce type confusion:
 - Add more error handling (runtime + generated code)
+  -- Errors for < > <= >=
+  -- Wrong parameter count
 - Add metadata for arrays (array length), change array indexing code.
 - Add strings, string handling runtime functions, and metadata for strings.
 - Add taggedness checks to generated code.

@@ -16,6 +16,11 @@ import sys
 
 output = ""
 
+ERROR_ARITHMETIC_OPERATION_PARAMETER_NOT_INT = "RuntimeError: Arithmetic operation parameter not an int"
+ERROR_ARRAY_INDEX_NOT_INT = "RuntimeError: Array index not an int"
+ERROR_ARRAY_BASE_NOT_ARRAY = "RuntimeError: Array base not an array"
+ERROR_ARRAY_SIZE_NOT_INT = "RuntimeError: Array size not an int"
+
 class InterpreterException(BaseException):
   def __init__(self, message, pos = None):
     BaseException.__init__(self)
@@ -75,13 +80,13 @@ class Array:
 
   def getData(self, index):
     if type(index) is not int:
-      raise InterpreterException("RuntimeError: Array index not an int")
+      raise InterpreterException(ERROR_ARRAY_INDEX_NOT_INT)
     # FIXME: better runtime error for overflow
     return self.values[index]
 
   def setData(self, index, new_value):
     if type(index) is not int:
-      raise InterpreterException("RuntimeError: Array index not an int")
+      raise InterpreterException(ERROR_ARRAY_INDEX_NOT_INT)
     # FIXME: better runtime error for overflow
     self.values[index] = new_value
 
@@ -109,7 +114,7 @@ def print_builtin(parameters):
 def array_builtin(parameters):
   assert(len(parameters) == 1)
   if type(parameters[0]) is not int:
-    raise InterpreterException("RuntimeError: Array size not an int")
+    raise InterpreterException(ERROR_ARRAY_SIZE_NOT_INT)
   return Array(parameters[0])
 
 
@@ -195,7 +200,7 @@ class Interpreter:
       elif isinstance(s.where, ArrayIndexExpression):
         array = self.__evaluateExpression(s.where.array)
         if type(array) is not Array:
-          raise InterpreterException("RuntimeError: Array base not an array")
+          raise InterpreterException(ERROR_ARRAY_BASE_NOT_ARRAY)
         array.setData(self.__evaluateExpression(s.where.index), self.__evaluateExpression(s.expression))
       else:
         assert(False)
@@ -244,26 +249,36 @@ class Interpreter:
       return self.__function_context_stack[-1].variableValue(e.resolved_variable)
     if isinstance(e, AddExpression):
       ix = 1
-      current = self.__evaluateExpression(e.items[0])
       assert(len(e.items) % 2 == 1)
+      current = self.__evaluateExpression(e.items[0])
+      if type(current) is not int:
+        raise InterpreterException(ERROR_ARITHMETIC_OPERATION_PARAMETER_NOT_INT)
       while ix < len(e.items):
+        other = self.__evaluateExpression(e.items[ix + 1])
+        if type(other) is not int:
+          raise InterpreterException(ERROR_ARITHMETIC_OPERATION_PARAMETER_NOT_INT)
         if e.items[ix].token_type == TokenType.plus:
-          current += self.__evaluateExpression(e.items[ix + 1])
+          current += other
         elif e.items[ix].token_type == TokenType.minus:
-          current -= self.__evaluateExpression(e.items[ix + 1])
+          current -= other
         else:
           assert(False)
         ix += 2
       return current
     if isinstance(e, MultiplyExpression):
       ix = 1
-      current = self.__evaluateExpression(e.items[0])
       assert(len(e.items) % 2 == 1)
+      current = self.__evaluateExpression(e.items[0])
+      if type(current) is not int:
+        raise InterpreterException(ERROR_ARITHMETIC_OPERATION_PARAMETER_NOT_INT)
       while ix < len(e.items):
+        other = self.__evaluateExpression(e.items[ix + 1])
+        if type(other) is not int:
+          raise InterpreterException(ERROR_ARITHMETIC_OPERATION_PARAMETER_NOT_INT)
         if e.items[ix].token_type == TokenType.multiplication:
-          current *= self.__evaluateExpression(e.items[ix + 1])
+          current *= other
         elif e.items[ix].token_type == TokenType.division:
-          current //= self.__evaluateExpression(e.items[ix + 1])
+          current //= other
         else:
           assert(False)
         ix += 2
