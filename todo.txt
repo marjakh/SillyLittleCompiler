@@ -62,6 +62,7 @@ let bar = foo()[3];
 Small stuff:
 - test for exact error message for non-runtime errors too
   -- make the program exit value be non-zero in case of runtime error
+- function comparison doesn't work
 - print out the statement as comments in the program?
 - mark some functions staticmethods if we don't need an object...
 - Allow negative numbers but not always... so e.g., 1 + (-1) is OK but 1 + -1 is not.
@@ -72,6 +73,7 @@ Small stuff:
 
 
 Medium stuff:
+- register allocation is still damn slow
 - the whole undefined thing... we need a representation for undefined, we need to init variables as undefined, and check for undefined in suitable places.
 - break and continue
 - should we allow: outer()(); when outer returns a function? Now the lang forces assigning it to a variable... in general, we should allow expression();

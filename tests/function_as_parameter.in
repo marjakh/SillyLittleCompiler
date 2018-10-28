@@ -1,0 +1,11 @@
+function foo() {
+  print(5);
+}
+
+function bar(f) {
+  print(1);
+  f();
+  print(2);
+}
+
+bar(foo);
