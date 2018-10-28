@@ -8,7 +8,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-const char* error_messages[] = {"Array index not an int",
+const char* error_messages[] = {"Code generation bug!",
+                                "Array index not an int",
                                 "Array base not an array"};
 
 extern "C" void user_code();
@@ -55,6 +56,10 @@ extern "C" void runtime_SetStackHigh(std::int32_t* stack_high) {
 }
 
 extern "C" void runtime_Error(int32_t error_index) {
+  if (error_index == 0) {
+    printf("RuntimeError: assert failure in generated code\n");
+    exit(1);
+  }
   terminate_with_runtime_error(error_messages[error_index]);
 }
 
@@ -63,10 +68,7 @@ int main(int argc, char** argv) {
     memory_test_set_gc_stress();
   }
   memory_init();
-  fprintf(stderr, "Calling user code\n");
   user_code();
-  fprintf(stderr, "User code returned\n");
   memory_teardown();
-  fprintf(stderr, "Runtime exiting\n");
   return 0;
 }

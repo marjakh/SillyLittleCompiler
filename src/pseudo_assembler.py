@@ -674,10 +674,11 @@ class PseudoAssembler:
   def __getFunctionContext(self, function_context):
     return [PAMov(self.__function_context_location, function_context)]
 
-  # FIXME: add (optional) asserts that something is tagged whenever untagging it
   def __getUntaggedFunctionContext(self, function_context):
-    return [PAMov(self.__function_context_location, function_context),
-            PASub(PAConstant(PTR_TAG), function_context)]
+    code = [PAMov(self.__function_context_location, function_context)]
+    code += self.__createPointerTagCheck(function_context, self.__label_error_assert_failure)
+    code += [PASub(PAConstant(PTR_TAG), function_context)]
+    return code
 
   def __getOuterFunctionContext(self, depth):
     function_context = self.registers.nextRegister()
@@ -685,8 +686,10 @@ class PseudoAssembler:
     for i in range(depth):
       untagged_function_context = self.registers.nextRegister()
       new_function_context = self.registers.nextRegister()
-      code += [PAMov(function_context, untagged_function_context),
-               PASub(PAConstant(PTR_TAG), untagged_function_context),
+      code += [PAMov(function_context, untagged_function_context)]
+      code += self.__createPointerTagCheck(untagged_function_context, self.__label_error_assert_failure)
+      # FIXME: add type assertion
+      code += [PASub(PAConstant(PTR_TAG), untagged_function_context),
                PAMov(PARegisterAndOffset(untagged_function_context, FUNCTION_CONTEXT_OUTER_FUNCTION_CONTEXT_OFFSET), new_function_context)]
       function_context = new_function_context
     return (function_context, code)
@@ -694,8 +697,9 @@ class PseudoAssembler:
   def __getUntaggedOuterFunctionContext(self, depth):
     (function_context, code) = self.__getOuterFunctionContext(depth)
     untagged_function_context = self.registers.nextRegister()
-    code += [PAMov(function_context, untagged_function_context),
-             PASub(PAConstant(PTR_TAG), untagged_function_context)]
+    code += [PAMov(function_context, untagged_function_context)]
+    code += self.__createPointerTagCheck(untagged_function_context, self.__label_error_assert_failure)
+    code += [PASub(PAConstant(PTR_TAG), untagged_function_context)]
     return (untagged_function_context, code)
 
   def __createForLoad(self, load):
@@ -1085,6 +1089,7 @@ class PseudoAssembler:
     self.__ebp = PARegister("ebp")
     self.__function_context_location = PARegisterAndOffset(self.__ebp, FUNCTION_CONTEXT_FROM_EBP_OFFSET * POINTER_SIZE)
 
+    self.__label_error_assert_failure = "error_assert_failure"
     self.__label_error_array_index_not_int = "error_array_index_not_int"
     self.__label_error_array_base_not_array = "error_array_base_not_array"
 
@@ -1113,6 +1118,7 @@ class PseudoAssembler:
       # for b in blocks:
       #   print_debug(listToString(b.instructions, "", "", "\n"))
 
-    error_handlers = [[self.__label_error_array_index_not_int, ERROR_ID_ARRAY_INDEX_NOT_INT],
+    error_handlers = [[self.__label_error_assert_failure, ERROR_ID_ASSERT_FAILURE],
+                      [self.__label_error_array_index_not_int, ERROR_ID_ARRAY_INDEX_NOT_INT],
                       [self.__label_error_array_base_not_array, ERROR_ID_ARRAY_BASE_NOT_ARRAY]]
     return PseudoAssembly(output, error_handlers, PseudoAssemblyMetadata(self.registers, self.__metadata.function_param_and_local_counts))
