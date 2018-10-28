@@ -676,6 +676,7 @@ class PseudoAssembler:
 
   def __getUntaggedFunctionContext(self, function_context):
     code = [PAMov(self.__function_context_location, function_context)]
+    # FIXME: add type assertion
     code += self.__createPointerTagCheck(function_context, self.__label_error_assert_failure)
     code += [PASub(PAConstant(PTR_TAG), function_context)]
     return code
@@ -699,6 +700,7 @@ class PseudoAssembler:
     untagged_function_context = self.registers.nextRegister()
     code += [PAMov(function_context, untagged_function_context)]
     code += self.__createPointerTagCheck(untagged_function_context, self.__label_error_assert_failure)
+    # FIXME: add type assertion
     code += [PASub(PAConstant(PTR_TAG), untagged_function_context)]
     return (untagged_function_context, code)
 
@@ -721,8 +723,9 @@ class PseudoAssembler:
     if isinstance(load.what, OuterFunctionLocal) or isinstance(load.what, OuterFunctionParameter):
       (outer_function_context, code) = self.__getOuterFunctionContext(load.what.depth)
       untagged_outer_function_context = self.registers.nextRegister()
-      code += [PAMov(outer_function_context, untagged_outer_function_context),
-               PASub(PAConstant(PTR_TAG), untagged_outer_function_context),
+      code += [PAMov(outer_function_context, untagged_outer_function_context)]
+      code += self.__createPointerTagCheck(untagged_outer_function_context, self.__label_error_assert_failure)
+      code += [PASub(PAConstant(PTR_TAG), untagged_outer_function_context),
                PAMov(PARegisterAndOffset(untagged_outer_function_context, load.what.variable.offset + FUNCTION_CONTEXT_HEADER_SIZE), temp)]
       return code
 
@@ -752,8 +755,9 @@ class PseudoAssembler:
       (outer_function_context, code) = self.__getOuterFunctionContext(array.base.depth)
       untagged_outer_function_context = self.registers.nextRegister()
       address_register = self.registers.nextRegister()
-      code += [PAMov(outer_function_context, untagged_outer_function_context),
-               PASub(PAConstant(PTR_TAG), untagged_outer_function_context),
+      code += [PAMov(outer_function_context, untagged_outer_function_context)]
+      code += self.__createPointerTagCheck(untagged_outer_function_context, self.__label_error_assert_failure)
+      code += [PASub(PAConstant(PTR_TAG), untagged_outer_function_context),
                PAMov(PARegisterAndOffset(untagged_outer_function_context, array.base.variable.offset + FUNCTION_CONTEXT_HEADER_SIZE), address_register)]
       [address_register2, index_code] = self.__createArrayIndexingCode(address_register, array.index)
       return [address_register2, code + index_code]
@@ -900,9 +904,11 @@ class PseudoAssembler:
       temp_context = self.__virtualRegister(instruction.temporary_for_function_context)
       untagged_temp_context = self.registers.nextRegister()
       temp = self.__virtualRegister(instruction.temporary_variable)
-      return [PAMov(temp_context, untagged_temp_context),
-              PASub(PAConstant(PTR_TAG), untagged_temp_context),
+      code = [PAMov(temp_context, untagged_temp_context)]
+      code += self.__createPointerTagCheck(untagged_temp_context, self.__label_error_assert_failure)
+      code += [PASub(PAConstant(PTR_TAG), untagged_temp_context),
               PAMov(temp, PARegisterAndOffset(untagged_temp_context, POINTER_SIZE * (FUNCTION_CONTEXT_PARAMS_OFFSET + instruction.index)))]
+      return code
 
     if isinstance(instruction, CallFunction):
       if instruction.function.variable_type == VariableType.builtin_function:
@@ -942,8 +948,9 @@ class PseudoAssembler:
         untagged_function = self.registers.nextRegister()
         code = [PAComment("Calling user function (indirect)"),
                 PAComment("Get FunctionContext and function address from Function"),
-                PAMov(function, untagged_function),
-                PASub(PAConstant(PTR_TAG), untagged_function),
+                PAMov(function, untagged_function)]
+        code += self.__createPointerTagCheck(untagged_function, self.__label_error_assert_failure)
+        code += [PASub(PAConstant(PTR_TAG), untagged_function),
                 PAMov(PARegisterAndOffset(untagged_function, FUNCTION_OFFSET_FUNCTION_CONTEXT * POINTER_SIZE), function_context),
                 PAMov(PARegisterAndOffset(untagged_function, FUNCTION_OFFSET_ADDRESS * POINTER_SIZE), address),
                 PAComment("Push all registers"),
