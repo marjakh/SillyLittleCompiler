@@ -975,39 +975,55 @@ class PseudoAssembler:
       v_from1 = self.__virtualRegister(instruction.from_variable1)
       v_from2 = self.__virtualRegister(instruction.from_variable2)
       v_to = self.__virtualRegister(instruction.to_variable)
-      return [PAMov(v_from1, v_to), PAAdd(v_from2, v_to)]
+      code = []
+      code += self.__createIntTagCheck(v_from1, self.__label_error_arithmetic_operation_parameter_not_int)
+      code += self.__createIntTagCheck(v_from2, self.__label_error_arithmetic_operation_parameter_not_int)
+      code += [PAMov(v_from1, v_to), PAAdd(v_from2, v_to)]
+      return code
 
     if isinstance(instruction, SubtractTemporaryFromTemporary):
       v_from1 = self.__virtualRegister(instruction.from_variable1)
       v_from2 = self.__virtualRegister(instruction.from_variable2)
       v_to = self.__virtualRegister(instruction.to_variable)
-      return [PAMov(v_from1, v_to), PASub(v_from2, v_to)]
+      code = []
+      code += self.__createIntTagCheck(v_from1, self.__label_error_arithmetic_operation_parameter_not_int)
+      code += self.__createIntTagCheck(v_from2, self.__label_error_arithmetic_operation_parameter_not_int)
+      code += [PAMov(v_from1, v_to), PASub(v_from2, v_to)]
+      return code
 
     if isinstance(instruction, MultiplyTemporaryByTemporary):
       v_from1 = self.__virtualRegister(instruction.from_variable1)
       v_from2 = self.__virtualRegister(instruction.from_variable2)
       v_to = self.__virtualRegister(instruction.to_variable)
       v_from2.addConflict(self.__edx)
-      return [PAMov(v_from1, self.__eax),
-              PAPush(self.__edx),
-              PAMov(PAConstant(0), self.__edx),
-              PAMul(v_from2),
-              PAPop(self.__edx),
-              PAArithmeticShiftRight(PAConstant(INT_TAG_SHIFT), self.__eax),
-              PAMov(self.__eax, v_to)]
+      code = []
+      code += self.__createIntTagCheck(v_from1, self.__label_error_arithmetic_operation_parameter_not_int)
+      code += self.__createIntTagCheck(v_from2, self.__label_error_arithmetic_operation_parameter_not_int)
+      code += [PAMov(v_from1, self.__eax),
+               PAPush(self.__edx),
+               PAMov(PAConstant(0), self.__edx),
+               PAMul(v_from2),
+               PAPop(self.__edx),
+               PAArithmeticShiftRight(PAConstant(INT_TAG_SHIFT), self.__eax),
+               PAMov(self.__eax, v_to)]
+      return code
 
     if isinstance(instruction, DivideTemporaryByTemporary):
       v_from1 = self.__virtualRegister(instruction.from_variable1)
       v_from2 = self.__virtualRegister(instruction.from_variable2)
       v_to = self.__virtualRegister(instruction.to_variable)
       # FIXME: this is inefficient. We might not need to push edx.
-      return [PAMov(v_from1, self.__eax),
-              PAPush(self.__edx),
-              PACustom("cdq"),
-              PADiv(v_from2),
-              PAPop(self.__edx),
-              PAArithmeticShiftLeft(PAConstant(INT_TAG_SHIFT), self.__eax),
-              PAMov(self.__eax, v_to)]
+      code = []
+      code += self.__createIntTagCheck(v_from1, self.__label_error_arithmetic_operation_parameter_not_int)
+      code += self.__createIntTagCheck(v_from2, self.__label_error_arithmetic_operation_parameter_not_int)
+      code += [PAMov(v_from1, self.__eax),
+               PAPush(self.__edx),
+               PACustom("cdq"),
+               PADiv(v_from2),
+               PAPop(self.__edx),
+               PAArithmeticShiftLeft(PAConstant(INT_TAG_SHIFT), self.__eax),
+               PAMov(self.__eax, v_to)]
+      return code
 
     if isinstance(instruction, TestWithOperator):
       v_left = self.__virtualRegister(instruction.left)
@@ -1097,6 +1113,7 @@ class PseudoAssembler:
     self.__function_context_location = PARegisterAndOffset(self.__ebp, FUNCTION_CONTEXT_FROM_EBP_OFFSET * POINTER_SIZE)
 
     self.__label_error_assert_failure = "error_assert_failure"
+    self.__label_error_arithmetic_operation_parameter_not_int = "error_arithmetic_operation_parameter_not_int"
     self.__label_error_array_index_not_int = "error_array_index_not_int"
     self.__label_error_array_base_not_array = "error_array_base_not_array"
 
@@ -1126,6 +1143,7 @@ class PseudoAssembler:
       #   print_debug(listToString(b.instructions, "", "", "\n"))
 
     error_handlers = [[self.__label_error_assert_failure, ERROR_ID_ASSERT_FAILURE],
+                      [self.__label_error_arithmetic_operation_parameter_not_int, ERROR_ID_ARITHMETIC_OPERATION_PARAMETER_NOT_INT],
                       [self.__label_error_array_index_not_int, ERROR_ID_ARRAY_INDEX_NOT_INT],
                       [self.__label_error_array_base_not_array, ERROR_ID_ARRAY_BASE_NOT_ARRAY]]
     return PseudoAssembly(output, error_handlers, PseudoAssemblyMetadata(self.registers, self.__metadata.function_param_and_local_counts))

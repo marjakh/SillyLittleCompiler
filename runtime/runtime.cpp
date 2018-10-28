@@ -8,7 +8,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-const char* error_messages[] = {"Code generation bug!",
+const char* error_messages[] = {"Assert failure in generated code",
+                                "Arithmetic operation parameter not an int",
                                 "Array index not an int",
                                 "Array base not an array"};
 
