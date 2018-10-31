@@ -331,10 +331,11 @@ int32_t** build_string_table(const char* strings, int32_t string_count) {
   const char* string_ptr = strings;
   for (int i = 0; i < string_count; ++i) {
     int len = strlen(string_ptr);
-    char* string = new char[len];
+    char* string = new char[len + 1];
     for (int j = 0; j < len; ++j) {
       string[j] = string_ptr[j];
     }
+    string[len] = '\0';
     table[i] = tag_pointer(string);
     string_ptr += (len + 1);
   }

@@ -1,0 +1,10 @@
+let a = new Array(3);
+a[0] = "zero";
+a[1] = "one";
+a[2] = "two";
+
+let i = 0;
+while (i < 3) {
+  print(a[i]);
+  i = i + 1;
+}

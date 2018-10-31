@@ -1,0 +1,9 @@
+function print_parameter(x) {
+  print(x);
+}
+
+if (1 == 0) {
+  print("Impossible!");
+} else {
+  print("Quite possible");
+}
