@@ -53,7 +53,7 @@ class RealAssembler:
     self.__esp = Register("esp")
 
   # FIXME: refactor out common parts, move code to pseudo assembler.
-  def __createMainPrologue(self, spill_position, local_counts):
+  def __createMainPrologue(self, spill_position, local_counts, string_count):
     code = [Label("user_code"),
             PAComment("prologue"),
             # Crete stack frame for the main function.
@@ -64,10 +64,13 @@ class RealAssembler:
             # 2) Stack frame marker
             PAPush(PAConstant(0xc0decafe)),
             # 3) Function context pointer
+            PAPush(PAConstant(string_count)),
+            PALea(PAVariable("strings"), self.__eax),
+            PAPush(self.__eax),
             PAPush(PAConstant(local_counts)),
             PACallRuntimeFunction("CreateMainFunctionContext"),
             PABuiltinOrRuntimeFunctionReturnValueToRegister(self.__eax),
-            PAClearStack(1),
+            PAClearStack(3),
             PAPush(self.__eax),
             # Set spill count in function context
             PASub(PAConstant(PTR_TAG), self.__eax),
@@ -120,10 +123,9 @@ class RealAssembler:
   def create(self, pseudo_assembly):
     # FIXME: when we have functions, we need to run the register allocator for each separately.
 
-    program = [
-      Label("text"),
-      GlobalDeclaration("user_code")
-    ]
+    program = [GlobalDeclaration("user_code"),
+               Label("strings"),
+               ".ascii " + pseudo_assembly.metadata.string_table.dump()]
 
     for [function, function_blocks] in pseudo_assembly.functions_and_blocks:
       # FIXME: function name needs to refer the outer function. Add tests that
@@ -154,7 +156,7 @@ class RealAssembler:
           assert(False)
 
       if function.name == MAIN_NAME:
-        program.extend(self.__createMainPrologue(spill_position, pseudo_assembly.metadata.function_param_and_local_counts[MAIN_NAME]))
+        program.extend(self.__createMainPrologue(spill_position, pseudo_assembly.metadata.function_param_and_local_counts[MAIN_NAME], pseudo_assembly.metadata.string_table.stringCount()))
       else:
         program.extend(self.__createFunctionPrologue(function.function_variable.unique_name(), spill_position))
 

@@ -175,6 +175,9 @@ rules = [
     GrammarRule("mul_term", ["token_number"],
                 lambda: Gatherer("NumberExpression", [True],
                                  lambda items, pos: NumberExpression(items[0].value, pos))),
+    GrammarRule("mul_term", ["token_string"],
+                lambda: Gatherer("StringExpression", [True],
+                                 lambda items, pos: StringExpression(items[0].value, pos))),
     GrammarRule("mul_term", ["identifier_or_array_or_function_call"], just_route),
 
     GrammarRule("parameter_list", ["epsilon"], None),

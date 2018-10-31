@@ -238,6 +238,7 @@ store_or_load_targets["outer"]["not_parameter"] = OuterFunctionLocal
 store_or_load_targets["outer"]["parameter"] = OuterFunctionParameter
 
 
+# FIXME: rename to IntConstant or NumberConstant
 class Constant:
   def __init__(self, value):
     # Value not tagged with the integer tag.
@@ -248,6 +249,15 @@ class Constant:
 
   def tagged_value(self):
     return self.__value * INT_TAG_MULTIPLIER
+
+
+class StringConstant:
+  def __init__(self, value):
+    self.value = value
+
+  def __str__(self):
+    return str("\"" + self.value + "\"")
+
 
 class Load(MediumLevelIRInstruction):
   def __init__(self, what, where):
@@ -266,13 +276,16 @@ class Store(MediumLevelIRInstruction):
   def __init__(self, what, where):
     # To: temporary, local variable, parameter, outer function local, outer
     # function parameter
-    assert(isinstance(where, StoreOrLoadTarget) or isinstance(where, TemporaryVariable))
+    assert(isinstance(where, StoreOrLoadTarget) or
+           isinstance(where, TemporaryVariable))
     self.where = where
-    assert(isinstance(what, Constant) or isinstance(what, TemporaryVariable))
+    assert(isinstance(what, Constant) or
+           isinstance(what, StringConstant) or
+           isinstance(what, TemporaryVariable))
     self.what = what
 
   def __str__(self):
-    if isinstance(self.what, Constant):
+    if isinstance(self.what, Constant) or isinstance(self.what, StringConstant):
       what = str(self.what)
     else:
       assert(isinstance(self.what, TemporaryVariable))
@@ -712,6 +725,11 @@ class MediumLevelIRCreator:
       # TODO: optimization: many of these can be shortcut.
       temporary = self.__nextTemporary()
       return [temporary, [Store(Constant(expression.value), temporary)]]
+
+    if isinstance(expression, StringExpression):
+      # TODO: optimization: many of these can be shortcut.
+      temporary = self.__nextTemporary()
+      return [temporary, [Store(StringConstant(expression.value), temporary)]]
 
     if isinstance(expression, FunctionCall):
       temporary_for_function_context = self.__nextTemporary()

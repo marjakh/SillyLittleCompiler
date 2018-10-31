@@ -116,6 +116,10 @@ void memory_teardown() {
 void do_gc(std::int32_t* stack_low);
 
 int32_t* allocate_from_current_chunk(std::int32_t size) {
+  // Align.
+  if (size % 2 != 0) {
+    ++size;
+  }
   if (current_chunk_cursor + size + 2 < current_chunk_end) {
     // fprintf(stderr, "Fits in the current chunk\n");
     // Reserve space for size and color.
@@ -320,4 +324,33 @@ bool memory_test_is_live_object(int32_t* object) {
     return true;
   }
   return false;
+}
+
+int32_t** build_string_table(const char* strings, int32_t string_count) {
+  int32_t** table = new int32_t*[string_count + 1];
+  const char* string_ptr = strings;
+  for (int i = 0; i < string_count; ++i) {
+    int len = strlen(string_ptr);
+    char* string = new char[len];
+    for (int j = 0; j < len; ++j) {
+      string[j] = string_ptr[j];
+    }
+    table[i] = tag_pointer(string);
+    string_ptr += (len + 1);
+  }
+  table[string_count] = nullptr;
+  return table;
+}
+
+void free_string_table(int32_t** table) {
+  int row = 0;
+  while (true) {
+    int32_t* string = table[row];
+    if (string == nullptr) {
+      break;
+    }
+    delete[] untag_pointer(string);
+    ++row;
+  }
+  delete[] table;
 }

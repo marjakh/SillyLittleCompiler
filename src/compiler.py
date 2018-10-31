@@ -50,7 +50,7 @@ if __name__ == "__main__":
   # TODO: optimizations
 
   pa = PseudoAssembler()
-  pseudo_assembly = pa.create(medium_level_ir)
+  pseudo_assembly = pa.create(medium_level_ir, scanner.string_table)
 
   # TODO: optimizations
 

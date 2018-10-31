@@ -5,34 +5,35 @@ from enum import Enum
 class TokenType(Enum):
   invalid = 0
   number = 1
-  identifier = 2
-  plus = 3
-  minus = 4
-  multiplication = 5
-  division = 6
-  equals = 7
-  not_equals = 8
-  less_than = 9
-  less_or_equals = 10
-  greater_than = 11
-  greater_or_equals = 12
-  left_paren = 13
-  right_paren = 14
-  left_curly = 15
-  right_curly = 16
-  left_bracket = 17
-  right_bracket = 18
-  assign = 19
-  semicolon = 20
-  comma = 21
-  keyword_if = 22
-  keyword_else = 23
-  keyword_while = 24
-  keyword_let = 25
-  keyword_function = 26
-  keyword_return = 27
-  keyword_new = 28
-  eos = 29
+  string = 2
+  identifier = 3
+  plus = 4
+  minus = 5
+  multiplication = 6
+  division = 7
+  equals = 8
+  not_equals = 9
+  less_than = 10
+  less_or_equals = 11
+  greater_than = 12
+  greater_or_equals = 13
+  left_paren = 14
+  right_paren = 15
+  left_curly = 16
+  right_curly = 17
+  left_bracket = 18
+  right_bracket = 19
+  assign = 20
+  semicolon = 21
+  comma = 22
+  keyword_if = 23
+  keyword_else = 24
+  keyword_while = 25
+  keyword_let = 26
+  keyword_function = 27
+  keyword_return = 28
+  keyword_new = 29
+  eos = 30
 
 
 class Token:
@@ -52,6 +53,29 @@ class Token:
     s = str(self.token_type) # TokenType.name
     return "token_" + s.split(".")[1]
 
+
+class StringTable:
+  def __init__(self):
+    self.__strings = dict()
+    self.__strings_array = []
+
+  def addString(self, s):
+    if s not in self.__strings:
+      ix = len(self.__strings)
+      self.__strings[s] = ix
+      self.__strings_array.append(s)
+
+  def indexOfString(self, s):
+    return self.__strings[s]
+
+  def dump(self):
+    main_string = ""
+    for s in self.__strings_array:
+      main_string += s + "\\0"
+    return "\"" + main_string + "\""
+
+  def stringCount(self):
+    return len(self.__strings_array)
 
 class Scanner:
   # Order matters.
@@ -99,6 +123,7 @@ class Scanner:
     self.s = s
     self.pos = 0
     self.__skipWhitespaceAndComments()
+    self.string_table = StringTable()
 
   def __skipWhitespaceAndComments(self):
     self.__skipWhitespace()
@@ -121,6 +146,17 @@ class Scanner:
       n = n * 10 + ord(self.s[self.pos]) - ord("0")
       self.pos += 1
     return Token(TokenType.number, n)
+
+  def __scanString(self):
+    self.pos += 1
+    s = ""
+    while self.__hasMore() and self.s[self.pos] != "\"":
+      # FIXME: escaping
+      s += self.s[self.pos]
+      self.pos += 1
+    self.pos += 1
+    self.string_table.addString(s)
+    return Token(TokenType.string, s)
 
   def __scanIdentifierOrKeyword(self):
     name = ""
@@ -159,5 +195,7 @@ class Scanner:
     if ((self.s[self.pos] >= "a" and self.s[self.pos] <= "z") or
         (self.s[self.pos] >= "A" and self.s[self.pos] <= "Z")):
       return self.__scanIdentifierOrKeyword()
+    if self.s[self.pos] == "\"":
+      return self.__scanString()
 
     return Token(TokenType.invalid)

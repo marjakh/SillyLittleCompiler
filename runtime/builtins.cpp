@@ -7,12 +7,15 @@
 
 extern "C" void builtin_print(void** tagged_function_context, int* stack_low) {
   int32_t* function_context = untag_pointer(tagged_function_context);
-  int32_t value = reinterpret_cast<int32_t>(function_context[FUNCTION_CONTEXT_PARAMS_OFFSET]);
+  int32_t* value = reinterpret_cast<int32_t*>(function_context[FUNCTION_CONTEXT_PARAMS_OFFSET]);
   if (has_int_tag(value)) {
-    value = untag_int(value);
-    printf("%d\n", value);
+    int int_value = untag_int(value);
+    printf("%d\n", int_value);
+  } else {
+    const char* string = reinterpret_cast<const char*>(untag_pointer(value));
+    printf("%s\n", string);
   }
-  // FIXME: else print the type
+  // FIXME: other pointer types
 }
 
 extern "C" void* builtin_Array(void** tagged_function_context, int* stack_low) {

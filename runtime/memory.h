@@ -18,6 +18,9 @@ void memory_test_do_gc(std::int32_t* stack_low);
 void memory_test_set_gc_stress();
 bool memory_test_is_live_object(int32_t* object);
 
+int32_t** build_string_table(const char* strings, int32_t string_count);
+void free_string_table(int32_t** table);
+
 class TemporaryHandle {
  public:
   TemporaryHandle(std::int32_t* tagged_ptr);

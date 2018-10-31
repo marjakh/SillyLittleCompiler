@@ -235,6 +235,18 @@ class NumberExpression(Expression):
     visitor.visitNumberExpression(self)
 
 
+class StringExpression(Expression):
+  def __init__(self, value, pos):
+    super().__init__(pos)
+    self.value = value
+
+  def __str__(self):
+    return "StringExpression(" + str(self.value) + ")"
+
+  def accept(self, visitor):
+    visitor.visitStringExpression(self)
+
+
 class NewExpression(Expression):
   def __init__(self, items, pos):
     super().__init__(pos)
@@ -381,6 +393,10 @@ class ParseTreeVisitor:
     pass
 
   def visitNumberExpression(self, expression):
+    assert(self.visit_expressions)
+    pass
+
+  def visitStringExpression(self, expression):
     assert(self.visit_expressions)
     pass
 

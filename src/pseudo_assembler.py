@@ -70,6 +70,15 @@ class PAConstant:
     return []
 
 
+# For variables declared in the binary.
+class PAVariable:
+  def __init__(self, name):
+    self.name = name
+
+  def __str__(self):
+    return self.name
+
+
 class PAVirtualRegister(PARegister):
   def __init__(self, i):
     super().__init__("v" + str(i))
@@ -615,9 +624,10 @@ class PseudoAssembly:
 
 
 class PseudoAssemblyMetadata:
-  def __init__(self, registers, function_param_and_local_counts):
+  def __init__(self, registers, function_param_and_local_counts, string_table):
     self.registers = registers
     self.function_param_and_local_counts = function_param_and_local_counts
+    self.string_table = string_table
 
 
 class PseudoAssemblyBasicBlock:
@@ -789,61 +799,83 @@ class PseudoAssembler:
             PAJumpNotEquals(jump_to)]
 
   def __createArrayIndexingCode(self, address_register, index):
+    pointer_size_register = self.registers.nextRegister()
+    pointer_size_register.addConflict(self.__edx)
+    address_register2 = self.registers.nextRegister()
+
     code = [PAComment("Indexing array")]
-    if isinstance(index, Constant):
+    code += self.__createPointerTagCheck(address_register, self.__label_error_array_base_not_array)
+    if type(index) is int:
+      # Indexing into internal data structures (e.g., string table).
+      code += [PAComment("index to eax"),
+               PAMov(PAConstant(index), self.__eax),
+               PAComment("pointer size"),
+               PAMov(PAConstant(POINTER_SIZE), pointer_size_register)]
+    elif isinstance(index, Constant):
       # FIXME: does this actually happen ever?
       assert(False)
     else:
       assert(isinstance(index, TemporaryVariable))
-      pointer_size_register = self.registers.nextRegister()
-      address_register2 = self.registers.nextRegister()
       index_register = self.__virtualRegister(index)
       code += self.__createIntTagCheck(index_register, self.__label_error_array_index_not_int)
-      code += self.__createPointerTagCheck(address_register, self.__label_error_array_base_not_array)
       code += [PAComment("index to eax"),
                PAMov(index_register, self.__eax),
                PAComment("pointer size"),
                # No need to untag the index, since we divice by
                # INT_TAG_MULTIPLIER here.
-               PAMov(PAConstant(POINTER_SIZE // INT_TAG_MULTIPLIER), pointer_size_register),
-               PAComment("store the value of edx, we need to nullify it"),
-               PAPush(self.__edx),
-               PAMov(PAConstant(0), self.__edx),
-               PAMul(pointer_size_register),
-               PAPop(self.__edx),
-               PAMov(self.__eax, address_register2),
-               PAComment("untag base address + add base address"),
-               PASub(PAConstant(1), address_register),
-               PAAdd(address_register, address_register2)]
-      pointer_size_register.addConflict(self.__edx)
-    code += [PAComment("Computing array address done")]
+               PAMov(PAConstant(POINTER_SIZE // INT_TAG_MULTIPLIER), pointer_size_register)]
+
+    code += [PAComment("store the value of edx, we need to nullify it"),
+             PAPush(self.__edx),
+             PAMov(PAConstant(0), self.__edx),
+             PAMul(pointer_size_register),
+             PAPop(self.__edx),
+             PAMov(self.__eax, address_register2),
+             PAComment("untag base address + add base address"),
+             PASub(PAConstant(1), address_register),
+             PAAdd(address_register, address_register2),
+             PAComment("Computing array address done")]
     return [address_register2, code]
 
   def __createForStore(self, store):
     assert(isinstance(store.where, StoreOrLoadTarget) or isinstance(store.where, TemporaryVariable))
+    init_code = []
+    if isinstance(store.what, Constant):
+      what_to_move = PAConstant(store.what.tagged_value())
+    elif isinstance(store.what, StringConstant):
+      untagged_function_context = self.registers.nextRegister()
+      string_table_register = self.registers.nextRegister()
+      function_context_code = self.__getUntaggedFunctionContext(untagged_function_context) + [PAMov(PARegisterAndOffset(untagged_function_context, FUNCTION_CONTEXT_STRING_TABLE_OFFSET), string_table_register)]
+      string_ix = self.__string_table.indexOfString(store.what.value)
+      [string_address_register, string_table_indexing_code] = self.__createArrayIndexingCode(string_table_register, string_ix)
+      init_code = function_context_code + string_table_indexing_code
+      what_to_move = PARegisterAndOffset(string_address_register, 0)
+
     if isinstance(store.where, Array):
       [address_register, code] = self.__createLoadArray(store.where)
       code.insert(0, PAComment("Store to array"))
-      if isinstance(store.what, Constant):
-        code += [PAMov(PAConstant(store.what.tagged_value()), PARegisterAndOffset(address_register, 0)), PAComment("Store to array done")]
+      if isinstance(store.what, Constant) or isinstance(store.what, StringConstant):
+        code += init_code
+        code += [PAMov(what_to_move, PARegisterAndOffset(address_register, 0)),
+                 PAComment("Store to array done")]
         return code
       else:
         assert(isinstance(store.what, TemporaryVariable))
         code += [PAMov(self.__virtualRegister(store.what), PARegisterAndOffset(address_register, 0)), PAComment("Store to array done")]
         return code
 
-    if isinstance(store.what, Constant):
+    if isinstance(store.what, Constant) or isinstance(store.what, StringConstant):
       if isinstance(store.where, Local) or isinstance(store.where, Parameter):
         untagged_function_context = self.registers.nextRegister()
         # FIXME: emit assert (here and elsewhere) that we don't index
         # function context out of bounds
-        return self.__getUntaggedFunctionContext(untagged_function_context) + [
-            PAMov(PAConstant(store.what.tagged_value()), PARegisterAndOffset(untagged_function_context, store.where.variable.offset + FUNCTION_CONTEXT_HEADER_SIZE))]
+        return self.__getUntaggedFunctionContext(untagged_function_context) + init_code + [
+            PAMov(what_to_move, PARegisterAndOffset(untagged_function_context, store.where.variable.offset + FUNCTION_CONTEXT_HEADER_SIZE))]
       if isinstance(store.where, TemporaryVariable):
-        return [PAMov(PAConstant(store.what.tagged_value()), self.__virtualRegister(store.where))]
+        return init_code + [PAMov(what_to_move, self.__virtualRegister(store.where))]
       if isinstance(store.where, OuterFunctionLocal):
         (untagged_outer_function_context, code) = self.__getUntaggedOuterFunctionContext(store.where.depth)
-        code += [PAMov(PAConstant(store.what.tagged_value()), PARegisterAndOffset(untagged_outer_function_context, store.where.variable.offset + FUNCTION_CONTEXT_HEADER_SIZE))]
+        code += init_code + [PAMov(what_to_move, PARegisterAndOffset(untagged_outer_function_context, store.where.variable.offset + FUNCTION_CONTEXT_HEADER_SIZE))]
         return code
     else:
       assert(isinstance(store.what, TemporaryVariable))
@@ -1103,8 +1135,9 @@ class PseudoAssembler:
 
     self.__cannotCreate(instruction)
 
-  def create(self, ir): # FIXME: cleaner if we give the ir to the ctor
+  def create(self, ir, string_table): # FIXME: cleaner if we give the ir to the ctor
     self.__metadata = ir.metadata
+    self.__string_table = string_table
 
     self.__eax = PARegister("eax")
     self.__edx = PARegister("edx")
@@ -1146,4 +1179,4 @@ class PseudoAssembler:
                       [self.__label_error_arithmetic_operation_parameter_not_int, ERROR_ID_ARITHMETIC_OPERATION_PARAMETER_NOT_INT],
                       [self.__label_error_array_index_not_int, ERROR_ID_ARRAY_INDEX_NOT_INT],
                       [self.__label_error_array_base_not_array, ERROR_ID_ARRAY_BASE_NOT_ARRAY]]
-    return PseudoAssembly(output, error_handlers, PseudoAssemblyMetadata(self.registers, self.__metadata.function_param_and_local_counts))
+    return PseudoAssembly(output, error_handlers, PseudoAssemblyMetadata(self.registers, self.__metadata.function_param_and_local_counts, self.__string_table))

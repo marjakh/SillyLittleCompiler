@@ -13,6 +13,8 @@ const char* error_messages[] = {"Assert failure in generated code",
                                 "Array index not an int",
                                 "Array base not an array"};
 
+int32_t** global_string_table = nullptr;
+
 extern "C" void user_code();
 
 extern "C" void* runtime_CreateFunctionContext(std::int32_t* outer, std::int32_t params_and_locals_count, int return_value_count, int* stack_low) {
@@ -24,6 +26,9 @@ extern "C" void* runtime_CreateFunctionContext(std::int32_t* outer, std::int32_t
   context->spill_count = 0; // Caller fills this in
   context->params_and_locals_count = params_and_locals_count;
   context->return_value_count = return_value_count;
+  // FIXME: it's wasteful to reserve space for the string table in all function
+  // contexts.
+  context->string_table = tag_pointer(global_string_table);
   fprintf(stderr, "CreateFunctionContext (outer %p) returns %p\n", outer, context);
   return tag_pointer(context);
 }
@@ -40,7 +45,7 @@ extern "C" void* runtime_CreateFunction(FunctionContext* function_context, std::
   return tag_pointer(function);
 }
 
-extern "C" void* runtime_CreateMainFunctionContext(std::int32_t locals_count) {
+extern "C" void* runtime_CreateMainFunctionContext(std::int32_t locals_count, const char* strings, int32_t string_count) {
   // We don't have proper stack structure yet, so GC cannot
   // happen. But we're guaranteed to have enough space in the start.
   FunctionContext* context = reinterpret_cast<FunctionContext*>(memory_allocate_no_gc(sizeof(FunctionContext) + locals_count * POINTER_SIZE));
@@ -48,6 +53,9 @@ extern "C" void* runtime_CreateMainFunctionContext(std::int32_t locals_count) {
   context->spill_count = 0; // Caller fills this in
   context->params_and_locals_count = locals_count;
   context->return_value_count = 0;
+  assert(global_string_table == nullptr);
+  global_string_table = build_string_table(strings, string_count);
+  context->string_table = tag_pointer(global_string_table);
   fprintf(stderr, "CreateMainFunctionContext returns %p\n", context);
   return tag_pointer(context);
 }
@@ -70,6 +78,7 @@ int main(int argc, char** argv) {
   }
   memory_init();
   user_code();
+  free_string_table(global_string_table);
   memory_teardown();
   return 0;
 }

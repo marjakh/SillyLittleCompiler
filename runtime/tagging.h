@@ -16,6 +16,11 @@ inline bool has_pointer_tag(int32_t value) {
   return (value & INT_PTR_TAG_MASK) == PTR_TAG;
 }
 
+template<typename T>
+bool has_int_tag(T* value) {
+  return !has_pointer_tag(value);
+}
+
 inline bool has_int_tag(int32_t value) {
   return !has_pointer_tag(value);
 }
@@ -25,6 +30,14 @@ inline int32_t untag_int(int32_t value) {
   // it's a code generation error.
   assert(!has_pointer_tag(value));
   return value >> TAG_SHIFT;
+}
+
+template<typename T>
+int32_t untag_int(T* value) {
+  // To be used only in contexts where the value *must* be an int, otherwise
+  // it's a code generation error.
+  assert(!has_pointer_tag(value));
+  return reinterpret_cast<int32_t>(value) >> TAG_SHIFT;
 }
 
 template<typename T>
