@@ -701,7 +701,7 @@ class PseudoAssembler:
       code += self.__createPointerTagCheck(untagged_function_context, self.__label_error_assert_failure)
       # FIXME: add type assertion
       code += [PASub(PAConstant(PTR_TAG), untagged_function_context),
-               PAMov(PARegisterAndOffset(untagged_function_context, FUNCTION_CONTEXT_OUTER_FUNCTION_CONTEXT_OFFSET), new_function_context)]
+               PAMov(PARegisterAndOffset(untagged_function_context, FUNCTION_CONTEXT_OFFSET_OUTER_FUNCTION_CONTEXT), new_function_context)]
       function_context = new_function_context
     return (function_context, code)
 
@@ -845,7 +845,7 @@ class PseudoAssembler:
     elif isinstance(store.what, StringConstant):
       untagged_function_context = self.registers.nextRegister()
       string_table_register = self.registers.nextRegister()
-      function_context_code = self.__getUntaggedFunctionContext(untagged_function_context) + [PAMov(PARegisterAndOffset(untagged_function_context, FUNCTION_CONTEXT_STRING_TABLE_OFFSET), string_table_register)]
+      function_context_code = self.__getUntaggedFunctionContext(untagged_function_context) + [PAMov(PARegisterAndOffset(untagged_function_context, FUNCTION_CONTEXT_OFFSET_STRING_TABLE), string_table_register)]
       string_ix = self.__string_table.indexOfString(store.what.value)
       [string_address_register, string_table_indexing_code] = self.__createArrayIndexingCode(string_table_register, string_ix)
       init_code = function_context_code + string_table_indexing_code
@@ -939,7 +939,7 @@ class PseudoAssembler:
       code = [PAMov(temp_context, untagged_temp_context)]
       code += self.__createPointerTagCheck(untagged_temp_context, self.__label_error_assert_failure)
       code += [PASub(PAConstant(PTR_TAG), untagged_temp_context),
-              PAMov(temp, PARegisterAndOffset(untagged_temp_context, POINTER_SIZE * (FUNCTION_CONTEXT_PARAMS_OFFSET + instruction.index)))]
+              PAMov(temp, PARegisterAndOffset(untagged_temp_context, POINTER_SIZE * (FUNCTION_CONTEXT_OFFSET_PARAMS + instruction.index)))]
       return code
 
     if isinstance(instruction, CallFunction):
@@ -1076,7 +1076,7 @@ class PseudoAssembler:
         # FIXME: support multiple return values
         return [PAMov(function_context, untagged_function_context),
                 PASub(PAConstant(PTR_TAG), untagged_function_context),
-                PAMov(PARegisterAndOffset(untagged_function_context, (FUNCTION_CONTEXT_PARAMS_OFFSET + self.__metadata.function_param_and_local_counts[instruction.function.unique_name()]) * POINTER_SIZE), v)]
+                PAMov(PARegisterAndOffset(untagged_function_context, (FUNCTION_CONTEXT_OFFSET_PARAMS + self.__metadata.function_param_and_local_counts[instruction.function.unique_name()]) * POINTER_SIZE), v)]
       elif instruction.function.variable_type == VariableType.temporary:
         function_context = self.__virtualRegister(instruction.temporary_for_function_context)
         function = self.__virtualRegister(instruction.function)
@@ -1087,7 +1087,7 @@ class PseudoAssembler:
             PAMov(function, untagged_function),
             PASub(PAConstant(PTR_TAG), untagged_function),
             # Read the param and local count from Function
-            PAMov(PARegisterAndOffset(untagged_function, FUNCTION_OFFSET_RETURN_VALUE_OFFSET * POINTER_SIZE), temp),
+            PAMov(PARegisterAndOffset(untagged_function, FUNCTION_OFFSET_RETURN_VALUE * POINTER_SIZE), temp),
             PAMov(function_context, untagged_function_context),
             PASub(PAConstant(PTR_TAG), untagged_function_context),
             PAAdd(untagged_function_context, temp),
@@ -1105,7 +1105,7 @@ class PseudoAssembler:
         what = PAConstant(instruction.value.tagged_value())
       else:
         assert(False)
-      code += [PAMov(what, PARegisterAndOffset(untagged_function_context, (FUNCTION_CONTEXT_PARAMS_OFFSET + self.__metadata.function_param_and_local_counts[self.__function.function_variable.unique_name()]) * POINTER_SIZE))]
+      code += [PAMov(what, PARegisterAndOffset(untagged_function_context, (FUNCTION_CONTEXT_OFFSET_PARAMS + self.__metadata.function_param_and_local_counts[self.__function.function_variable.unique_name()]) * POINTER_SIZE))]
       return code
 
     if isinstance(instruction, CreateFunctionContextFromVariable):

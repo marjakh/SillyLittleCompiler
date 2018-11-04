@@ -74,7 +74,7 @@ class RealAssembler:
             PAPush(self.__eax),
             # Set spill count in function context
             PASub(PAConstant(PTR_TAG), self.__eax),
-            PAMov(PAConstant(spill_position), PARegisterAndOffset(self.__eax, FUNCTION_CONTEXT_SPILL_COUNT_OFFSET * POINTER_SIZE)),
+            PAMov(PAConstant(spill_position), PARegisterAndOffset(self.__eax, FUNCTION_CONTEXT_OFFSET_SPILL_COUNT * POINTER_SIZE)),
             #4) Space for spills
             PAComment("Number of spills: " + str(spill_position)),
             PASub(PAConstant(spill_position * POINTER_SIZE), self.__esp),
@@ -108,7 +108,7 @@ class RealAssembler:
             PAPush(self.__eax),
             # Set spill count in function context
             PASub(PAConstant(PTR_TAG), self.__eax),
-            PAMov(PAConstant(spill_position), PARegisterAndOffset(self.__eax, FUNCTION_CONTEXT_SPILL_COUNT_OFFSET * POINTER_SIZE)),
+            PAMov(PAConstant(spill_position), PARegisterAndOffset(self.__eax, FUNCTION_CONTEXT_OFFSET_SPILL_COUNT * POINTER_SIZE)),
             #4) Space for spills
             PAComment("Number of spills: " + str(spill_position)),
             PASub(PAConstant(spill_position * POINTER_SIZE), self.__esp),
