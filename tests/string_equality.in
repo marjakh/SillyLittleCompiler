@@ -1,0 +1,15 @@
+let a = "foo";
+let b = "foo";
+let c = "bar";
+
+if (a == b) {
+  print("a == b");
+} else {
+  print("a != b");
+}
+
+if (a == c) {
+  print("a == c");
+} else {
+  print("a != c");
+}
