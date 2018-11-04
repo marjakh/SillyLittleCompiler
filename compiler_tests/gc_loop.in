@@ -1,0 +1,8 @@
+let a = new Array(1);
+
+a[0] = new Array(1);
+a[0][0] = a;
+
+test_do_gc();
+
+print("done");
