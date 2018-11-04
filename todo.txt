@@ -1,5 +1,4 @@
 Bugs:
-- outer_function_context_walking.in
 - comparisons.in -> compilatin takes a lot of time, prob register allocation again
 
 Reduce type confusion:

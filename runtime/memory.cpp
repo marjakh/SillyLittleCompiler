@@ -271,7 +271,8 @@ void mark_and_sweep(std::stack<std::pair<std::int32_t**, int32_t*>>* ptrs) {
     int32_t** location = ptr_pair.first;
     int32_t* ptr = ptr_pair.second;
 
-    // FIXME: when is it not in current chunk?
+    // It's possible that the pointer is not in the current chunk e.g., if it's
+    // a pointer to the string table (allocated in its own area).
     if (is_in_current_chunk(ptr)) {
       fprintf(stderr, "Mark and sweep root %p\n", ptr);
       assert(!has_pointer_tag(ptr));
