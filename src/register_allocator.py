@@ -59,8 +59,8 @@ class RegisterAllocationDone:
 
 
 class Spill:
-  def __init__(self, register):
-    self.register = register
+  def __init__(self, registers):
+    self.registers = registers
 
 
 class RegisterAllocator:
@@ -172,10 +172,11 @@ class RegisterAllocator:
         assigned_registers[node.register] = node.assigned_register
       return RegisterAllocationDone(assigned_registers)
 
-    # Else, spill the register with the most conflicts.
+    # Else, find the max conflict registers and spill them all. (Except the ones
+    # that conflict with some register we're already going to spill.)
     # FIXME: this strategy is bad.
     max_conflicts = 0
-    max_conflict_register = None
+    max_conflict_registers = []
     # print_debug("Finding register to spill")
     for node in nodes:
       if node.assigned_register:
@@ -185,7 +186,19 @@ class RegisterAllocator:
       # print_debug("node " + str(node.register) + " conflict count " + str(c))
       if c > max_conflicts:
         max_conflicts = c
-        max_conflict_register = node.register
+        max_conflict_registers = [node.register]
+      elif c == max_conflicts:
+        max_conflict_registers.append(node.register)
     assert(max_conflicts > 0)
     # print_debug("Spilling: " + str(max_conflict_register))
-    return Spill(max_conflict_register)
+
+    spill_registers = []
+    for r in max_conflict_registers:
+      spill_it = True
+      for r2 in spill_registers:
+        if r2 in r.conflicts:
+          spill_it = False
+      if spill_it:
+        spill_registers.append(r)
+    assert(len(spill_registers) > 0)
+    return Spill(spill_registers)

@@ -147,8 +147,9 @@ class RealAssembler:
         if isinstance(action, Spill):
           # print_debug("Spilling " + str(action.register) + " to position " + str(spill_position))
           # FIXME: ugly, refactor.
-          pseudo_assembly.spill(action.register, spill_position, function_blocks)
-          spill_position += 1
+          for r in action.registers:
+            pseudo_assembly.spill(r, spill_position, function_blocks)
+            spill_position += 1
         elif isinstance(action, RegisterAllocationDone):
           assigned_registers = action.assigned_registers
           break
