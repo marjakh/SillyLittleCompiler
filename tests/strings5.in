@@ -1,0 +1,6 @@
+function foo(s) {
+  print(s);
+}
+
+foo("hello");
+foo("world");
