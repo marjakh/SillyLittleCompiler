@@ -48,6 +48,24 @@ function array_list_print(a) {
   }
 }
 
+function array_list_foreach(a, f) {
+  let len = a[0];
+  let i = 0;
+  while (i < len) {
+    f(a[i + 2]);
+    i = i + 1;
+  }
+}
+
+function array_list_map(a, f) {
+  let len = a[0];
+  let i = 0;
+  while (i < len) {
+    a[i + 2] = f(a[i + 2]);
+    i = i + 1;
+  }
+}
+
 let a = array_list_create();
 let i = 0;
 while (i < 20) {
@@ -56,3 +74,13 @@ while (i < 20) {
 }
 array_list_print(a);
 
+function add_one(elem) {
+  return elem + 1;
+}
+
+function my_print(elem) {
+  print(elem);
+}
+
+array_list_map(a, add_one);
+array_list_foreach(a, my_print);
