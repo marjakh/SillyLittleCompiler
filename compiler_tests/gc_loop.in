@@ -5,4 +5,8 @@ a[0][0] = a;
 
 test_do_gc();
 
-print("done");
+if (a[0][0] == a) {
+  print("done");
+} else {
+  print("error");
+}
