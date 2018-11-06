@@ -1,0 +1,58 @@
+print("ArrayList test");
+
+let array_list_initial_capacity = 6;
+let array_list_growth = 2;
+
+function array_list_create() {
+  let a = new Array(array_list_initial_capacity + 2);
+  a[0] = 0; // length
+  a[1] = 6; // capacity
+  return a;
+}
+
+function array_list_add(a, elem) {
+  let len = a[0];
+  let capacity = a[1];
+  if (len < capacity) {
+    // There's space
+    a[len + 2] = elem;
+    a[0] = len + 1;
+    return a;
+  }
+  let new_capacity = array_list_growth * len;
+  let new_a = new Array(new_capacity + 2);
+  new_a[0] = len + 1;
+  new_a[1] = new_capacity;
+  let i = 0;
+  while (i < capacity) {
+    new_a[i + 2] = a[i + 2];
+    i = i + 1;
+  }
+  new_a[i + 2] = elem;
+  return new_a;
+}
+
+function array_list_print(a) {
+  let len = a[0];
+  let capacity = a[1];
+  print("ArrayList");
+  print("Length");
+  print(len);
+  print("Capacity");
+  print(capacity);
+  print("Elements");
+  let i = 0;
+  while (i < len) {
+    print(a[i + 2]);
+    i = i + 1;
+  }
+}
+
+let a = array_list_create();
+let i = 0;
+while (i < 20) {
+  a = array_list_add(a, i * 5);
+  i = i + 1;
+}
+array_list_print(a);
+
