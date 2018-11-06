@@ -1,0 +1,16 @@
+function foo(a) {
+  return a[1];
+}
+
+function bar(a) {
+  a[1] = 8;
+}
+
+let a = new Array(3);
+a[0] = 9;
+a[1] = 10;
+a[2] = 11;
+
+print(foo(a));
+bar(a);
+print(foo(a));

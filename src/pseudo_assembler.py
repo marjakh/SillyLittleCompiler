@@ -748,7 +748,7 @@ class PseudoAssembler:
   def __createLoadArray(self, array):
     assert(isinstance(array.base, StoreOrLoadTarget))
     code = [PAComment("Computing array address")]
-    if isinstance(array.base, Local):
+    if isinstance(array.base, Local) or isinstance(array.base, Parameter):
       # local[%temp] or local[constant]
 
       # FIXME: refactor this; the array is just an address which is the value of
@@ -761,7 +761,7 @@ class PseudoAssembler:
 
       [address_register2, index_code] = self.__createArrayIndexingCode(address_register, array.index)
       return [address_register2, code + index_code]
-    elif isinstance(array.base, OuterFunctionLocal):
+    elif isinstance(array.base, OuterFunctionLocal) or isinstance(array.base, OuterFunctionParameter):
       (outer_function_context, code) = self.__getOuterFunctionContext(array.base.depth)
       untagged_outer_function_context = self.registers.nextRegister()
       address_register = self.registers.nextRegister()

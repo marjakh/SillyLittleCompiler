@@ -1,0 +1,22 @@
+function foo(a) {
+  function inner() {
+    return a[1];
+  }
+  return inner();
+}
+
+function bar(a) {
+  function inner() {
+    a[1] = 8;
+  }
+  inner();
+}
+
+let a = new Array(3);
+a[0] = 9;
+a[1] = 10;
+a[2] = 11;
+
+print(foo(a));
+bar(a);
+print(foo(a));
