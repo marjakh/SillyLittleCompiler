@@ -1,0 +1,6 @@
+let a = 0;
+let b = a;
+a = 2;
+let c = a;
+print(b);
+print(c);

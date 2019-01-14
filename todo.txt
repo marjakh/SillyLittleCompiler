@@ -1,5 +1,35 @@
 Bugs:
 - comparisons.in -> compilatin takes a lot of time, prob register allocation again
+- umm what?
+
+# Instruction: b = %temp2 # local
+movl -8(%ebp), %ebx
+movl %ebx, -24(%ebp) # Store spilled
+movl -24(%ebp), %ebx # Load spilled
+movl %ebx, %ebx
+movl %ebx, -28(%ebp) # Store spilled
+movl -28(%ebp), %ebx # Load spilled
+andl $0x1, %ebx
+movl %ebx, -28(%ebp) # Store spilled
+movl -28(%ebp), %ebx # Load spilled
+cmp $0x1, %ebx
+jne error_assert_failure
+movl -24(%ebp), %ebx # Load spilled
+subl $0x1, %ebx
+movl %ebx, -24(%ebp) # Store spilled
+movl -20(%ebp), %ecx # Load spilled
+movl -24(%ebp), %ebx # Load spilled
+movl %ecx, 24(%ebx)
+
+
+With this source:
+
+let a = 0;
+let b = a + 1;
+let c = a + 2;
+print(b);
+print(c);
+
 
 Reduce type confusion:
 - Add more error handling (runtime + generated code)
@@ -16,6 +46,12 @@ Reduce type confusion:
   -- Then I need to also disallow assigning an object to a different type into a variable.
 - Then the compiler could whine at build time if I pass an object of the wrong type..
 
+
+Efficiency:
+- No redundant tag checks, keep track of what has been tag checked already. For this we probably need to introduce the notion of "type of a variable".
+- No redundant loads if the value is already in a (virtual) register.
+- Also no need to store the variable back if the value hasn't changed.
+- But it's hard... e.g. a basic block could call a function that changes the value of an outer function variable, so how can we even do this?
 
 Priorities:
 1. functions improvements:
