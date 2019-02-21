@@ -29,7 +29,7 @@ extern "C" void* runtime_CreateFunctionContext(std::int32_t* outer, std::int32_t
   // FIXME: it's wasteful to reserve space for the string table in all function
   // contexts.
   context->string_table = tag_pointer(global_string_table);
-  fprintf(stderr, "CreateFunctionContext (outer %p) returns %p\n", outer, context);
+  // fprintf(stderr, "CreateFunctionContext (outer %p) returns %p\n", outer, context);
   return tag_pointer(context);
 }
 
@@ -41,7 +41,7 @@ extern "C" void* runtime_CreateFunction(FunctionContext* function_context, std::
   assert(has_pointer_tag(function->function_context));
   function->code_address = code_address;
   function->return_value_offset = sizeof(FunctionContext) + params_and_locals_count * POINTER_SIZE;
-  fprintf(stderr, "CreateFunction (FunctionContext %p) returns %p\n", function_context, function);
+  // fprintf(stderr, "CreateFunction (FunctionContext %p) returns %p\n", function_context, function);
   return tag_pointer(function);
 }
 
@@ -56,7 +56,7 @@ extern "C" void* runtime_CreateMainFunctionContext(std::int32_t locals_count, co
   assert(global_string_table == nullptr);
   global_string_table = build_string_table(strings, string_count);
   context->string_table = tag_pointer(global_string_table);
-  fprintf(stderr, "CreateMainFunctionContext returns %p\n", context);
+  // fprintf(stderr, "CreateMainFunctionContext returns %p\n", context);
   return tag_pointer(context);
 }
 

@@ -93,13 +93,13 @@ void memory_init() {
   zap_memory(current_chunk, CHUNK_SIZE);
   current_chunk_cursor = current_chunk;
   current_chunk_end = current_chunk + CHUNK_SIZE;
-  fprintf(stderr, "First chunk: %p %p\n", current_chunk_cursor, current_chunk_end);
+  // fprintf(stderr, "First chunk: %p %p\n", current_chunk_cursor, current_chunk_end);
 
   other_chunk = reinterpret_cast<char*>(malloc(CHUNK_SIZE));
   other_chunk_cursor = other_chunk;
   other_chunk_end = other_chunk + CHUNK_SIZE;
   zap_memory(current_chunk,  CHUNK_SIZE);
-  fprintf(stderr, "Second chunk: %p %p\n", other_chunk_cursor, other_chunk_end);
+  // fprintf(stderr, "Second chunk: %p %p\n", other_chunk_cursor, other_chunk_end);
 
   current_objects = new std::vector<int32_t*>();
   other_objects = new std::vector<int32_t*>();
@@ -126,7 +126,7 @@ int32_t* allocate_from_current_chunk(std::int32_t size) {
     // FIXME: compact; no need to use 8 bytes for them. Also add helpers.
     int32_t* result = reinterpret_cast<int32_t*>(current_chunk_cursor);
     result += 2;
-    fprintf(stderr, "Allocation result: %p\n", result);
+    // fprintf(stderr, "Allocation result: %p\n", result);
     memset(result, 0, size);
     int32_t* p = reinterpret_cast<int32_t*>(current_chunk_cursor);
     *p = size;
@@ -143,7 +143,7 @@ int32_t* allocate_from_current_chunk(std::int32_t size) {
 }
 
 int32_t* memory_allocate_no_gc(int32_t size) {
-  fprintf(stderr, "Allocate %d\n", size);
+  // fprintf(stderr, "Allocate %d\n", size);
 
   int32_t* result = allocate_from_current_chunk(size);
   if (result != nullptr) {
@@ -153,7 +153,7 @@ int32_t* memory_allocate_no_gc(int32_t size) {
 }
 
 int32_t* memory_allocate(int32_t size, int32_t* stack_low) {
-  fprintf(stderr, "Allocate %d\n", size);
+  // fprintf(stderr, "Allocate %d\n", size);
   int32_t* result = 0;
   if (memory_gc_stress) {
     do_gc(stack_low);
