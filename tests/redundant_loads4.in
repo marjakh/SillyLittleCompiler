@@ -1,0 +1,59 @@
+let level0var = 0;
+
+function level0func() {
+  level0var = 1;
+}
+
+function test1() {
+  print("Test 1");
+  let level1var = 10;
+  print(level0var);
+  print(level1var);
+  // Function call invalidates the variable cache (also for level1var, since the
+  // function could sneakily modify it too (e.g., if it gets passed a reference to
+  // an inner function as an argument).
+  level0func();
+  print(level0var);
+  print(level1var);
+}
+
+test1();
+
+function test2() {
+  print("Test 2");
+  let level1var = 10;
+  print(level0var);
+  print(level1var);
+
+  function level1func() {
+    level0var = 2;
+    level1var = 11;
+  }
+
+  // Function call invalidates the variable cache.
+  level1func();
+  print(level0var);
+  print(level1var);
+}
+
+test2();
+
+function test3() {
+  print("Test 3");
+  let level1var = 10;
+  print(level0var);
+  print(level1var);
+
+  function level1func() {
+    level0var = 3;
+    level1var = 11;
+  }
+
+  // Indirect function call invalidates the variable cache.
+  let indirect = level1func;
+  indirect();
+  print(level0var);
+  print(level1var);
+}
+
+test3();

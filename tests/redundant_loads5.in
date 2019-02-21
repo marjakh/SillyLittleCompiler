@@ -1,0 +1,21 @@
+function sneaky(f) {
+  f();
+}
+
+function test1() {
+  print("Test 1");
+  let level1var = 10;
+  function level1func() {
+    level1var = 20;
+  }
+
+  print(level1var);
+
+  // Function call invalidates the variable cache (also for level1var, since the
+  // function could sneakily modify it too (e.g., if it gets passed a reference to
+  // an inner function as an argument).
+  sneaky(level1func);
+  print(level1var);
+}
+
+test1();

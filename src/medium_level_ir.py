@@ -556,6 +556,9 @@ class MediumLevelIRCreator:
     return TemporaryVariable("%temp" + str(self.__temporary_count - 1))
 
   def __createForBasicBlock(self, block):
+    # The mapping between which variables are in which temporaries needs to be
+    # cleared after every basic block.
+    self.__variables_in_temporaries = dict()
     output = []
     output.append(Label("block_" + str(block.id)))
     for statement in block.statements:
@@ -624,6 +627,13 @@ class MediumLevelIRCreator:
         code += [CallFunction(statement.function.resolved_variable, temporary_for_function_context)]
       else:
          code += temporary_code + [CallFunction(temporary_for_function, temporary_for_function_context)]
+
+      # A function can modify variables, so we need to flush them. (Only after
+      # the function call though; it's ok if the function arguments come from
+      # the cache.)
+      if OPTIMIZE_VARIABLES_IN_TEMPORARIES:
+        self.__variables_in_temporaries = dict()
+
       return code
     if isinstance(statement, ReturnStatement):
       code = []
@@ -661,6 +671,13 @@ class MediumLevelIRCreator:
       [temporary, temporary_code] = self.__computeIntoTemporary(statement.expression)
       what = temporary
       code += temporary_code
+      # FIXME: maybe set varibles_in_temporaries here too?
+
+    if isinstance(where, StoreOrLoadTargetWithVariable):
+      # Whatever temporary contained the old value of the variable is invalid
+      # now.
+      if where.variable in self.__variables_in_temporaries:
+        del self.__variables_in_temporaries[where.variable]
 
     code += [Store(what, where)]
     return code
@@ -755,8 +772,11 @@ class MediumLevelIRCreator:
       return [temporary_for_return_value, code]
 
     if isinstance(expression, VariableExpression):
+      if OPTIMIZE_VARIABLES_IN_TEMPORARIES and expression.resolved_variable in self.__variables_in_temporaries:
+        return [self.__variables_in_temporaries[expression.resolved_variable], []]
       temporary = self.__nextTemporary()
       [what, code] = self.__createStoreOrLoadTarget(expression)
+      self.__variables_in_temporaries[expression.resolved_variable] = temporary
       return [temporary, code + [Load(what, temporary)]]
 
     if isinstance(expression, ArrayIndexExpression):

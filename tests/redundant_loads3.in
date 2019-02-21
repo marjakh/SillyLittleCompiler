@@ -1,0 +1,10 @@
+let a = 0;
+
+function foo() {
+  a = 1;
+}
+
+print(a);
+// Function call invalidates the variable cache.
+foo();
+print(a);
