@@ -9,13 +9,18 @@ function test1() {
     level1var = 20;
   }
 
-  print(level1var);
+  let a = level1var;
+  let b = level1var;
 
   // Function call invalidates the variable cache (also for level1var, since the
   // function could sneakily modify it too (e.g., if it gets passed a reference to
   // an inner function as an argument).
   sneaky(level1func);
-  print(level1var);
+  let c = level1var;
+
+  print(a);
+  print(b);
+  print(c);
 }
 
 test1();

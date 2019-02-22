@@ -7,14 +7,23 @@ function level0func() {
 function test1() {
   print("Test 1");
   let level1var = 10;
-  print(level0var);
-  print(level1var);
+  let a = level0var;
+  let b = level1var;
+  // Redundant loads.
+  let c = level0var;
+  let d = level1var;
   // Function call invalidates the variable cache (also for level1var, since the
   // function could sneakily modify it too (e.g., if it gets passed a reference to
   // an inner function as an argument).
   level0func();
-  print(level0var);
-  print(level1var);
+  let e = level0var;
+  let f = level1var;
+  print(a);
+  print(b);
+  print(c);
+  print(d);
+  print(e);
+  print(f);
 }
 
 test1();
@@ -22,8 +31,11 @@ test1();
 function test2() {
   print("Test 2");
   let level1var = 10;
-  print(level0var);
-  print(level1var);
+  let a = level0var;
+  let b = level1var;
+  // Redundant loads.
+  let c = level0var;
+  let d = level1var;
 
   function level1func() {
     level0var = 2;
@@ -32,8 +44,14 @@ function test2() {
 
   // Function call invalidates the variable cache.
   level1func();
-  print(level0var);
-  print(level1var);
+  let e = level0var;
+  let f = level1var;
+  print(a);
+  print(b);
+  print(c);
+  print(d);
+  print(e);
+  print(f);
 }
 
 test2();
@@ -41,8 +59,11 @@ test2();
 function test3() {
   print("Test 3");
   let level1var = 10;
-  print(level0var);
-  print(level1var);
+  let a = level0var;
+  let b = level1var;
+  // Redundant loads.
+  let c = level0var;
+  let d = level1var;
 
   function level1func() {
     level0var = 3;
@@ -52,8 +73,14 @@ function test3() {
   // Indirect function call invalidates the variable cache.
   let indirect = level1func;
   indirect();
-  print(level0var);
-  print(level1var);
+  let e = level0var;
+  let f = level1var;
+  print(a);
+  print(b);
+  print(c);
+  print(d);
+  print(e);
+  print(f);
 }
 
 test3();
