@@ -32,6 +32,23 @@ class BasicBlock:
     # function ends, it's None.
     self.next = None
     self.has_returned = False
+    # State of the variables_in_temporaries cache (describing which variables
+    # (locals etc) are in which temporaries, to eliminate redundant loads) at
+    # the block end.
+    self.variables_in_temporaries_at_end = None
+    self.previous = []
+
+  def set_next(self, next_block):
+    assert(isinstance(next_block, BasicBlock) or next_block is None)
+    self.next = next_block
+    if next_block is not None:
+      next_block.previous.append(self)
+
+  def set_next_branch(self, next_branch):
+    assert(isinstance(next_branch, BasicBlockBranch))
+    self.next = next_branch
+    next_branch.true_block.previous.append(self)
+    next_branch.false_block.previous.append(self)
 
   def __str__(self):
     s = "BasicBlock(" + self.id.__str__() + ", " + listToString(self.statements) + ", "
@@ -111,14 +128,14 @@ class CfgCreatorVisitor(ParseTreeVisitor):
     if_block = self.__newBasicBlock()
     else_block = self.__newBasicBlock() if statement.else_body else None
     after_block = self.__newBasicBlock()
-    if_block.next = after_block
+    if_block.set_next(after_block)
     if else_block:
-      else_block.next = after_block
-    after_block.next = self.__next_block_stack[-1]
+      else_block.set_next(after_block)
+    after_block.set_next(self.__next_block_stack[-1])
 
     # print_debug("Adding branch as next to block " + str(self.__currentBlock().id))
-    self.__currentBlock().next = BasicBlockBranch(statement.expression, if_block,
-                                                  else_block if else_block else after_block)
+    self.__currentBlock().set_next_branch(BasicBlockBranch(statement.expression, if_block,
+                                                           else_block if else_block else after_block))
 
     self.__basic_block_stack.pop()
     self.__basic_block_stack.append(after_block)

@@ -1,0 +1,100 @@
+function test1() {
+  print("Test 1");
+
+  let a = 45;
+  let b = a;
+
+  if (0 == 0) {
+  } else {
+  }
+
+  // Redundant load after an if-else block.
+  let c = a;
+
+  print(b);
+  print(c);
+}
+
+test1();
+
+function test2() {
+  print("Test 2");
+
+  let a = 45;
+  let b = a;
+
+  if (0 == 0) {
+    a = 46;
+  } else {
+  }
+
+  // Not a redundant load.
+  let c = a;
+
+  print(b);
+  print(c);
+}
+
+test2();
+
+function test3() {
+  print("Test 3");
+
+  let a = 45;
+  let b = a;
+
+  if (0 == 0) {
+  } else {
+    a = 46;
+  }
+
+  // Not a redundant load.
+  let c = a;
+
+  print(b);
+  print(c);
+}
+
+test3();
+
+function test4() {
+  print("Test 4");
+
+  let a = 45;
+  let other = 50;
+  let b = a;
+
+  if (0 == 0) {
+    other = 51;
+  } else {
+    other = 52;
+  }
+
+  // Redundant load.
+  let c = a;
+
+  print(b);
+  print(c);
+}
+
+test4();
+
+function test5() {
+  print("Test 5");
+
+  let a = 45;
+  let b = a;
+
+  if (0 == 0) {
+  } else {
+    print("lol");
+  }
+
+  // Not a redundant load.
+  let c = a;
+
+  print(b);
+  print(c);
+}
+
+test5();

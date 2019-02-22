@@ -532,6 +532,7 @@ class MediumLevelIRCreator:
       self.__current_function = f
       function_output = []
       for b in cfg:
+        # print_debug(b)
         code = self.__createForBasicBlock(b)
         if is_first:
           is_first = False
@@ -555,10 +556,28 @@ class MediumLevelIRCreator:
     self.__temporary_count += 1
     return TemporaryVariable("%temp" + str(self.__temporary_count - 1))
 
+  @staticmethod
+  def __intersect_previous_variables_in_temporaries_caches(blocks):
+    if len(blocks) == 0 or blocks[0].variables_in_temporaries_at_end is None:
+      return dict()
+    current_dict = blocks[0].variables_in_temporaries_at_end.copy()
+    i = 1
+    while i < len(blocks):
+      other_dict = blocks[i].variables_in_temporaries_at_end
+      if other_dict is None:
+        return dict()
+      new_dict = dict()
+      for variable, temporary in current_dict.items():
+        if variable in other_dict and other_dict[variable] == temporary:
+          new_dict[variable] = temporary
+      current_dict = new_dict
+      i += 1
+    return current_dict
+
   def __createForBasicBlock(self, block):
     # The mapping between which variables are in which temporaries needs to be
     # cleared after every basic block.
-    self.__variables_in_temporaries = dict()
+    self.__variables_in_temporaries = MediumLevelIRCreator.__intersect_previous_variables_in_temporaries_caches(block.previous)
     output = []
     output.append(Label("block_" + str(block.id)))
     for statement in block.statements:
@@ -584,6 +603,8 @@ class MediumLevelIRCreator:
       # Block doesn't have a next block, so it just returns (if it's inside a function)
       if len(output) > 0 and not isinstance(output[-1], Return):
         output.append(Return())
+
+    block.variables_in_temporaries_at_end = self.__variables_in_temporaries.copy()
 
     return output
 
@@ -630,7 +651,8 @@ class MediumLevelIRCreator:
 
       # A function can modify variables, so we need to flush them. (Only after
       # the function call though; it's ok if the function arguments come from
-      # the cache.)
+      # the cache.) Note: this is an awesome footgun: adding a debug print
+      # invalidates the caches, so it might make a bug disappear!
       if OPTIMIZE_VARIABLES_IN_TEMPORARIES:
         self.__variables_in_temporaries = dict()
 
