@@ -686,8 +686,9 @@ class PseudoAssembler:
 
   def __getUntaggedFunctionContext(self, function_context):
     code = [PAMov(self.__function_context_location, function_context)]
-    # FIXME: add type assertion
-    code += self.__createPointerTagCheck(function_context, self.__label_error_assert_failure)
+    if GENERATE_FUNCTION_CONTEXT_TAG_CHECK:
+      # FIXME: add type assertion
+      code += self.__createPointerTagCheck(function_context, self.__label_error_assert_failure)
     code += [PASub(PAConstant(PTR_TAG), function_context)]
     return code
 
@@ -698,8 +699,9 @@ class PseudoAssembler:
       untagged_function_context = self.registers.nextRegister()
       new_function_context = self.registers.nextRegister()
       code += [PAMov(function_context, untagged_function_context)]
-      code += self.__createPointerTagCheck(untagged_function_context, self.__label_error_assert_failure)
-      # FIXME: add type assertion
+      if GENERATE_FUNCTION_CONTEXT_TAG_CHECK:
+        # FIXME: add type assertion
+        code += self.__createPointerTagCheck(untagged_function_context, self.__label_error_assert_failure)
       code += [PASub(PAConstant(PTR_TAG), untagged_function_context),
                PAMov(PARegisterAndOffset(untagged_function_context, FUNCTION_CONTEXT_OFFSET_OUTER_FUNCTION_CONTEXT), new_function_context)]
       function_context = new_function_context
@@ -709,8 +711,9 @@ class PseudoAssembler:
     (function_context, code) = self.__getOuterFunctionContext(depth)
     untagged_function_context = self.registers.nextRegister()
     code += [PAMov(function_context, untagged_function_context)]
-    code += self.__createPointerTagCheck(untagged_function_context, self.__label_error_assert_failure)
-    # FIXME: add type assertion
+    if GENERATE_FUNCTION_CONTEXT_TAG_CHECK:
+      # FIXME: add type assertion
+      code += self.__createPointerTagCheck(untagged_function_context, self.__label_error_assert_failure)
     code += [PASub(PAConstant(PTR_TAG), untagged_function_context)]
     return (untagged_function_context, code)
 
@@ -734,7 +737,9 @@ class PseudoAssembler:
       (outer_function_context, code) = self.__getOuterFunctionContext(load.what.depth)
       untagged_outer_function_context = self.registers.nextRegister()
       code += [PAMov(outer_function_context, untagged_outer_function_context)]
-      code += self.__createPointerTagCheck(untagged_outer_function_context, self.__label_error_assert_failure)
+      if GENERATE_FUNCTION_CONTEXT_TAG_CHECK:
+        # FIXME: add type assertion
+        code += self.__createPointerTagCheck(untagged_outer_function_context, self.__label_error_assert_failure)
       code += [PASub(PAConstant(PTR_TAG), untagged_outer_function_context),
                PAMov(PARegisterAndOffset(untagged_outer_function_context, load.what.variable.offset + FUNCTION_CONTEXT_HEADER_SIZE), temp)]
       return code
@@ -766,7 +771,9 @@ class PseudoAssembler:
       untagged_outer_function_context = self.registers.nextRegister()
       address_register = self.registers.nextRegister()
       code += [PAMov(outer_function_context, untagged_outer_function_context)]
-      code += self.__createPointerTagCheck(untagged_outer_function_context, self.__label_error_assert_failure)
+      if GENERATE_FUNCTION_CONTEXT_TAG_CHECK:
+        # FIXME: add type assertion
+        code += self.__createPointerTagCheck(untagged_outer_function_context, self.__label_error_assert_failure)
       code += [PASub(PAConstant(PTR_TAG), untagged_outer_function_context),
                PAMov(PARegisterAndOffset(untagged_outer_function_context, array.base.variable.offset + FUNCTION_CONTEXT_HEADER_SIZE), address_register)]
       [address_register2, index_code] = self.__createArrayIndexingCode(address_register, array.index)
@@ -937,7 +944,9 @@ class PseudoAssembler:
       untagged_temp_context = self.registers.nextRegister()
       temp = self.__virtualRegister(instruction.temporary_variable)
       code = [PAMov(temp_context, untagged_temp_context)]
-      code += self.__createPointerTagCheck(untagged_temp_context, self.__label_error_assert_failure)
+      if GENERATE_FUNCTION_CONTEXT_TAG_CHECK:
+        # FIXME: add type assertion
+        code += self.__createPointerTagCheck(untagged_temp_context, self.__label_error_assert_failure)
       code += [PASub(PAConstant(PTR_TAG), untagged_temp_context),
               PAMov(temp, PARegisterAndOffset(untagged_temp_context, POINTER_SIZE * (FUNCTION_CONTEXT_OFFSET_PARAMS + instruction.index)))]
       return code
@@ -981,7 +990,9 @@ class PseudoAssembler:
         code = [PAComment("Calling user function (indirect)"),
                 PAComment("Get FunctionContext and function address from Function"),
                 PAMov(function, untagged_function)]
-        code += self.__createPointerTagCheck(untagged_function, self.__label_error_assert_failure)
+        if GENERATE_FUNCTION_CONTEXT_TAG_CHECK:
+          # FIXME: add type assertion
+          code += self.__createPointerTagCheck(untagged_function, self.__label_error_assert_failure)
         code += [PASub(PAConstant(PTR_TAG), untagged_function),
                 PAMov(PARegisterAndOffset(untagged_function, FUNCTION_OFFSET_FUNCTION_CONTEXT * POINTER_SIZE), function_context),
                 PAMov(PARegisterAndOffset(untagged_function, FUNCTION_OFFSET_ADDRESS * POINTER_SIZE), address),

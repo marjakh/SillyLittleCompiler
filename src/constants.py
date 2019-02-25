@@ -32,3 +32,6 @@ ERROR_ID_ARRAY_BASE_NOT_ARRAY = 3
 
 # Optimization flags
 OPTIMIZE_VARIABLES_IN_TEMPORARIES = True
+
+# Verifying internal consistency
+GENERATE_FUNCTION_CONTEXT_TAG_CHECK = True
