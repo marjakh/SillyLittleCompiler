@@ -1,0 +1,11 @@
+let n1 = 1073741823;
+print(n1);
+
+let n2 = n1 + 1;
+print(n2);
+
+let n3 = n2 + 1;
+print(n3);
+
+let n4 = n1 + 2;
+print(n4);
