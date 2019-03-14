@@ -1,0 +1,14 @@
+function plusser_generator(x) {
+  function inner(y) {
+    return y + x;
+  }
+  return inner;
+}
+
+let plus5 = plusser_generator(5);
+print(plus5(4));
+print(plus5(8));
+
+let plus3 = plusser_generator(3);
+print(plus3(4));
+print(plus3(8));
