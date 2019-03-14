@@ -167,7 +167,7 @@ int32_t* memory_allocate(int32_t size, int32_t* stack_low) {
     if (result != nullptr) {
       return result;
     }
-    fprintf(stderr, "Doesn't fit in the current chunk\n");
+    // fprintf(stderr, "Doesn't fit in the current chunk\n");
     // Doesn't fit. Collect garbage. Then try again. (Umm, actually this does GC
     // twice... FIXME.)
     do_gc(stack_low);
@@ -208,28 +208,28 @@ bool find_object(int32_t* ptr_to_object, int32_t** object, int32_t* offset) {
 }
 
 bool move_object(int32_t* ptr_to_object, int32_t** new_ptr, std::stack<std::pair<int32_t**, int32_t*>>* ptrs) {
-  fprintf(stderr, "Processing ptr %p\n", ptr_to_object);
+  // fprintf(stderr, "Processing ptr %p\n", ptr_to_object);
   int32_t* object;
   int32_t offset;
 
   // FIXME: wat?
   if (!find_object(ptr_to_object, &object, &offset)) {
-    fprintf(stderr, "Ptr doesn't belong to an object\n");
+    // fprintf(stderr, "Ptr doesn't belong to an object\n");
     return false;
   }
 
   // Maybe this object has been moved already?
   int32_t color = get_color(object);
-  fprintf(stderr, "Moving object %p\n", object);
+  // fprintf(stderr, "Moving object %p\n", object);
   if (color == COLOR_MOVED) {
     int32_t* new_address = reinterpret_cast<int32_t*>(get_byte_size(object));
     *new_ptr = tag_pointer(new_address + offset);
-    fprintf(stderr, "Already moved\n");
+    // fprintf(stderr, "Already moved\n");
     return true;
   }
 
   int32_t byte_size = get_byte_size(object);
-  fprintf(stderr, "Size in bytes %d\n", byte_size);
+  // fprintf(stderr, "Size in bytes %d\n", byte_size);
   assert(byte_size % INT_SIZE == 0);
 
   // Copy the raw bytes.
@@ -239,7 +239,7 @@ bool move_object(int32_t* ptr_to_object, int32_t** new_ptr, std::stack<std::pair
   other_chunk_cursor += byte_size + 2 * INT_SIZE;
 
   new_address += 2;
-  fprintf(stderr, "new address is %p\n", new_address);
+  // fprintf(stderr, "new address is %p\n", new_address);
   other_objects->push_back(new_address);
 
   // Mark the object as moved
@@ -252,7 +252,7 @@ bool move_object(int32_t* ptr_to_object, int32_t** new_ptr, std::stack<std::pair
   for (size_t i = 0; i < byte_size / INT_SIZE; ++i) {
     int32_t* maybe_ptr = reinterpret_cast<int32_t*>(*p);
     if (has_pointer_tag(maybe_ptr) && is_in_current_chunk(maybe_ptr)) {
-      fprintf(stderr, "Discovered pointer %p\n", maybe_ptr);
+      // fprintf(stderr, "Discovered pointer %p\n", maybe_ptr);
       ptrs->push(std::make_pair(reinterpret_cast<int32_t**>(p), untag_pointer(maybe_ptr)));
     }
     p++;
@@ -274,7 +274,7 @@ void mark_and_sweep(std::stack<std::pair<std::int32_t**, int32_t*>>* ptrs) {
     // It's possible that the pointer is not in the current chunk e.g., if it's
     // a pointer to the string table (allocated in its own area).
     if (is_in_current_chunk(ptr)) {
-      fprintf(stderr, "Mark and sweep root %p\n", ptr);
+      // fprintf(stderr, "Mark and sweep root %p\n", ptr);
       assert(!has_pointer_tag(ptr));
       move_object(ptr, location, ptrs);
     }
@@ -282,9 +282,9 @@ void mark_and_sweep(std::stack<std::pair<std::int32_t**, int32_t*>>* ptrs) {
 }
 
 void do_gc(std::int32_t* stack_low) {
-  fprintf(stderr, "GC starting\n");
-  fprintf(stderr, "Current chunk: %p %p %p\n", current_chunk, current_chunk_cursor, current_chunk_end);
-  fprintf(stderr, "%d full, no of objects: %d\n", 100 * (current_chunk_cursor - current_chunk) / (current_chunk_end - current_chunk), current_objects->size());
+  // fprintf(stderr, "GC starting\n");
+  // fprintf(stderr, "Current chunk: %p %p %p\n", current_chunk, current_chunk_cursor, current_chunk_end);
+  // fprintf(stderr, "%d full, no of objects: %d\n", 100 * (current_chunk_cursor - current_chunk) / (current_chunk_end - current_chunk), current_objects->size());
 
   // Discover potential pointers. They can be in the stack or in the current
   // memory chunk, pointed to by already discovered pointers.
@@ -303,10 +303,9 @@ void do_gc(std::int32_t* stack_low) {
   other_chunk_cursor = other_chunk;
   other_objects->clear();
 
-  fprintf(stderr, "GC done\n");
-  fprintf(stderr, "Current chunk: %p %p %p\n", current_chunk, current_chunk_cursor, current_chunk_end);
-  fprintf(stderr, "%d full, no of objects: %d\n", 100 * (current_chunk_cursor - current_chunk) / (current_chunk_end - current_chunk), current_objects->size());
-
+  // fprintf(stderr, "GC done\n");
+  // fprintf(stderr, "Current chunk: %p %p %p\n", current_chunk, current_chunk_cursor, current_chunk_end);
+  // fprintf(stderr, "%d full, no of objects: %d\n", 100 * (current_chunk_cursor - current_chunk) / (current_chunk_end - current_chunk), current_objects->size());
 }
 
 void memory_test_do_gc(int32_t* stack_low) {
