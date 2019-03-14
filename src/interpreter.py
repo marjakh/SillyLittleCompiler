@@ -238,6 +238,8 @@ class Interpreter:
     # print_debug("Evaluating " + str(e))
     if isinstance(e, NumberExpression):
       return e.value
+    if isinstance(e, StringExpression):
+      return e.value
     if isinstance(e, VariableExpression):
       assert(e.resolved_variable)
       # Maybe the variable is in the current function context, or in some outer
