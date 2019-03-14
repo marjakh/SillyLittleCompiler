@@ -16,28 +16,28 @@ class Parser:
   def parse(self):
     pos = self.__scanner.pos
     token = self.__scanner.nextToken()
-    # print("Got token " + str(token))
+    # print_debug("Got token " + str(token))
 
     while len(self.__stack):
-      # print("Stack is " + str(self.__stack))
-      # print("Token is " + str(token))
-      # print("Ctor stack is " + list_to_string(self.__ctor_stack))
+      # print_debug("Stack is " + str(self.__stack))
+      # print_debug("Token is " + str(token))
+      # print_debug("Ctor stack is " + list_to_string(self.__ctor_stack))
 
       while self.__stack[0] == "epsilon":
         self.__gather(None, pos)
         self.__stack.pop(0)
 
-      # print("Stack is " + str(self.__stack))
-      # print("Token is " + str(token))
-      # print("Ctor stack is " + list_to_string(self.__ctor_stack))
+      # print_debug("Stack is " + str(self.__stack))
+      # print_debug("Token is " + str(token))
+      # print_debug("Ctor stack is " + list_to_string(self.__ctor_stack))
 
       if self.__stack[0] == token.name():
         self.__stack.pop(0)
-        # print("Consumed " + str(token))
+        # print_debug("Consumed " + str(token))
         self.__gather(token, pos)
         pos = self.__scanner.pos
         token = self.__scanner.nextToken()
-        # print("Got token " + str(token))
+        # print_debug("Got token " + str(token))
         continue
 
       try:
@@ -52,18 +52,18 @@ class Parser:
         return
 
       if rule and rule.gatherer:
-        # print("rule is " + str(rule.gatherer))
+        # print_debug("rule is " + str(rule.gatherer))
         self.__ctor_stack = [rule.gatherer()] + self.__ctor_stack
 
-      # print("Got prediction " + str(prediction))
+      # print_debug("Got prediction " + str(prediction))
       self.__stack = prediction + self.__stack[1:]
 
   def __gather(self, item, pos):
-    #print("gather " + str(self.__ctor_stack))
-    #print("gather " + str(item))
+    #print_debug("gather " + str(self.__ctor_stack))
+    #print_debug("gather " + str(item))
     if len(self.__ctor_stack) == 0:
-      #print("no more ctor stack");
-      #print(str(item))
+      #print_debug("no more ctor stack");
+      #print_debug(str(item))
       return
     if self.__ctor_stack[0]:
       self.__ctor_stack[0].add(item, pos)
@@ -75,5 +75,5 @@ class Parser:
           self.program = result
           return
         # FIXME: pos here might be wrong; not sure.
-        # print("re-routing result " + str(result))
+        # print_debug("re-routing result " + str(result))
         self.__ctor_stack[0].add(result, pos)
