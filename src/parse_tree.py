@@ -2,6 +2,8 @@
 
 from util import *
 from scanner import Token
+from ttypes import Type
+from ttypes import any_type, Type
 from type_enums import VariableType
 
 # Temp constructs
@@ -65,7 +67,8 @@ class FormalParameter(ParseTreeNode):
     if ttype is None:
       self.ttype = "any"
     else:
-      self.ttype = ttype.value
+      assert(isinstance(ttype, Type))
+      self.ttype = ttype
 
 
 class FormalParameterList(ParseTreeNode):
@@ -105,11 +108,11 @@ class FunctionStatement(Statement):
     super().__init__(pos)
     self.name = items[0].value
     self.formal_parameters = items[1] or FormalParameterList(None, pos)
-    if items[2] is not None:
-      assert(isinstance(items[2], Token))
-      self.return_type = items[2].value
+    if items[2] is None:
+      self.return_type = any_type
     else:
-      self.return_type = "any"
+      assert(isinstance(items[2], Type))
+      self.return_type = items[2]
     self.body = items[3] or []
     self.resolved_variable = None
     self.function = None # The Function object created during scope analysis.
@@ -125,11 +128,11 @@ class LetStatement(Statement):
     super().__init__(pos)
     assert(len(items) == 3)
     self.identifier = items[0].value
-    if items[1] is not None:
-      assert(isinstance(items[1], Token))
-      self.ttype = items[1].value
+    if items[1] is None:
+      self.ttype = any_type
     else:
-      self.ttype = "any"
+      assert(isinstance(items[1], Type))
+      self.ttype = items[1]
     self.expression = items[2]
     self.resolved_variable = None
 

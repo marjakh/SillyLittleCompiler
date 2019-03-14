@@ -4,6 +4,7 @@
 
 from grammar import GrammarDriver, GrammarRule, SyntaxError
 from parse_tree import *
+from ttypes import any_type, identifier_to_type, dispatch_type_template, TypeList, TypeListContinuation, FunctionType
 from util import *
 
 class Gatherer:
@@ -121,9 +122,29 @@ rules = [
                                  lambda items, pos: ReturnStatement(items, pos))),
 
     GrammarRule("maybe_type", ["epsilon"], None),
-    GrammarRule("maybe_type", ["token_colon", "token_identifier"],
-                lambda: Gatherer("JustRoute", [False, True],
+    GrammarRule("maybe_type", ["token_colon", "type"],
+                lambda: Gatherer("MaybeTypeGatherer", [False, True],
                                  lambda items, pos: items[0])),
+
+    GrammarRule("type", ["token_identifier", "maybe_type_template_continuation"],
+                lambda: Gatherer("TypeGatherer", [True, True],
+                                 lambda items, pos: dispatch_type_template(identifier_to_type(items[0].value), items[1]))),
+    GrammarRule("maybe_type_template_continuation", ["epsilon"], None),
+    GrammarRule("maybe_type_template_continuation", ["token_less_than", "type", "token_greater_than"],
+                lambda: Gatherer("TypeTemplateGatherer", [False, True, False],
+                                 lambda items, pos: items[0])),
+
+    GrammarRule("type", ["token_left_bracket", "type_list", "token_right_bracket", "token_arrow", "type"],
+                lambda: Gatherer("TypeListGatherer", [False, True, False, False, True],
+                                 lambda items, pos: FunctionType(items[0], items[1]))),
+    GrammarRule("type_list", ["epsilon"], None),
+    GrammarRule("type_list", ["type", "type_list_continuation"],
+                lambda: Gatherer("TypeListGatherer", [True, True],
+                                 lambda items, pos: TypeList(items))),
+    GrammarRule("type_list_continuation", ["epsilon"], None),
+    GrammarRule("type_list_continuation", ["token_comma", "type", "type_list_continuation"],
+                lambda: Gatherer("TypeListContinuationGatherer", [False, True, True],
+                                 lambda items, pos: TypeListContinuation(items))),
 
     GrammarRule("expression_or_none", ["epsilon"], None),
     GrammarRule("expression_or_none", ["expression"], just_route),

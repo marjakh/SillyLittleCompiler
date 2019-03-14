@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
 from constants import *
+from ttypes import any_type
 from type_enums import VariableType, ScopeType
 from util import *
 
@@ -53,7 +54,7 @@ class FunctionVariable(Variable):
     # Note that allocation_scope is the scope where the function variable is
     # declared, not the scope of the function.
     # FIXME: function variable type
-    super().__init__(name, "any", VariableType.user_function, allocation_scope)
+    super().__init__(name, any_type, VariableType.user_function, allocation_scope)
     self.function_statement = function_statement
     self.__unique_name = unique_name # For inner functions: outer__inner
 
@@ -67,7 +68,7 @@ class FunctionVariable(Variable):
 class BuiltinFunctionVariable(Variable):
   def __init__(self, name, allocation_scope):
     # FIXME: function variable type
-    super().__init__(name, "any", VariableType.builtin_function, allocation_scope)
+    super().__init__(name, any_type, VariableType.builtin_function, allocation_scope)
 
   def __str__(self):
     return "BuiltinFunctionVariable(" + self.name + ")"

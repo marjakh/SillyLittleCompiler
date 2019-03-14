@@ -14,6 +14,7 @@
 from constants import *
 from parse_tree import *
 from scanner import *
+from ttypes import any_type
 from type_enums import ScopeType
 from util import *
 from variable import Variable, FunctionVariable, Function
@@ -232,7 +233,7 @@ class CfgCreator:
       else:
         main_body.append(s)
     main_statement = FunctionStatement([Token(TokenType.identifier, MAIN_NAME), [],
-                                        Token(TokenType.identifier, "any"), main_body], 0)
+                                        any_type, main_body], 0)
     main_statement.function = self.__program.main_function
     visitor.visitFunctionStatement(main_statement)
 

@@ -1,0 +1,24 @@
+let a0 = 0;
+let a1 : int = 0;
+let a2 : string = "foo";
+let a3 : any = 0;
+
+function f4() : int { return 0; }
+let a4 : [] -> int = f4;
+
+function f5(x: int) : int { return 0; }
+let a5 : [int] -> int = f5;
+
+function f6(x: int, y: int) : int { return 0; }
+let a6 : [int, int] -> int = f6;
+
+let a7 : Array<int> = new Array(5);
+
+let a8 : Array<[] -> int> = new Array(5);
+let a9 : Array<[int] -> int> = new Array(5);
+let a10 : Array<[int, int] -> int> = new Array(5);
+
+function f11(x: Array<int>) : Array<string> { return new Array(5); }
+let a11 : [Array<int>] -> Array<string> = f11;
+
+print("ok");

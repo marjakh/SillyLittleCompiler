@@ -28,14 +28,15 @@ class TokenType(Enum):
   semicolon = 22
   dot = 23
   comma = 24
-  keyword_if = 25
-  keyword_else = 26
-  keyword_while = 27
-  keyword_let = 28
-  keyword_function = 29
-  keyword_return = 30
-  keyword_new = 31
-  eos = 32
+  arrow = 25
+  keyword_if = 26
+  keyword_else = 27
+  keyword_while = 28
+  keyword_let = 29
+  keyword_function = 30
+  keyword_return = 31
+  keyword_new = 32
+  eos = 33
 
 
 class Token:
@@ -86,6 +87,7 @@ class Scanner:
     ("!=", TokenType.not_equals),
     ("<=", TokenType.less_or_equals),
     (">=", TokenType.greater_or_equals),
+    ("->", TokenType.arrow),
     ("+", TokenType.plus),
     ("-", TokenType.minus),
     ("*", TokenType.multiplication),
