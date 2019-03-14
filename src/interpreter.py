@@ -329,8 +329,8 @@ class Interpreter:
 
       function_statement = value.function_statement
 
-      if len(parameters) != len(function_statement.parameter_names):
-        raise RuntimeError("RuntimeError: Wrong number of parameters, expecting " + str(len(function_statement.parameter_names)), e.pos)
+      if len(parameters) != len(function_statement.formal_parameters.items):
+        raise RuntimeError("RuntimeError: Wrong number of parameters, expecting " + str(len(function_statement.formal_parameters.items)), e.pos)
 
       # Create a FunctionContext for the function we're about to call.
       self.__function_context_stack = [FunctionContext(value)] + self.__function_context_stack

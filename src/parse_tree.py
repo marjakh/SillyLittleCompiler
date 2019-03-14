@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
 from util import *
+from scanner import Token
 from type_enums import VariableType
 
 # Temp constructs
@@ -56,17 +57,65 @@ class Statement(ParseTreeNode):
     super().__init__(pos)
     self.scope = None
 
+
+class FormalParameter(ParseTreeNode):
+  def __init__(self, name, ttype, pos):
+    super().__init__(pos)
+    self.name = name.value
+    if ttype is None:
+      self.ttype = "any"
+    else:
+      self.ttype = ttype.value
+
+
+class FormalParameterList(ParseTreeNode):
+  def __init__(self, items, pos):
+    super().__init__(pos)
+    if items is None:
+      self.items = []
+    else:
+      assert(len(items) == 3)
+      self.items = [FormalParameter(items[0], items[1], pos)]
+      if items[2] is not None:
+        assert(isinstance(items[2], FormalParameterListContinuation))
+        self.items.extend(items[2].items)
+
+  def __str__(self):
+    s = "["
+    for p in self.items:
+      if s != "[":
+        s += ", "
+      s += p.name + ": " + p.ttype
+    s += "]"
+    return s
+
+
+class FormalParameterListContinuation(ParseTreeNode):
+  def __init__(self, items, pos):
+    super().__init__(pos)
+    assert(len(items) == 3)
+    self.items = [FormalParameter(items[0], items[1], pos)]
+    if items[2] is not None:
+      assert(isinstance(items[2], FormalParameterListContinuation))
+      self.items.extend(items[2].items)
+
+
 class FunctionStatement(Statement):
   def __init__(self, items, pos):
     super().__init__(pos)
     self.name = items[0].value
-    self.parameter_names = items[1] or []
-    self.body = items[2] or []
+    self.formal_parameters = items[1] or FormalParameterList(None, pos)
+    if items[2] is not None:
+      assert(isinstance(items[2], Token))
+      self.return_type = items[2].value
+    else:
+      self.return_type = "any"
+    self.body = items[3] or []
     self.resolved_variable = None
     self.function = None # The Function object created during scope analysis.
 
   def __str__(self):
-    return "FunctionStatement(" + str(self.name) + ", " + listToString(self.parameter_names) + ", " + listToString(self.body) + ")"
+    return "FunctionStatement(" + str(self.name) + ", " + str(self.return_type) + ", " + str(self.formal_parameters) + ", " + listToString(self.body) + ")"
 
   def accept(self, visitor):
     visitor.visitFunctionStatement(self)
@@ -74,13 +123,18 @@ class FunctionStatement(Statement):
 class LetStatement(Statement):
   def __init__(self, items, pos):
     super().__init__(pos)
-    assert(len(items) == 2)
+    assert(len(items) == 3)
     self.identifier = items[0].value
-    self.expression = items[1]
+    if items[1] is not None:
+      assert(isinstance(items[1], Token))
+      self.ttype = items[1].value
+    else:
+      self.ttype = "any"
+    self.expression = items[2]
     self.resolved_variable = None
 
   def __str__(self):
-    return "LetStatement(" + str(self.identifier) + ", " + str(self.expression) + ")"
+    return "LetStatement(" + str(self.identifier) + ", " + str(self.ttype) + ", " + str(self.expression) + ")"
 
   def accept(self, visitor):
     visitor.visitLetStatement(self)

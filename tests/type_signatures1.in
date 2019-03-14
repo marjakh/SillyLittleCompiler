@@ -1,0 +1,29 @@
+let x : int = 0;
+let x2 = 0;
+
+function foo(x : int) : int {
+  return x + 1;
+}
+
+function TestParameterTypeAnnotationsWithoutReturnType() {
+  function foo1(x, y) { }
+
+  function foo2(x : int, y) { }
+
+  function foo3(x, y : int) { }
+
+  function foo4(x : int, y : int) { }
+}
+
+function TestParameterTypeAnnotationsWithtReturnType() {
+  function foo1(x, y) : int { }
+
+  function foo2(x : int, y) : int { }
+
+  function foo3(x, y : int) : int { }
+
+  function foo4(x : int, y : int) : int { }
+}
+
+print("nothing to see here");
+

@@ -231,8 +231,8 @@ class CfgCreator:
         visitor.visitFunctionStatement(s)
       else:
         main_body.append(s)
-    main_statement = FunctionStatement([Token(TokenType.identifier,
-                                              MAIN_NAME), [], main_body], 0)
+    main_statement = FunctionStatement([Token(TokenType.identifier, MAIN_NAME), [],
+                                        Token(TokenType.identifier, "any"), main_body], 0)
     main_statement.function = self.__program.main_function
     visitor.visitFunctionStatement(main_statement)
 

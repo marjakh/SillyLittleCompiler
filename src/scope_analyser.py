@@ -3,7 +3,7 @@
 from constants import *
 from grammar import GrammarDriver
 from grammar_rules import rules
-from parse_tree import ParseTreeVisitor, VariableExpression, ArrayIndexExpression, FunctionCall
+from parse_tree import ParseTreeVisitor, VariableExpression, ArrayIndexExpression, FunctionCall, FormalParameter
 from parser import Parser
 from scanner import Scanner
 from type_enums import VariableType, ScopeType
@@ -180,7 +180,7 @@ class SecondPassScopeAnalyser(ScopeAnalyserVisitor):
 
   def visitLetStatement(self, s):
     super().visitLetStatement(s)
-    v = Variable(s.identifier, VariableType.variable, self.currentVariableAllocationScope())
+    v = Variable(s.identifier, s.ttype, VariableType.variable, self.currentVariableAllocationScope())
     # print("Adding normal variable " + s.identifier + " into scope " + str(self.scopes[0]))
     if not self.scopes[0].addVariable(v):
       raise ScopeError("ScopeError: redeclaration of variable " + s.identifier, s.pos)
@@ -238,12 +238,13 @@ class SecondPassScopeAnalyser(ScopeAnalyserVisitor):
   def visitFunctionStatementParameters(self, s):
     # TODO: parameters need to keep track of which functions they are a parameter to.
     super().visitFunctionStatementParameters(s)
-    for p in s.parameter_names: # p is Token
+    for p in s.formal_parameters.items:
+      assert(isinstance(p, FormalParameter))
       assert(s.function.scope)
-      v = Variable(p.value, VariableType.variable, s.function.scope, True)
+      v = Variable(p.name, p.ttype, VariableType.variable, s.function.scope, True)
       # Note that parameter can also be referred to by inner functions.
       if not self.scopes[0].addVariable(v):
-        raise ScopeError("ScopeError: redeclaration of variable " + p.value, s.pos)
+        raise ScopeError("ScopeError: redeclaration of variable " + p.name, s.pos)
 
   def visitNewExpression(self, e):
     super().visitNewExpression(e)

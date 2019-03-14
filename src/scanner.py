@@ -24,16 +24,18 @@ class TokenType(Enum):
   left_bracket = 18
   right_bracket = 19
   assign = 20
-  semicolon = 21
-  comma = 22
-  keyword_if = 23
-  keyword_else = 24
-  keyword_while = 25
-  keyword_let = 26
-  keyword_function = 27
-  keyword_return = 28
-  keyword_new = 29
-  eos = 30
+  colon = 21
+  semicolon = 22
+  dot = 23
+  comma = 24
+  keyword_if = 25
+  keyword_else = 26
+  keyword_while = 27
+  keyword_let = 28
+  keyword_function = 29
+  keyword_return = 30
+  keyword_new = 31
+  eos = 32
 
 
 class Token:
@@ -97,7 +99,9 @@ class Scanner:
     ("=", TokenType.assign),
     ("<", TokenType.less_than),
     (">", TokenType.greater_than),
+    (":", TokenType.colon),
     (";", TokenType.semicolon),
+    (".", TokenType.dot),
     (",", TokenType.comma),
   ]
 

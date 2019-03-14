@@ -74,6 +74,7 @@ Priorities:
    -- passing a ptr where we should pass an int (e.g., length of array)
 
 Random bugs / corner cases:
+- Missing return statement causes a segfault (e.g., case where the func was meant to return an inner func)
 - Check all usages of PARegisterAndOffset; shouldn't we multiply by POINTER_SIZE everywhere?
 - Not sure if the "locals and params count" is correct, maybe that's multiplied by POINTER_SIZE..
 - Add tests for what happens when trying to access the return value for print.

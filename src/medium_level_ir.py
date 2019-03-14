@@ -90,7 +90,8 @@ def computeVariableOffsetsForNonFunctionScope(scope, offset=0):
 
 class TemporaryVariable(Variable):
   def __init__(self, name):
-    super().__init__(name, VariableType.temporary, None)
+    # FIXME: do temporary variables need types?
+    super().__init__(name, "any", VariableType.temporary, None)
 
 
 class Comment:
