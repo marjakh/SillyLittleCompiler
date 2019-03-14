@@ -115,7 +115,7 @@ class FunctionStatement(Statement):
     self.function = None # The Function object created during scope analysis.
 
   def __str__(self):
-    return "FunctionStatement(" + str(self.name) + ", " + str(self.return_type) + ", " + str(self.formal_parameters) + ", " + listToString(self.body) + ")"
+    return "FunctionStatement(" + str(self.name) + ", " + str(self.return_type) + ", " + str(self.formal_parameters) + ", " + list_to_string(self.body) + ")"
 
   def accept(self, visitor):
     visitor.visitFunctionStatement(self)
@@ -184,7 +184,7 @@ class IfStatement(Statement):
     self.else_scope = None
 
   def __str__(self):
-    return "IfStatement(" + str(self.expression) + ", " + listToString(self.then_body) + ", " + listToString(self.else_body) + ")"
+    return "IfStatement(" + str(self.expression) + ", " + list_to_string(self.then_body) + ", " + list_to_string(self.else_body) + ")"
 
   def accept(self, visitor):
     visitor.visitIfStatement(self)
@@ -199,7 +199,7 @@ class WhileStatement(Statement):
     self.scope = None
 
   def __str__(self):
-    return "WhileStatement(" + str(self.expression) + ", " + listToString(self.body) + ")"
+    return "WhileStatement(" + str(self.expression) + ", " + list_to_string(self.body) + ")"
 
   def accept(self, visitor):
     visitor.visitWhileStatement(self)
@@ -230,7 +230,7 @@ class FunctionCall(Expression):
     self.parameters = parameters or []
 
   def __str__(self):
-    return "FunctionCall(" + str(self.function) + ", " + listToString(self.parameters) + ")"
+    return "FunctionCall(" + str(self.function) + ", " + list_to_string(self.parameters) + ")"
 
   def accept(self, visitor):
     visitor.visitFunctionCall(self)
@@ -318,7 +318,7 @@ class AddExpression(Expression):
     self.items = items
 
   def __str__(self):
-    return "AddExpression(" + listToString(self.items) + ")"
+    return "AddExpression(" + list_to_string(self.items) + ")"
 
   def accept(self, visitor):
     visitor.visitAddExpression(self)
@@ -330,7 +330,7 @@ class MultiplyExpression(Expression):
     self.items = items
 
   def __str__(self):
-    return "MultiplyExpression(" + listToString(self.items) + ")"
+    return "MultiplyExpression(" + list_to_string(self.items) + ")"
 
   def accept(self, visitor):
     visitor.visitMultiplyExpression(self)
@@ -343,7 +343,7 @@ class BooleanExpression(Expression):
     self.items = items
 
   def __str__(self):
-    return "BooleanExpression(" + listToString(self.items) + ")"
+    return "BooleanExpression(" + list_to_string(self.items) + ")"
 
   def accept(self, visitor):
     visitor.visitBooleanExpression(self)
@@ -355,7 +355,7 @@ class Program(ParseTreeNode):
     self.statements = items[0] or []
 
   def __str__(self):
-    return "Program(" + listToString(self.statements) + ")"
+    return "Program(" + list_to_string(self.statements) + ")"
 
 
 class ParseTreeVisitor:

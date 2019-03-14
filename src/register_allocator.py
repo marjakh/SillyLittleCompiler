@@ -2,7 +2,7 @@
 
 from pseudo_assembler import PARegister
 from real_assembler import Register
-from util import listToString, toString, print_debug
+from util import list_to_string, to_string, print_debug
 
 """
 https://en.wikipedia.org/wiki/Register_allocation
@@ -20,7 +20,7 @@ class Node:
     self.is_real_register = is_real_register
 
   def __str__(self):
-    return toString(self.register)
+    return to_string(self.register)
 
   def addConflict(self, node):
     self.conflicts.add(node)
@@ -101,7 +101,7 @@ class RegisterAllocator:
     live_ranges.sort()
 
     # print_debug("tryToAllocate")
-    # print_debug(toString(live_ranges))
+    # print_debug(to_string(live_ranges))
 
     nodes = []
     for i in range(len(live_ranges)):

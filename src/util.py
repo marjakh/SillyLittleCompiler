@@ -1,6 +1,6 @@
 import sys
 
-def listToString(lst, begin="[", end="]", delimiter=", "):
+def list_to_string(lst, begin="[", end="]", delimiter=", "):
   if lst == None:
     return begin+end
   s = begin
@@ -8,30 +8,30 @@ def listToString(lst, begin="[", end="]", delimiter=", "):
     if n > 0:
       s += delimiter
     if isinstance(i, list):
-      s += listToString(i)
+      s += list_to_string(i)
     else:
       s += str(i)
   s += end
   return s
 
-def dictToString(d, begin="{", end="}"):
+def dict_to_string(d, begin="{", end="}"):
   s = begin
   first = True
   for key, value in d.items():
     if not first:
       s += ", "
     first = False
-    s += (toString(key) + ": " + toString(value))
+    s += (to_string(key) + ": " + to_string(value))
   s += end
   return s
 
-def toString(sth):
+def to_string(sth):
   if isinstance(sth, list):
-    return listToString(sth)
+    return list_to_string(sth)
   if isinstance(sth, dict):
-    return dictToString(sth)
+    return dict_to_string(sth)
   if isinstance(sth, set):
-    return listToString(list(sth), "{", "}")
+    return list_to_string(list(sth), "{", "}")
   return str(sth)
 
 def print_error(msg):

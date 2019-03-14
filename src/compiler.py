@@ -58,4 +58,4 @@ if __name__ == "__main__":
   real_assembly = ra.create(pseudo_assembly)
 
   # print("Final output:")
-  print(listToString(real_assembly, "", "\n", "\n"))
+  print(list_to_string(real_assembly, "", "\n", "\n"))

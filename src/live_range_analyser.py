@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-from util import listToString, print_debug, toString
+from util import list_to_string, print_debug, to_string
 
 class LiveRangeAnalyser:
   def __init__(self):
@@ -22,7 +22,7 @@ class LiveRangeAnalyser:
     # print_debug("LiveRangeAnalyzer")
     # for b in function_blocks:
     #   print_debug("block id " + str(b.id))
-    #   print_debug("next: " + listToString(b.possible_next_ids))
+    #   print_debug("next: " + list_to_string(b.possible_next_ids))
 
     # The IDs don't start from 0, thus we need this to find the function based
     # on id from the array.
@@ -41,7 +41,7 @@ class LiveRangeAnalyser:
         i.ix = instruction_ix
         instruction_ix += 1
         [read, written] = i.getRegisters()
-        # print_debug("Read: " + listToString(read) + ", written: " + listToString(written))
+        # print_debug("Read: " + list_to_string(read) + ", written: " + list_to_string(written))
         for r in read:
           if r not in written_so_far:
             b.gen_set.add(r)
@@ -50,8 +50,8 @@ class LiveRangeAnalyser:
           if r not in read_so_far:
             b.kill_set.add(r)
           written_so_far.add(r)
-      # print_debug("Gen: " + listToString(list(b.gen_set)))
-      # print_debug("Kill: " + listToString(list(b.kill_set)))
+      # print_debug("Gen: " + list_to_string(list(b.gen_set)))
+      # print_debug("Kill: " + list_to_string(list(b.kill_set)))
 
     # print_debug("Constructing in/out sets")
     something_changed = True
@@ -62,12 +62,12 @@ class LiveRangeAnalyser:
         new_in_set = b.gen_set | (b.out_set - b.kill_set)
         new_out_set = set()
         # print_debug("new in set")
-        # print_debug(toString(new_in_set))
+        # print_debug(to_string(new_in_set))
         for next_id in b.possible_next_ids:
           assert(function_blocks[next_id - base_id].id == next_id)
           new_out_set = new_out_set | function_blocks[next_id - base_id].in_set
           # print_debug("new out set")
-          # print_debug(toString(new_out_set))
+          # print_debug(to_string(new_out_set))
         if new_in_set != b.in_set or new_out_set != b.out_set:
           something_changed = True
         b.in_set = new_in_set
@@ -76,8 +76,8 @@ class LiveRangeAnalyser:
 
     # for b in function_blocks:
     #   print_debug("Basic block " + str(b.id))
-    #   print_debug("In: " + listToString(list(b.in_set)))
-    #   print_debug("Out: " + listToString(list(b.out_set)))
+    #   print_debug("In: " + list_to_string(list(b.in_set)))
+    #   print_debug("Out: " + list_to_string(list(b.out_set)))
 
     # Based on in_set and out_set, construct live ranges.
     for register in pseudo_assembly_metadata.registers.registers:

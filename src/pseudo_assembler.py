@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 
 from medium_level_ir import *
-from util import listToString, toString, print_error
+from util import list_to_string, to_string, print_error
 from constants import *
 
 """
@@ -132,7 +132,7 @@ class PARegisters:
     return v
 
   def __str__(self):
-    return toString(self.registers)
+    return to_string(self.registers)
 
 
 class PseudoAssemblerInstruction:
@@ -616,7 +616,7 @@ class PseudoAssembly:
     self.metadata = metadata
 
   def __str__(self):
-    return listToString(self.functions_and_blocks, "", "", "\n")
+    return list_to_string(self.functions_and_blocks, "", "", "\n")
 
   def spill(self, register, position, blocks):
     for b in blocks:
@@ -637,7 +637,7 @@ class PseudoAssemblyBasicBlock:
     self.instructions = instructions
 
   def __str__(self):
-    return listToString(self.instructions, "", "", "\n")
+    return list_to_string(self.instructions, "", "", "\n")
 
   def spill(self, register, position, registers):
     new_instructions = []
@@ -1184,7 +1184,7 @@ class PseudoAssembler:
       output.append([function, blocks])
       # print_debug("Pseudo assembly for function " + function.name)
       # for b in blocks:
-      #   print_debug(listToString(b.instructions, "", "", "\n"))
+      #   print_debug(list_to_string(b.instructions, "", "", "\n"))
 
     error_handlers = [[self.__label_error_assert_failure, ERROR_ID_ASSERT_FAILURE],
                       [self.__label_error_arithmetic_operation_parameter_not_int, ERROR_ID_ARITHMETIC_OPERATION_PARAMETER_NOT_INT],

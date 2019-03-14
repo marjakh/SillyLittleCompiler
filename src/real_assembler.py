@@ -3,7 +3,7 @@
 from live_range_analyser import LiveRangeAnalyser
 from pseudo_assembler import *
 from register_allocator import RegisterAllocator, RegisterAllocationDone, Spill
-from util import listToString, print_debug
+from util import list_to_string, print_debug
 
 class RealAssemblerInstruction:
   def __init__(self):

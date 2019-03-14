@@ -2,7 +2,7 @@
 
 from grammar_rules import rules
 from scanner import Scanner
-from util import listToString
+from util import list_to_string
 
 from math import floor
 from random import random
@@ -15,7 +15,7 @@ class Fuzzer:
   def run(self):
     program = []
     while len(self.__stack):
-      print("Stack: " + listToString(self.__stack))
+      print("Stack: " + list_to_string(self.__stack))
       want = self.__stack.pop(0)
       print("Want " + want)
       if want == "token_eos" or want == "epsilon":
@@ -40,16 +40,16 @@ class Fuzzer:
         ix = 0
       else:
         ix = floor(random() * len(applicable_rules))
-      print(listToString(applicable_rules))
+      print(list_to_string(applicable_rules))
       print(ix)
       print("Rule: " + str(applicable_rules[ix]))
       self.__stack = applicable_rules[ix].right + self.__stack
       print("Program so far: ")
-      print(listToString(program, "", "", " "))
+      print(list_to_string(program, "", "", " "))
     return program
 
 if __name__ == "__main__":
   f = Fuzzer(rules)
   program = f.run()
   print("Program:")
-  print(listToString(program, "", "", " "))
+  print(list_to_string(program, "", "", " "))

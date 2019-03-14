@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 
 from collections import defaultdict
-from util import listToString, print_debug
+from util import list_to_string, print_debug
 
 class SyntaxError(BaseException):
   def __init__(self, pos = None, message = None):
@@ -18,7 +18,7 @@ class GrammarRule:
     self.gatherer = gatherer
 
   def __str__(self):
-    return self.left + " -> " + listToString(self.right)
+    return self.left + " -> " + list_to_string(self.right)
 
 
 class GrammarDriver:

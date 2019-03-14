@@ -1,6 +1,11 @@
 Classes:
 
 class Foo:
-  def doStuff(self):
+  def do_stuff(self):
     this_is_var = 1
+
+Functions:
+
+def my_function(my_param):
+  my_local = 1
 

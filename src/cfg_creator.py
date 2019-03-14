@@ -51,7 +51,7 @@ class BasicBlock:
     next_branch.false_block.previous.append(self)
 
   def __str__(self):
-    s = "BasicBlock(" + self.id.__str__() + ", " + listToString(self.statements) + ", "
+    s = "BasicBlock(" + self.id.__str__() + ", " + list_to_string(self.statements) + ", "
     if isinstance(self.next, BasicBlock):
       s += "continues to block " + self.next.id.__str__()
     else:
