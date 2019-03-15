@@ -3,12 +3,9 @@
 from collections import defaultdict
 from util import list_to_string, print_debug
 
-class SyntaxError(BaseException):
+class SyntaxError(Exception):
   def __init__(self, pos = None, message = None):
-    self.pos = pos
-    self.message = message
-  def __str__(self):
-    return "SyntaxError: " + str(self.message) + " (" + str(self.pos) + ")"
+    super().__init__(message + " (position " + str(pos) + ")")
 
 
 class GrammarRule:
