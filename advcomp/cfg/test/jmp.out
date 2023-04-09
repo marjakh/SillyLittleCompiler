@@ -1,0 +1,8 @@
+digraph main{
+  block_0;
+  block_1;
+  somewhere;
+  block_0 -> somewhere;
+  block_1 -> somewhere;
+}
+
