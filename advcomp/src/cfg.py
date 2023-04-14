@@ -97,7 +97,7 @@ class CFG:
         block.add_successor(successor_block)
 
   def __str__(self):
-    s = "CFG [\n"
+    s = "CFG " + self.name + " [\n"
     for block in self.blocks:
       s+= str(block) + "\n"
     s += "]"
@@ -113,35 +113,67 @@ class CFG:
     s += "}\n"
     print(s)
 
-def process_func(func):
-  instructions = func["instrs"]
 
-  cfg = CFG(func["name"])
-  current_block = Block()
-  for instr in instructions:
-    if not is_label(instr):
-      current_block.add_instruction(instr)
-      if is_terminator(instr):
+class CFGCreator:
+  @staticmethod
+  def process_func(func):
+    instructions = func["instrs"]
+
+    cfg = CFG(func["name"])
+    current_block = Block()
+    for instr in instructions:
+      if not is_label(instr):
+        current_block.add_instruction(instr)
+        if is_terminator(instr):
+          cfg.add_block(current_block)
+          current_block = Block()
+      else:
         cfg.add_block(current_block)
         current_block = Block()
-    else:
-      cfg.add_block(current_block)
-      current_block = Block()
-      current_block.set_label(instr)
+        current_block.set_label(instr)
 
-  cfg.add_block(current_block)
+    cfg.add_block(current_block)
 
-  cfg.connect_blocks()
-  #print(cfg)
+    cfg.connect_blocks()
+    #print(cfg)
+    return cfg
 
-  cfg.print_dot()
+  @staticmethod
+  def process(json_prog):
+    cfgs = []
+    prog = json.loads(json_prog)
+    for func in prog["functions"]:
+      cfg = CFGCreator.process_func(func)
+      cfgs.append(cfg)
+    return cfgs
 
+  @staticmethod
+  def reconstructJSON(cfgs):
+    s = '{ "functions": ['
+    first_cfg = True
+    for cfg in cfgs:
+      if not first_cfg:
+        s += ", "
+      first_cfg = False
+      s += '{ "name": "'+ cfg.name + '", "instrs": ['
+      first_instr = True
+      for block in cfg.blocks:
+        if block.label is not None:
+          if not first_instr:
+            s += ", "
+          first_instr = False
+          s += '{"label": "' + block.label + '"}'
+        for instr in block.instructions:
+          if not first_instr:
+            s += ", "
+          first_instr = False
+          s += json.dumps(instr)
+      s += "] }" # end instrs and function
+    s += "] }"
 
-def process(json_prog):
-  prog = json.loads(json_prog)
-  for func in prog["functions"]:
-    process_func(func)
-
+    return s
 
 if __name__ == '__main__':
-  process(sys.stdin.read())
+  cfgs = CFGCreator.process(sys.stdin.read())
+  for cfg in cfgs:
+    cfg.print_dot()
