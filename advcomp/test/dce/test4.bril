@@ -1,0 +1,7 @@
+@main {
+  a: int = const 100;
+  jmp .l;
+  a: int = const 42;
+.l:
+  print a;
+}

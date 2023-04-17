@@ -1,0 +1,4 @@
+@main {
+  a: int = const 5;
+  print a;
+}

@@ -1,0 +1,8 @@
+@main {
+  a: int = const 100;
+  br a .l .k;
+.k:
+  a: int = const 42;
+.l:
+  print a;
+}
