@@ -1,6 +1,5 @@
 @main {
-  x: int = const 4;
-  copy1: int = id x;
+  copy1: int = const 4;
 .l:
   print copy1;
 }

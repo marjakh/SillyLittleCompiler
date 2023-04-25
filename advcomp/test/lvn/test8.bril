@@ -1,0 +1,8 @@
+@main {
+  a: int = const 4;
+  b: int = const 3;
+  sum: int = add a b;
+  redundant: int = add a b;
+  copy: int = id redundant;
+  print copy;
+}

@@ -57,17 +57,45 @@ class LocalValueNumbering:
   def updateInstruction(instr, value, value_table, environment):
     #print("updateInstruction")
     #print(instr)
+    #print(value)
     #print(value_table)
     #print(environment)
 
     if not "args" in instr:
       return
-    args = []
 
+    if instr["op"] == "id":
+      if LocalValueNumbering.updateIdInstruction(instr,  value, value_table, environment):
+        # updateIdInstruction handled it
+        return
+
+    args = []
     for a in value.args:
       canonical_home_variable = value_table[a][1]
       args.append(canonical_home_variable)
     instr["args"] = args
+
+  @staticmethod
+  def updateIdInstruction(instr, value, value_table, environment):
+    #print("updateIdInstruction")
+    #print(instr)
+    #print(value)
+    #print(value_table)
+    #print(environment)
+
+    assert(len(value.args) == 1)
+    ix = value.args[0]
+
+    # Check if the value at "ix" is a const.
+    replacement_value = value_table[ix][0]
+    if not replacement_value is None and replacement_value.op == "const":
+      instr["op"] = "const"
+      assert(len(replacement_value.args) == 1)
+      instr["value"] = replacement_value.args[0]
+      del instr["args"]
+      return True
+
+    return False
 
   @staticmethod
   def optimizeBlock(block):
