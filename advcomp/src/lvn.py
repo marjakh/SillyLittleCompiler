@@ -68,13 +68,11 @@ class LocalValueNumbering:
       return
 
     op = instr["op"]
-    if op == "id":
-      if LocalValueNumbering.updateIdInstruction(instr, value, value_table, environment):
-        # updateIdInstruction handled it
-        return
-    elif op == "add" or op == "mul" or op == "sub" or op == "div":
-      if LocalValueNumbering.maybeConstantFold(instr, value, value_table, environment):
-        return
+    if LocalValueNumbering.updateIdInstruction(instr, value, value_table, environment):
+      # updateIdInstruction handled it
+      return
+    elif LocalValueNumbering.maybeConstantFold(instr, value, value_table, environment):
+      return
 
     args = []
     for a in value.args:
@@ -89,6 +87,9 @@ class LocalValueNumbering:
     #print(value)
     #print(value_table)
     #print(environment)
+
+    if instr["op"] != "id":
+      return False
 
     assert(len(value.args) == 1)
     ix = value.args[0]
@@ -112,7 +113,10 @@ class LocalValueNumbering:
     #print(value_table)
     #print(environment)
 
-    assert(len(value.args) == 2)
+    if len(value.args) != 2:
+      # Not a constant foldable instruction.
+      return False
+
     ix1 = value.args[0]
     ix2 = value.args[1]
 
@@ -124,22 +128,24 @@ class LocalValueNumbering:
     if replacement_value2 is None or replacement_value2.op != "const":
       return False
 
-    # Update the instruction
-    op = instr["op"]
-
     assert(len(replacement_value1.args) == 1)
     value1 = replacement_value1.args[0]
     assert(len(replacement_value2.args) == 1)
     value2 = replacement_value2.args[0]
 
+    op = instr["op"]
     if op == "add":
       value = value1 + value2
     elif op == "sub":
       value = value1 - value2
     elif op == "mul":
       value = value1 * value2
-    elif op == "div":
+    elif op == "div" and value2 != 0:
       value = value1 / value2
+    else:
+      return False
+
+    # Update the instruction
     instr["op"] = "const"
     instr["value"] = value
     del instr["args"]
