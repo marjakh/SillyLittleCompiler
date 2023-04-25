@@ -1,0 +1,7 @@
+@main {
+  variable0: int = const 3;
+  print variable0;
+  x: int = const 4;
+  print x;
+  print variable0;
+}

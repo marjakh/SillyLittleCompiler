@@ -165,7 +165,10 @@ class LocalValueNumbering:
     # Mapping from variable names to value table ids
     environment = dict()
 
-    for instr in block.instructions:
+    # For generating new variable names
+    var_ix = 0
+
+    for i_ix, instr in enumerate(block.instructions):
       #print(instr)
 
       if not "op" in instr:
@@ -176,6 +179,42 @@ class LocalValueNumbering:
       #print("value is " + str(value))
 
       if "dest" in instr:
+        dest = instr["dest"]
+
+        # If dest will be overwritten later, it cannot be used as a canonical
+        # home variable that easily. Prepare for that situation by renaming
+        # dest now.
+        dest_will_be_overwritten = False
+        for i2_ix in range(i_ix + 1, len(block.instructions)):
+          instr2 = block.instructions[i2_ix]
+          if "dest" in instr2 and instr2["dest"] == dest:
+            dest_will_be_overwritten = True
+            break
+
+        if dest_will_be_overwritten:
+          # Rename this variable and also rename all uses before the overwriting
+          # instruction.
+          old_dest = dest
+          dest = "variable" + str(var_ix)
+          var_ix += 1
+
+          instr["dest"] = dest
+
+          for i2_ix in range(i_ix + 1, len(block.instructions)):
+            instr2 = block.instructions[i2_ix]
+            if "args" in instr2:
+              new_args = []
+              for a in instr2["args"]:
+                if a == old_dest:
+                  new_args.append(dest)
+                else:
+                  new_args.append(a)
+              instr2["args"] = new_args
+            # This has to be done last, since it's possible the overwriting
+            # insruction also uses old_dest.
+            if "dest" in instr2 and instr2["dest"] == old_dest:
+              break
+
         str_value = str(value)
         if value.op == "id":
           # If we encounter
@@ -186,10 +225,10 @@ class LocalValueNumbering:
           ix = value_table_lookup[str_value]
         else:
           ix = len(value_table)
-          value_table.append([value, instr["dest"]])
+          value_table.append([value, dest])
           value_table_lookup[str_value] = ix
 
-        environment[instr["dest"]] = ix
+        environment[dest] = ix
 
       # Reconstruct the instruction
       LocalValueNumbering.updateInstruction(instr, value, value_table, environment)
