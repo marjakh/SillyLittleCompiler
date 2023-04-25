@@ -12,7 +12,6 @@ class DeadCodeEliminator:
         something_changed = True
       if DeadCodeEliminator.eliminateIfAssignmentObsoletedByAnotherAssignment(cfg):
         something_changed = True
-    return cfg
 
   @staticmethod
   def eliminateIfValueNotUsed(cfg):
@@ -90,8 +89,7 @@ class DeadCodeEliminator:
 
 if __name__ == '__main__':
   cfgs = CFGCreator.process(sys.stdin.read())
-  new_cfgs = []
   for cfg in cfgs:
-    new_cfg = DeadCodeEliminator.eliminate(cfg)
-    new_cfgs.append(cfg)
-  print(CFGCreator.reconstructJSON(new_cfgs))
+    DeadCodeEliminator.eliminate(cfg)
+
+  print(CFGCreator.reconstructJSON(cfgs))
