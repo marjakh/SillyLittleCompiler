@@ -3,6 +3,11 @@ from dce import DeadCodeEliminator
 
 import sys
 
+# FIXME: this is wrong for function calls; they're not pure so we cannot skip
+# them.
+
+# FIXME: DCE for function calls is probably wrong, too.
+
 class Value:
   def __init__(self, op, args):
     self.op = op
@@ -33,8 +38,6 @@ class LocalValueNumbering:
     if instr["op"] == "const":
       return Value(instr["op"], [instr["value"]])
 
-    # FIXME: what to do with "id"?
-
     assert("args" in instr)
     arg_value_ids = []
     for arg in instr["args"]:
@@ -52,9 +55,15 @@ class LocalValueNumbering:
 
   @staticmethod
   def updateInstruction(instr, value, value_table, environment):
+    #print("updateInstruction")
+    #print(instr)
+    #print(value_table)
+    #print(environment)
+
     if not "args" in instr:
       return
     args = []
+
     for a in value.args:
       canonical_home_variable = value_table[a][1]
       args.append(canonical_home_variable)
@@ -87,8 +96,12 @@ class LocalValueNumbering:
 
       if "dest" in instr:
         str_value = str(value)
-        # Check if the value is already in the value table
-        if str_value in value_table_lookup:
+        if value.op == "id":
+          # If we encounter
+          # b: int = id a;
+          # make b point to the row where a is stored.
+          ix = value.args[0]
+        elif str_value in value_table_lookup:
           ix = value_table_lookup[str_value]
         else:
           ix = len(value_table)
@@ -99,6 +112,7 @@ class LocalValueNumbering:
 
       # Reconstruct the instruction
       LocalValueNumbering.updateInstruction(instr, value, value_table, environment)
+
 
 
 if __name__ == '__main__':
