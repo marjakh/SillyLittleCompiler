@@ -1,0 +1,7 @@
+@main {
+  a: int = const 4;
+  b: int = const 3;
+.l:
+  sum: int = add a b;
+  print sum;
+}

@@ -13,6 +13,10 @@ class Value:
     self.op = op
     self.args = args
 
+    # Commutative operations:
+    if op == "mul" or op == "add":
+      self.args.sort()
+
   def __str__(self):
     # Return a string which can be used as a key
     first = True
@@ -25,7 +29,6 @@ class Value:
     s += "]"
     return s
 
-# FIXME: value canonicalization
 
 class LocalValueNumbering:
   @staticmethod
@@ -64,9 +67,13 @@ class LocalValueNumbering:
     if not "args" in instr:
       return
 
-    if instr["op"] == "id":
-      if LocalValueNumbering.updateIdInstruction(instr,  value, value_table, environment):
+    op = instr["op"]
+    if op == "id":
+      if LocalValueNumbering.updateIdInstruction(instr, value, value_table, environment):
         # updateIdInstruction handled it
+        return
+    elif op == "add" or op == "mul" or op == "sub" or op == "div":
+      if LocalValueNumbering.maybeConstantFold(instr, value, value_table, environment):
         return
 
     args = []
@@ -96,6 +103,52 @@ class LocalValueNumbering:
       return True
 
     return False
+
+  @staticmethod
+  def maybeConstantFold(instr, value, value_table, environment):
+    #print("maybeConstantFold")
+    #print(instr)
+    #print(value)
+    #print(value_table)
+    #print(environment)
+
+    assert(len(value.args) == 2)
+    ix1 = value.args[0]
+    ix2 = value.args[1]
+
+    # Check if the value at "ix" is a const.
+    replacement_value1 = value_table[ix1][0]
+    if replacement_value1 is None or replacement_value1.op != "const":
+      return False
+    replacement_value2 = value_table[ix2][0]
+    if replacement_value2 is None or replacement_value2.op != "const":
+      return False
+
+    # Update the instruction
+    op = instr["op"]
+
+    assert(len(replacement_value1.args) == 1)
+    value1 = replacement_value1.args[0]
+    assert(len(replacement_value2.args) == 1)
+    value2 = replacement_value2.args[0]
+
+    if op == "add":
+      value = value1 + value2
+    elif op == "sub":
+      value = value1 - value2
+    elif op == "mul":
+      value = value1 * value2
+    elif op == "div":
+      value = value1 / value2
+    instr["op"] = "const"
+    instr["value"] = value
+    del instr["args"]
+
+    # Update the value of the row ix of "dest" in the value_table.
+    ix = environment[instr["dest"]]
+    value_table[ix][0] = Value("const", [value])
+
+    return True
 
   @staticmethod
   def optimizeBlock(block):

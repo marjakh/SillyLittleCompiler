@@ -1,4 +1,4 @@
 @main {
-  prod: int = const 36;
+  prod: int = const 35;
   print prod;
 }

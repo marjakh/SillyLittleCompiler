@@ -1,9 +1,9 @@
 @main {
   a: int = const 4;
   b: int = const 2;
-  sum1: int = add a b;
+  sum1: int = const 6;
 .l:
   sum2: int = add a b;
-  prod: int = mul sum1 sum2;
+  prod: int = mul sum2 sum1;
   print prod;
 }
