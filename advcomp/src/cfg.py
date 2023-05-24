@@ -3,26 +3,78 @@ import sys
 
 terminators = ["jmp", "br", "ret"]
 
-def is_label(instr):
-  return "label" in instr
-
-def is_terminator(instr):
-  global terminators
-  assert("op" in instr)
-  op = instr["op"]
-  return op in terminators
-
 block_number = 0
+
+class Instruction:
+  def __init__(self, instruction_dict):
+    self.dest = instruction_dict.get("dest", None)
+    self.args = instruction_dict.get("args", None)
+    self.op = instruction_dict.get("op", None)
+    self.type = instruction_dict.get("type", None)
+    self.value = instruction_dict.get("value", None)
+    self.labels = instruction_dict.get("labels", None)
+    self.label = instruction_dict.get("label", None)
+
+  def isLabel(self):
+    return not (self.label is None)
+
+  def isTerminator(self):
+    global terminators
+    assert(not(self.op is None))
+    return self.op in terminators
+
+  def __str__(self):
+    s = "{"
+    if not self.dest is None:
+      s += "dest: " + self.dest + ", "
+    if not self.args is None:
+      s += "args: " + str(self.args) + ", "
+    if not self.op is None:
+      s += "op: " + self.op + ", "
+    if not self.type is None:
+      s += "type: " + self.type + ", "
+    if not self.value is None:
+      s += "value: " + str(self.value) + ", "
+    if not self.labels is None:
+      s += "labels: " + str(self.labels) + ", "
+    if not self.label is None:
+      s += "label: " + self.label + ", "
+    if len(s) > 1:
+      s = s[:-2]
+    s += "}"
+    return s
+
+  def __repr__(self):
+    return str(self)
+
+  def getDict(self):
+    ret = dict()
+    if not self.dest is None:
+      ret["dest"] = self.dest
+    if not self.args is None:
+      ret["args"] = self.args
+    if not self.op is None:
+      ret["op"] = self.op
+    if not self.type is None:
+      ret["type"] = self.type
+    if not self.value is None:
+      ret["value"] = self.value
+    if not self.labels is None:
+      ret["labels"] = self.labels
+    if not self.label is None:
+      ret["label"] = self.label
+    return ret
+
 
 class Block:
   def __init__(self):
     global block_number
     self.instructions = []
+    self.predecessors = []
     self.successors = []
     self.block_number = block_number
     block_number += 1
     self.label = None
-    self.successors = []
 
   def add_instruction(self, instr):
     self.instructions.append(instr)
@@ -37,13 +89,18 @@ class Block:
     s += "]"
     if len(self.successors) > 0:
       s += " Successors: ["
-      for successor_block in self.successors:
-        s += str(successor_block.block_number) + ", "
+      for block in self.successors:
+        s += str(block.block_number) + ", "
+      s += "]"
+    if len(self.predecessors) > 0:
+      s += " Predecessors: ["
+      for block in self.predecessors:
+        s += str(block.block_number) + ", "
       s += "]"
     return s
 
   def set_label(self, instr):
-    self.label = instr["label"]
+    self.label = instr.label
 
   def is_empty(self):
     return len(self.instructions) == 0
@@ -53,11 +110,13 @@ class Block:
 
   def add_successor(self, successor):
     self.successors.append(successor)
+    successor.predecessors.append(self)
 
   def get_name(self):
     if self.label is not None:
       return self.label
     return "block_{}".format(self.block_number)
+
 
 class CFG:
   def __init__(self, name):
@@ -82,11 +141,11 @@ class CFG:
 
   def connect_block(self, block, block_ix):
     instr = block.last_instruction()
-    if "labels" in instr:
-      for label in instr["labels"]:
+    if not instr.labels is None:
+      for label in instr.labels:
         successor_block = self.get_block(label)
         block.add_successor(successor_block)
-    elif instr["op"] == "ret":
+    elif instr.op == "ret":
       # No fall through.
       pass
     else:
@@ -120,11 +179,16 @@ class CFGCreator:
     instructions = func["instrs"]
 
     cfg = CFG(func["name"])
+    if "args" in func:
+      cfg.args = func["args"]
+    else:
+      cfg.args = []
     current_block = Block()
-    for instr in instructions:
-      if not is_label(instr):
+    for instr_dict in instructions:
+      instr = Instruction(instr_dict)
+      if not instr.isLabel():
         current_block.add_instruction(instr)
-        if is_terminator(instr):
+        if instr.isTerminator():
           cfg.add_block(current_block)
           current_block = Block()
       else:
@@ -155,7 +219,7 @@ class CFGCreator:
       if not first_cfg:
         s += ", "
       first_cfg = False
-      s += '{ "name": "'+ cfg.name + '", "instrs": ['
+      s += '{ "args": ' + str(cfg.args) + ', "name": "'+ cfg.name + '", "instrs": ['
       first_instr = True
       for block in cfg.blocks:
         if block.label is not None:
@@ -167,11 +231,12 @@ class CFGCreator:
           if not first_instr:
             s += ", "
           first_instr = False
-          s += json.dumps(instr)
+          s += json.dumps(instr.getDict())
       s += "] }" # end instrs and function
     s += "] }"
 
     return s
+
 
 if __name__ == '__main__':
   cfgs = CFGCreator.process(sys.stdin.read())

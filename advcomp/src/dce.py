@@ -20,8 +20,8 @@ class DeadCodeEliminator:
     used_variables = set()
     for block in cfg.blocks:
       for instr in block.instructions:
-        if "args" in instr:
-          used_variables.update(instr["args"])
+        if not instr.args is None:
+          used_variables.update(instr.args)
 
     something_changed_in_this_func = False
     something_changed = True
@@ -31,7 +31,7 @@ class DeadCodeEliminator:
       for block in cfg.blocks:
         new_instructions = []
         for instr in block.instructions:
-          if "dest" in instr and instr["dest"] not in used_variables:
+          if not instr.dest is None and not instr.dest in used_variables:
             # Remove this instruction
             something_changed = True
             something_changed_in_this_func = True
@@ -49,8 +49,8 @@ class DeadCodeEliminator:
     used_variables = set()
     for block in cfg.blocks:
       for instr in block.instructions:
-        if "args" in instr:
-          used_variables.update(instr["args"])
+        if not instr.args is None:
+          used_variables.update(instr.args)
 
     something_changed = True
     something_changed_in_this_func = False
@@ -59,27 +59,28 @@ class DeadCodeEliminator:
 
       for block in cfg.blocks:
         maybe_obsolete_assignments = dict()
+        to_remove = set()
 
         for instr in block.instructions:
-          # Retrieve te values needed by the instruction -> the last assignments
-          # to those are no longer candidates for removal.
-          if "args" in instr:
-            for a in instr["args"]:
+          # Retrieve the values needed by the instruction -> the last
+          # assignments to those are no longer candidates for removal.
+          if not instr.args is None:
+            for a in instr.args:
               maybe_obsolete_assignments.pop(a, None)
 
           # If the instruction assigns to something, 1) potentially eliminate
           # a previous assignment, 2) record this assignment.
-          if "dest" in instr:
-            dest = instr["dest"]
+          if not instr.dest is None:
+            dest = instr.dest
             if dest in maybe_obsolete_assignments:
-              maybe_obsolete_assignments[dest]["removeThis"] = True
+              to_remove.add(maybe_obsolete_assignments[dest])
               something_changed_in_this_func = True
 
             maybe_obsolete_assignments[dest] = instr
 
         new_instructions = []
         for instr in block.instructions:
-          if not "removeThis" in instr:
+          if not (instr in to_remove):
             new_instructions.append(instr)
 
         block.instructions = new_instructions

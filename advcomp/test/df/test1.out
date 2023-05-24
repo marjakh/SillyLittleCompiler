@@ -1,0 +1,15 @@
+{dest: a, op: const, type: int, value: 47}
+{dest: b, op: const, type: int, value: 42}
+{args: ['cond'], op: br, labels: ['left', 'right']}
+Reachable definitions for cond: {'this is an arg'}
+{dest: b, op: const, type: int, value: 1}
+{dest: c, op: const, type: int, value: 5}
+{op: jmp, labels: ['end']}
+{dest: a, op: const, type: int, value: 2}
+{dest: c, op: const, type: int, value: 10}
+{op: jmp, labels: ['end']}
+{dest: d, args: ['a', 'c'], op: sub, type: int}
+Reachable definitions for a: {{dest: a, op: const, type: int, value: 47}, {dest: a, op: const, type: int, value: 2}}
+Reachable definitions for c: {{dest: c, op: const, type: int, value: 5}, {dest: c, op: const, type: int, value: 10}}
+{args: ['d'], op: print}
+Reachable definitions for d: {{dest: d, args: ['a', 'c'], op: sub, type: int}}

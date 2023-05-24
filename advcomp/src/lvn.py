@@ -38,12 +38,12 @@ class LocalValueNumbering:
 
   @staticmethod
   def constructValue(instr, value_table, environment):
-    if instr["op"] == "const":
-      return Value(instr["op"], [instr["value"]])
+    if instr.op == "const":
+      return Value(instr.op, [instr.value])
 
-    assert("args" in instr)
+    assert(not instr.args is None)
     arg_value_ids = []
-    for arg in instr["args"]:
+    for arg in instr.args:
       # Find this arg from the table
       if not arg in environment:
         # This basic block doesn't know about this variable; it might be coming
@@ -54,7 +54,7 @@ class LocalValueNumbering:
 
       arg_value_id = environment[arg]
       arg_value_ids.append(arg_value_id)
-    return Value(instr["op"], arg_value_ids)
+    return Value(instr.op, arg_value_ids)
 
   @staticmethod
   def updateInstruction(instr, value, value_table, environment):
@@ -64,10 +64,10 @@ class LocalValueNumbering:
     #print(value_table)
     #print(environment)
 
-    if not "args" in instr:
+    if instr.args is None:
       return
 
-    op = instr["op"]
+    op = instr.op
     if LocalValueNumbering.updateIdInstruction(instr, value, value_table, environment):
       # updateIdInstruction handled it
       return
@@ -78,7 +78,7 @@ class LocalValueNumbering:
     for a in value.args:
       canonical_home_variable = value_table[a][1]
       args.append(canonical_home_variable)
-    instr["args"] = args
+    instr.args = args
 
   @staticmethod
   def updateIdInstruction(instr, value, value_table, environment):
@@ -88,7 +88,7 @@ class LocalValueNumbering:
     #print(value_table)
     #print(environment)
 
-    if instr["op"] != "id":
+    if instr.op != "id":
       return False
 
     assert(len(value.args) == 1)
@@ -97,10 +97,10 @@ class LocalValueNumbering:
     # Check if the value at "ix" is a const.
     replacement_value = value_table[ix][0]
     if not replacement_value is None and replacement_value.op == "const":
-      instr["op"] = "const"
+      instr.op = "const"
       assert(len(replacement_value.args) == 1)
-      instr["value"] = replacement_value.args[0]
-      del instr["args"]
+      instr.value = replacement_value.args[0]
+      instr.args = None
       return True
 
     return False
@@ -133,7 +133,7 @@ class LocalValueNumbering:
     assert(len(replacement_value2.args) == 1)
     value2 = replacement_value2.args[0]
 
-    op = instr["op"]
+    op = instr.op
     if op == "add":
       value = value1 + value2
     elif op == "sub":
@@ -146,12 +146,12 @@ class LocalValueNumbering:
       return False
 
     # Update the instruction
-    instr["op"] = "const"
-    instr["value"] = value
-    del instr["args"]
+    instr.op = "const"
+    instr.value = value
+    instr.args = None
 
     # Update the value of the row ix of "dest" in the value_table.
-    ix = environment[instr["dest"]]
+    ix = environment[instr.dest]
     value_table[ix][0] = Value("const", [value])
 
     return True
@@ -177,15 +177,15 @@ class LocalValueNumbering:
     for i_ix, instr in enumerate(block.instructions):
       #print(instr)
 
-      if not "op" in instr:
+      if instr.op is None:
         # Labels and stuff
         continue
 
       value = LocalValueNumbering.constructValue(instr, value_table, environment)
       #print("value is " + str(value))
 
-      if "dest" in instr:
-        dest = instr["dest"]
+      if not instr.dest is None:
+        dest = instr.dest
 
         # If dest will be overwritten later, it cannot be used as a canonical
         # home variable that easily. Prepare for that situation by renaming
@@ -193,7 +193,7 @@ class LocalValueNumbering:
         dest_will_be_overwritten = False
         for i2_ix in range(i_ix + 1, len(block.instructions)):
           instr2 = block.instructions[i2_ix]
-          if "dest" in instr2 and instr2["dest"] == dest:
+          if instr2.dest == dest:
             dest_will_be_overwritten = True
             break
 
@@ -204,21 +204,21 @@ class LocalValueNumbering:
           dest = "variable" + str(var_ix)
           var_ix += 1
 
-          instr["dest"] = dest
+          instr.dest = dest
 
           for i2_ix in range(i_ix + 1, len(block.instructions)):
             instr2 = block.instructions[i2_ix]
-            if "args" in instr2:
+            if not instr2.args is None:
               new_args = []
-              for a in instr2["args"]:
+              for a in instr2.args:
                 if a == old_dest:
                   new_args.append(dest)
                 else:
                   new_args.append(a)
-              instr2["args"] = new_args
+              instr2.args = new_args
             # This has to be done last, since it's possible the overwriting
             # insruction also uses old_dest.
-            if "dest" in instr2 and instr2["dest"] == old_dest:
+            if instr2.dest == old_dest:
               break
 
         str_value = str(value)
@@ -238,7 +238,6 @@ class LocalValueNumbering:
 
       # Reconstruct the instruction
       LocalValueNumbering.updateInstruction(instr, value, value_table, environment)
-
 
 
 if __name__ == '__main__':
