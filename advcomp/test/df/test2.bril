@@ -1,0 +1,14 @@
+@main() {
+.b1:
+  a: int = const 47;
+  b: int = const 42;
+  jmp .b2;
+.b2:
+  a: int = const 100;
+  c: int = const 5;
+  jmp .b3;
+.b3:
+  print a;
+  print b;
+  print c;
+}

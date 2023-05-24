@@ -1,0 +1,12 @@
+{dest: a, op: const, type: int, value: 47}
+{dest: b, op: const, type: int, value: 42}
+{op: jmp, labels: ['b2']}
+{dest: a, op: const, type: int, value: 100}
+{dest: c, op: const, type: int, value: 5}
+{op: jmp, labels: ['b3']}
+{args: ['a'], op: print}
+Reachable definitions for a: {{dest: a, op: const, type: int, value: 100}}
+{args: ['b'], op: print}
+Reachable definitions for b: {{dest: b, op: const, type: int, value: 42}}
+{args: ['c'], op: print}
+Reachable definitions for c: {{dest: c, op: const, type: int, value: 5}}
