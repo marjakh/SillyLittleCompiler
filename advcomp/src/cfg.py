@@ -23,6 +23,9 @@ class Instruction:
     assert(not(self.op is None))
     return self.op in terminators
 
+  def isDefinition(self):
+    return self.dest is not None
+
   def __str__(self):
     s = "{"
     if not self.dest is None:
@@ -65,6 +68,36 @@ class Instruction:
       ret["label"] = self.label
     return ret
 
+class Phi(Instruction):
+  def __init__(self, var_name):
+    super_args = dict()
+    super_args["dest"] = var_name
+    super_args["args"] = []
+    super_args["labels"] = []
+    super_args["op"] = "phi"
+    super().__init__(super_args)
+
+  def __str__(self):
+    s = "{"
+    s += "dest: " + self.dest + ", "
+    # Args now points to the instruction; print only the variable name.
+    s += "args: ["
+    first = True
+    for a in self.args:
+      if not first:
+        s += ", "
+      first = False
+      s += a.dest
+    s += "], "
+    s += "op: " + self.op + ", "
+    # FIXME: type of a phi? Nobody knows!
+    if not self.type is None:
+      s += "type: " + self.type + ", "
+    s += "labels: " + str(self.labels) + ", "
+    if len(s) > 1:
+      s = s[:-2]
+    s += "}"
+    return s
 
 class Block:
   def __init__(self):
@@ -75,15 +108,36 @@ class Block:
     self.block_number = block_number
     block_number += 1
     self.label = None
+    self.dominators = None
+    self.dominates = None
+    self.dominance_frontier = None
+    self.phis = dict()
 
   def add_instruction(self, instr):
     self.instructions.append(instr)
+
+  def add_phi(self, var_name, block, instr):
+    assert isinstance(block, Block)
+    assert isinstance(instr, Instruction)
+    if var_name not in self.phis:
+      phi = Phi(var_name)
+    else:
+      phi = self.phis[var_name]
+
+    for pred in self.predecessors:
+      if block in pred.dominators:
+        phi.labels.append(pred.label)
+        phi.args.append(instr)
+
+    self.phis[var_name] = phi
 
   def __str__(self):
     s = "Block " + str(self.block_number) + " "
     if self.label is not None:
       s += str(self.label) + " "
     s += "["
+    for p in self.phis.values():
+      s += str(p) + ", "
     for i in self.instructions:
       s += str(i) + ", "
     s += "]"
@@ -95,6 +149,11 @@ class Block:
     if len(self.predecessors) > 0:
       s += " Predecessors: ["
       for block in self.predecessors:
+        s += str(block.block_number) + ", "
+      s += "]"
+    if self.dominators:
+      s += " Dominators: ["
+      for block in self.dominators:
         s += str(block.block_number) + ", "
       s += "]"
     return s
@@ -131,6 +190,15 @@ class CFG:
     self.blocks.append(block)
     if block.label is not None:
       self.label_to_block[block.label] = block
+
+  def add_block_and_create_new(self, block):
+    assert(isinstance(block, Block))
+    if block.is_empty():
+      return block
+    self.blocks.append(block)
+    if block.label is not None:
+      self.label_to_block[block.label] = block
+    return Block()
 
   def get_block(self, label):
     return self.label_to_block[label]
@@ -189,11 +257,9 @@ class CFGCreator:
       if not instr.isLabel():
         current_block.add_instruction(instr)
         if instr.isTerminator():
-          cfg.add_block(current_block)
-          current_block = Block()
+          current_block = cfg.add_block_and_create_new(current_block)
       else:
-        cfg.add_block(current_block)
-        current_block = Block()
+        current_block = cfg.add_block_and_create_new(current_block)
         current_block.set_label(instr)
 
     cfg.add_block(current_block)
