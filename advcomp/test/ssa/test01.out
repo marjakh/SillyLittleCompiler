@@ -1,0 +1,13 @@
+@main {
+  a0: bool = const true;
+  br a0 .true .false;
+.true:
+  b0: bool = const 1;
+  jmp .end;
+.false:
+  b1: int = const 0;
+  jmp .end;
+.end:
+  b2 = phi b0 b1 .true .false;
+  print b2;
+}

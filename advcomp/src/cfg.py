@@ -77,6 +77,17 @@ class Phi(Instruction):
     super_args["op"] = "phi"
     super().__init__(super_args)
 
+  def getDict(self):
+    ret = dict()
+    ret["dest"] = self.dest
+    # self.args is a list of Instructions; convert it to variable names instead.
+    ret["args"] = [a.dest for a in self.args]
+    ret["op"] = self.op
+    if not self.type is None:
+      ret["type"] = self.type
+    ret["labels"] = self.labels
+    return ret
+
   def __str__(self):
     s = "{"
     s += "dest: " + self.dest + ", "
@@ -293,6 +304,11 @@ class CFGCreator:
             s += ", "
           first_instr = False
           s += '{"label": "' + block.label + '"}'
+        for phi in block.phis.values():
+          if not first_instr:
+            s += ", "
+          first_instr = False
+          s += json.dumps(phi.getDict())
         for instr in block.instructions:
           if not first_instr:
             s += ", "

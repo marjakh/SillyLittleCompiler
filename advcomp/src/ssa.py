@@ -41,7 +41,6 @@ class Dominators:
             b1.dominance_frontier.add(s)
 
 class ToSSA:
-
   @staticmethod
   def findBlockToRename(blocks_to_rename):
     for block in blocks_to_rename:
@@ -128,6 +127,5 @@ if __name__ == '__main__':
   cfgs = CFGCreator.process(sys.stdin.read())
   for cfg in cfgs:
     ToSSA.makeSSA(cfg)
-    print(cfg)
+  print(CFGCreator.reconstructJSON(cfgs))
 
-  #print(CFGCreator.reconstructJSON(cfgs))

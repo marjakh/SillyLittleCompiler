@@ -1,0 +1,1 @@
+command = "/home/marja/python-venv-for-advcomp/bin/bril2json < {filename} | python3 ../../src/ssa.py | /home/marja/python-venv-for-advcomp/bin/bril2txt"
